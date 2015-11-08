@@ -13,7 +13,7 @@ Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto r
 * A customized search engine for bl.ocks.org. Give it a D3 function and you will see a list of relevant projects. Created by [Irene Ros](http://ireneros.com/) and [Bocoup](http://bocoup.com/).
 
 [Data Visualization & D3.js Weekly Newsletter](https://www.dashingd3js.com/data-visualization-and-d3-newsletter)
-* A curated weekly list of articles, reading, and videos on D3 and Datavis. Run by [Sebastian Gutierrez](https://www.dashingd3js.com/about) of [Dashing D3js](https://www.dashingd3js.com).
+* A short curated weekly list of articles, reading, and videos on D3 and Datavis. Collected by [Sebastian Gutierrez](https://www.dashingd3js.com/about) of [Dashing D3js](https://www.dashingd3js.com).
 
 [NYC D3.js group through Meetup.com](http://www.meetup.com/NYC-D3-JS/)
 * A monthly event focused on D3 and Datavis with speakers, socializing, and refreshments. Formerly organized by Sebastian Gutierrez, now run by [Amit Schechter and Natalie Wesson](http://two-n.com/team/) of [TWO-N](http://www.two-n.com/).
