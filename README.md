@@ -1,4 +1,4 @@
-## My D3.js & Datavis Portfolio
+## D3.js & Datavis Portfolio
 * [Echoblock](http://bl.ocks.org/tomswisher/raw/e91ff1a121125724bbf7)
 * [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33)
 * [Constellation](http://admixcollective.org/constellation.html)
