@@ -6,7 +6,7 @@
 ## Background
 I'm a huge fan of [D3.js](http://d3js.org/), the data visualization JavaScript library created by [Mike Bostock](http://bost.ocks.org/mike/), [Jeffrey Heer](http://homes.cs.washington.edu/~jheer/), and a [community](https://github.com/mbostock/d3/graphs/contributors) of open source contributors.
 
-Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto repository for the Datavis community's examples and sketches. Using his Node.js program [gistup](http://bost.ocks.org/mike/block/) or [browser extenstion](https://github.com/mbostock/bl.ocks.org/blob/master/README.md) you can upload a git project and host all the files you need for a modestly sized [static](http://stackoverflow.com/a/15719098) webapp. [Ian Johnson](https://www.kickstarter.com/projects/1058500513/building-blocks-0) is working on a [project](https://www.kickstarter.com/projects/1058500513/building-blocks-0) to remove the command-line aspect and bring bl.ock-making to more users.
+Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto repository for the Datavis community's examples and sketches. Using his Node.js program [gistup](http://bost.ocks.org/mike/block/) or [browser extenstion](https://github.com/mbostock/bl.ocks.org/blob/master/README.md) you can upload a git project and host all the files you need for a modestly sized [static](http://stackoverflow.com/a/15719098) webapp. [Ian Johnson](https://www.kickstarter.com/profile/1058500513) is working on a [project](https://www.kickstarter.com/projects/1058500513/building-blocks-0) to remove the command-line aspect and bring bl.ock-making to more users.
 
 ## Helpful Resources
 [bl.ocksplorer.org](http://bl.ocksplorer.org/)
