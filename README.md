@@ -29,3 +29,6 @@ Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto r
 
 [D3 for Beginners Part II: Vadim Ogievetsky on Developing in D3](https://www.youtube.com/watch?v=RXhucjpsNqA)
 * A great next-step video for building your intuition for thinking in D3, by [Vadim Ogievetsky](https://github.com/vogievetsky).
+
+[User Interface Algorithms [JSConf2014]](https://www.youtube.com/watch?v=90NsjKvz9Ns)
+* A deep-dive into JavaScript algorithms powering the UI and UX of charts and websites, by [Mark DiMarco](https://github.com/markmarkoh).
