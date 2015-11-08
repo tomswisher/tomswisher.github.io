@@ -19,9 +19,9 @@ Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto r
 * A monthly event focused on D3 and Datavis with speakers, socializing, and refreshments. Formerly organized by Sebastian Gutierrez, now run by [Amit Schechter and Natalie Wesson](http://two-n.com/team/) of [TWO-N](http://www.two-n.com/).
 
 [Data Stories podcast](http://datastori.es/)
-* One of the best Datavis podcasts, covering a wide breadth of guests and topics. Many episodes are interviews, some explore ideas, and increasingly more are specific break-downs of projects alongside their authors. Hosted by [Enrico Bertini](http://enrico.bertini.me/) and [Moritz Stefaner](http://moritz.stefaner.eu/).
+* Possibly best Datavis podcasts, covering a wide breadth of guests and topics. Many episodes are interviews, some explore ideas, and increasingly more are specific break-downs of projects alongside their authors. Hosted by [Enrico Bertini](http://enrico.bertini.io/) and [Moritz Stefaner](http://moritz.stefaner.eu/).
 
-[Interactive Data Visualization for the Web](https://github.com/mbostock/d3/wiki/Gallery)
+[Interactive Data Visualization for the Web](http://chimera.labs.oreilly.com/books/1230000000345)
 * The definitive textbook for starting out in D3 (and JavaScript+HTML+CSS). Written by [Scott Murray](http://alignedleft.com/) and sold through O'Reilly. Scott was cool enough to write a free interactive webapp version with live code! This is the book I used to get started. I knew basically no JavaScript before reading it, and he cut through the fog better than all the other textbooks I tried.
 
 [D3 for Beginners Part I: Joe Golike on Thinking in D3](https://www.youtube.com/watch?v=TT11gTQAbcU)
@@ -30,5 +30,5 @@ Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto r
 [D3 for Beginners Part II: Vadim Ogievetsky on Developing in D3](https://www.youtube.com/watch?v=RXhucjpsNqA)
 * A great next-step video for building your intuition for thinking in D3, by [Vadim Ogievetsky](https://github.com/vogievetsky).
 
-[User Interface Algorithms [JSConf2014]](https://www.youtube.com/watch?v=90NsjKvz9Ns)
+[Mark DiMarco: User Interface Algorithms [JSConf2014]](https://www.youtube.com/watch?v=90NsjKvz9Ns)
 * A deep-dive into JavaScript algorithms powering the UI and UX of charts and websites, by [Mark DiMarco](https://github.com/markmarkoh).
