@@ -1,7 +1,7 @@
 ## D3.js & Datavis Portfolio
-* [Echoblock](http://bl.ocks.org/tomswisher/raw/e91ff1a121125724bbf7)
-* [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33)
-* [Constellation](http://bl.ocks.org/tomswisher/raw/58e0ac7cd6da86e391a1/)
+* [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33) (alpha, needs scoring and hit detection for the rotated keys)
+* [Echoblock](http://bl.ocks.org/tomswisher/raw/e91ff1a121125724bbf7) (alpha, needs full song controls and user uploading)
+* [Constellation](http://bl.ocks.org/tomswisher/raw/58e0ac7cd6da86e391a1/) (alpha, crashes often)
 * Force-directed ["About" page](http://www.pmrrecords.com/about/) for PMR Records ([Code](http://www.pmrrecords.com/wp-content/themes/bespoke/js/init.js?ver=4.3.1)). Collaboration with their devs/designers.
 
 ## Background
