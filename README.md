@@ -2,7 +2,7 @@
 * [Echoblock](http://bl.ocks.org/tomswisher/raw/e91ff1a121125724bbf7)
 * [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33)
 * [Constellation](http://bl.ocks.org/tomswisher/raw/58e0ac7cd6da86e391a1/)
-* Force-directed ["About" page](http://www.pmrrecords.com/about/) for PMR Records (they had final say on design)
+* Force-directed ["About" page](http://www.pmrrecords.com/about/) for PMR Records ([Code](http://www.pmrrecords.com/wp-content/themes/bespoke/js/init.js?ver=4.3.1)). Collaboration with their devs/designers.
 
 ## Background
 I'm a huge fan of [D3.js](http://d3js.org/), the data visualization JavaScript library created by [Mike Bostock](http://bost.ocks.org/mike/), [Jeffrey Heer](http://homes.cs.washington.edu/~jheer/), and a [community](https://github.com/mbostock/d3/graphs/contributors) of open source contributors.
