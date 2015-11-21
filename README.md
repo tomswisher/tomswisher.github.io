@@ -20,7 +20,7 @@ Bostock maintains [bl.ocks.org](http://bl.ocks.org/) which serves as a defacto r
 * A monthly event focused on D3 and Datavis with speakers, socializing, and refreshments. Formerly organized by Sebastian Gutierrez, now run by [Amit Schechter and Natalie Wesson](http://two-n.com/team/) of [TWO-N](http://www.two-n.com/).
 
 [Data Stories podcast](http://datastori.es/)
-* Possibly best Datavis podcasts, covering a wide breadth of guests and topics. Many episodes are interviews, some explore ideas, and increasingly more are specific break-downs of projects alongside their authors. Hosted by [Enrico Bertini](http://enrico.bertini.io/) and [Moritz Stefaner](http://moritz.stefaner.eu/).
+* Possibly the best Datavis podcast, covering a wide breadth of guests and topics. Many episodes are interviews, some explore a specific topic, and increasingly more are breakdowns of a project alongside its authors. Hosted by [Enrico Bertini](http://enrico.bertini.io/) and [Moritz Stefaner](http://moritz.stefaner.eu/).
 
 [Interactive Data Visualization for the Web](http://chimera.labs.oreilly.com/books/1230000000345)
 * The definitive textbook for starting out in D3 (and JavaScript+HTML+CSS). Written by [Scott Murray](http://alignedleft.com/) and sold through O'Reilly. Scott was cool enough to write a free interactive webapp version with live code! This is the book I used to get started. I knew basically no JavaScript before reading it, and he cut through the fog better than all the other textbooks I tried.
