@@ -1,9 +1,7 @@
 ## D3.js & Datavis Portfolio
-* [Constellation](http://bl.ocks.org/tomswisher/raw/58e0ac7cd6da86e391a1/) (alpha, Single-axis version)
-* [older Constellation](http://admixcollective.org/constellation.html) (unstable, X/Y-axis version)
-* [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33) (alpha, needs scoring and hit detection for rotated keys)
-* [Echoblock](http://bl.ocks.org/tomswisher/raw/e91ff1a121125724bbf7) (alpha, needs full song controls and user uploading)
-* Force-directed ["About" page](http://www.pmrrecords.com/about/) for PMR Records ([Code](http://www.pmrrecords.com/wp-content/themes/bespoke/js/init.js?ver=4.3.1)). Collaboration with their devs/designers.
+* [Constellation](http://bl.ocks.org/tomswisher/raw/58e0ac7cd6da86e391a1/) (single-axis version)
+* [Piarkanoid](http://bl.ocks.org/tomswisher/raw/09898dca3a6ca4ebfa33) (needs scoring and hit detection for rotated keys)
+* Force-directed "About" page for PMR Records (broken due to site changes) ([Code](http://www.pmrrecords.com/wp-content/themes/bespoke/js/init.js?ver=4.3.1))
 
 ## Background
 I'm a huge fan of [D3.js](http://d3js.org/), the data visualization JavaScript library created by [Mike Bostock](http://bost.ocks.org/mike/), [Jeffrey Heer](http://homes.cs.washington.edu/~jheer/), and a [community](https://github.com/mbostock/d3/graphs/contributors) of open source contributors.
