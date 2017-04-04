@@ -100,7 +100,7 @@ var defs = infoboxSVG.append('defs');
 var dropShadowFilter = defs.append('filter')
     .attr('id', 'drop-shadow')
     .attr('height', '130%')
-    .attr('width', '112%');
+    .attr('width', '120%');
 // SourceAlpha refers to opacity of graphic that this dropShadowFilter will be applied to
 // convolve that with a Gaussian with standard deviation 3 and store result in blur
 dropShadowFilter.append('feGaussianBlur')
@@ -340,32 +340,27 @@ function UpdateInfobox() {
 		.each(function(categoryName) {
             var categoryLabelWidth = rowWidth - 4*vs.categoryMarginX - vs.categoryGradeWidth;
             //
-            var categoryRowBGs = d3.select(this).selectAll('rect.category-row-bg').data([null]);
-            categoryRowBGs.enter().append('rect').attr('class', 'category-row-bg');
-            categoryRowBGs
-                .attr('x', 0)
-                .attr('y', 0)
-                .attr('rx', vs.categoryRounded ? rxValue : 0)
-                .attr('width', rowWidth-2)
-                .attr('height', rowHeight)
-                .style('fill', vs.categoryRectColor);
+            // var categoryRowBGs = d3.select(this).selectAll('rect.category-row-bg').data([null]);
+            // categoryRowBGs.enter().append('rect').attr('class', 'category-row-bg');
+            // categoryRowBGs
+            //     .attr('x', 0)
+            //     .attr('y', 0)
+            //     .attr('rx', vs.categoryRounded ? rxValue : 0)
+            //     .attr('width', rowWidth-2)
+            //     .attr('height', rowHeight)
+            //     .style('fill', vs.categoryRectColor);
             //
 			var categoryRowRect = d3.select(this).selectAll('rect.category-row-rect').data([categoryName]);
-			categoryRowRect.enter().append('rect').attr('class', 'category-row-rect');
+			categoryRowRect.enter().append('rect').attr('class', 'category-row-rect')
+                .style('fill', function(d) {
+                    return mapInstance._category === d ? vs.infoboxRowColorHighlighted : vs.categoryRectColor;
+                });
 			categoryRowRect
                 .attr('x', function(d) {
-                    if (mapInstance._category === d) {
-                        return vs.categoryMarginX - vs.popupDX;
-                    } else {
-                        return vs.categoryMarginX;
-                    }
+                    return mapInstance._category === d ? vs.categoryMarginX - vs.popupDX : vs.categoryMarginX;
                 })
                 .attr('y', function(d) {
-                    if (mapInstance._category === d) {
-                        return vs.categoryMarginY - vs.popupDY;
-                    } else {
-                        return vs.categoryMarginY;
-                    }
+                    return mapInstance._category === d ? vs.categoryMarginY - vs.popupDY : vs.categoryMarginY;
                 })
 				.attr('width', categoryLabelWidth)
 				.attr('height', rowHeight-2*vs.categoryMarginY)

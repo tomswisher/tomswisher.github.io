@@ -375,7 +375,7 @@ div.below-map-text div.footer-text div.inner-div {
 #visualization-container #dropdown-container {
   width: 290px;
   height: 45px;
-  text-align: center;
+  text-align: right;
 }
 #visualization-container #filters-svg {
   font-size: 14px;
@@ -415,8 +415,7 @@ div.below-map-text div.footer-text div.inner-div {
 #visualization-container #states-dropdown {
   height: 41px;
   margin-top: 5px;
-  padding-left: 15px;
-  padding-right: 35px;
+  margin-right: 39px;
   font-size: 14px;
   /*
 		-webkit-appearance: none;
