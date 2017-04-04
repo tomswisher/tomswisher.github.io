@@ -1,6 +1,8 @@
 // by Tom Swisher
 
 // window.debug = true;
+var animateDuration = 300;
+var animateEase = 'cubic-out';
 var hoverWidth = 0, hoverHeight = 0;
 var hoverText1 = '', hoverText2 = '';
 var rxValue = 15;
@@ -27,8 +29,6 @@ var body = d3.select('body');
 var mapInstance;
 var currentVisualizationWidth = 0;
 var currentVisualizationHeight = 0;
-var animateDuration = 200;
-var animateEase = 'linear';
 var mapFontSize, categoriesFontSize, infoboxFontSize;
 var sizeOfDOM = 0;
 var stateHovered = 'National';
@@ -60,15 +60,22 @@ vs.c_lightgainsboro = '#eeeeee';
 // vs.gradeColorArray = ['#b22222', 'lightgray', 'lightgray', 'lightgray', '#3cb371']; // green - gray - red
 // vs.gradeColorArray = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']; // colorbrewer
 vs.gradeColorArray = ['crimson', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641'];
+// vs.gradeColorArray = [
+// #FF1800,
+// #FFDD6B,
+// #FFF696,
+// #9CCC49,
+// #000911A,
+// ]
 //
 vs.gradeColorYes = 'crimson';
 vs.categoryRectColor = 'white';
 vs.categoryTextColor = 'black';
-vs.infoboxTextColorHighlighted = 'black';
-// vs.infoboxRowColorHighlighted = 'darkorange';
+vs.categoryTextColorHigh = 'black';
+// vs.categoryRectColorHigh = 'darkorange';
 // vs.categoryRectColor = 'black';
-vs.infoboxRowColorHighlighted = 'crimson';
-vs.gradeColorDefault = 'white';
+vs.categoryRectColorHigh = 'crimson';
+vs.gradeColor = 'white';
 //
 var colorScale = d3.scale.quantize()
 	.domain([0, 5])
@@ -111,8 +118,8 @@ dropShadowFilter.append('feGaussianBlur')
 // store result in offsetBlur
 dropShadowFilter.append('feOffset')
     .attr('in', 'blur')
-    .attr('dx', 5)
-    .attr('dy', 5)
+    .attr('dx', 3)
+    .attr('dy', 3)
     .attr('result', 'offsetBlur');
 // overlay original SourceGraphic over translated blurred opacity by using
 // feMerge dropShadowFilter. Order of specifying inputs is important!
@@ -131,7 +138,8 @@ function InitializePage() {
 		.jsonData(jsonDataURL);
 	ResizePage();
 	requestAnimationFrame(function() {
-		body.transition().duration(500).ease('cubic-in')
+		body
+            .transition().duration(500).ease('cubic-in')
 			.style('opacity', 1);
 	});
 }
@@ -151,9 +159,9 @@ function UpdateFilters() {
 		.attr('width', filtersWidth)
 		.attr('height', filtersHeight)
         .transition().duration(animateDuration).ease(animateEase)
-            .style('opacity', function(d) {
-                return mapInstance.Category() !== 'Overall Grade' ? 0 : 1;
-            });
+        .style('opacity', function(d) {
+            return mapInstance.Category() !== 'Overall Grade' ? 0 : 1;
+        });
 	var gradeDataArray = gradeArray.slice();
 	// var gradeRectSize = (1/2)*(1/gradeDataArray.length)*filtersWidth;
 	var gradeRectSize = filtersHeight-2*vs.gradeMargin;
@@ -183,7 +191,7 @@ function UpdateFilters() {
             var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
             gradeBG.enter().append('rect').attr('class', 'grade-bg')
                 .attr('rx', vs.gradeBGRounded ? rxValue : 0)
-                .style('fill', vs.gradeColorDefault);
+                .style('fill', vs.gradeColor);
             gradeBG
                 .attr('x', (-1/2)*filtersHeight)
                 .attr('y', (-1/2)*filtersHeight)
@@ -209,12 +217,13 @@ function UpdateFilters() {
                     return visibleGrades[d] === true ? 'url(#drop-shadow)' : null;
                 })
                 .style('stroke-width', function(d) {
-                    return visibleGrades[d] === true ? '1' : '0';
+                    return '1';
+                    // return visibleGrades[d] === true ? '1' : '0';
                 })
                 .transition().duration(animateDuration).ease(animateEase)
-                    .style('fill', function(d) {
-                        return visibleGrades[d] === true ? colorScale(gradeScale(d)) : vs.gradeColorDefault;
-                    });
+                .style('fill', function(d) {
+                    return visibleGrades[d] === true ? colorScale(gradeScale(d)) : vs.gradeColor;
+                });
             //
             var gradeLabel = d3.select(this).selectAll('text.grade-label').data([grade]);
             gradeLabel.enter().append('text').attr('class', 'grade-label button-text')
@@ -353,7 +362,7 @@ function UpdateInfobox() {
 			var categoryRowRect = d3.select(this).selectAll('rect.category-row-rect').data([categoryName]);
 			categoryRowRect.enter().append('rect').attr('class', 'category-row-rect')
                 .style('fill', function(d) {
-                    return mapInstance._category === d ? vs.infoboxRowColorHighlighted : vs.categoryRectColor;
+                    return mapInstance._category === d ? vs.categoryRectColorHigh : vs.categoryRectColor;
                 });
 			categoryRowRect
                 .attr('x', function(d) {
@@ -369,16 +378,17 @@ function UpdateInfobox() {
                     return mapInstance._category === d ? 'url(#drop-shadow)' : null;
                 })
                 .style('stroke-width', function(d) {
+                    // return '1';
                     return mapInstance._category === d ? '1' : '0';
                 })
                 .transition().duration(animateDuration).ease(animateEase)
-    				.style('fill', function(d) {
-                        return mapInstance._category === d ? vs.infoboxRowColorHighlighted : vs.categoryRectColor;
-                    });
+				.style('fill', function(d) {
+                    return mapInstance._category === d ? vs.categoryRectColorHigh : vs.categoryRectColor;
+                });
 			var categoryRowLabel = d3.select(this).selectAll('text.category-row-label').data([categoryName]);
 			categoryRowLabel.enter().append('text').attr('class', 'category-row-label button-text')
 				.style('fill', function(d) {
-                    return mapInstance._category === d ? vs.infoboxTextColorHighlighted : vs.categoryTextColor;
+                    return mapInstance._category === d ? vs.categoryTextColorHigh : vs.categoryTextColor;
                 });
 			categoryRowLabel
                 .attr('x', function(d) {
@@ -398,9 +408,9 @@ function UpdateInfobox() {
                 .text(function(d) { return d; })
                 .call(BostockTextWrap, categoryLabelWidth)
                 .transition().duration(animateDuration).ease(animateEase)
-                    .style('fill', function(d) {
-                        return mapInstance._category === d ? vs.infoboxTextColorHighlighted : vs.categoryTextColor;
-                    });
+                .style('fill', function(d) {
+                    return mapInstance._category === d ? vs.categoryTextColorHigh : vs.categoryTextColor;
+                });
 			var categoryRowGrade = d3.select(this).selectAll('text.category-row-grade').data([stateDataRow]);
 			categoryRowGrade.enter().append('text').attr('class', 'category-row-grade button-text')
 				.style('fill', vs.categoryTextColor);
@@ -640,9 +650,9 @@ function MapObject() {
 			.style('fill', function(d) {
 				var grade = d.properties[that._category];
 				if (grade === undefined) { return '#ccc'; }
-				if (grade === '_') { return vs.gradeColorDefault; }
+				if (grade === '_') { return vs.gradeColor; }
                 if (grade === 'Yes') { return vs.gradeColorYes; }
-                if (grade === 'No') { return vs.gradeColorDefault; }
+                if (grade === 'No') { return vs.gradeColor; }
 				return colorScale(gradeScale(grade));
 			})
 			.each(function(d) {
@@ -779,21 +789,21 @@ function MapObject() {
 				return '1px';
 			})
 			.transition().duration(animateDuration).ease(animateEase)
-				.style('fill', function(d) {
-					var grade = d.properties[that._category];
-					if (grade === undefined) { return '#ccc'; }
-					if (grade === '_') { return vs.gradeColorDefault; }
-                    if (grade === 'Yes') { return vs.gradeColorYes; }
-                    if (grade === 'No') { return vs.gradeColorDefault; }
-					return colorScale(gradeScale(grade));
-				});
+			.style('fill', function(d) {
+				var grade = d.properties[that._category];
+				if (grade === undefined) { return '#ccc'; }
+				if (grade === '_') { return vs.gradeColor; }
+                if (grade === 'Yes') { return vs.gradeColorYes; }
+                if (grade === 'No') { return vs.gradeColor; }
+				return colorScale(gradeScale(grade));
+			});
 		statePaths
 			.filter(function(d) { 
 				var gradeLetter = d.properties[that._category];
 				return visibleGrades[gradeLetter] === false;
 			})
 			.transition().duration(animateDuration).ease(animateEase)
-				.style('fill', vs.gradeColorDefault);
+			.style('fill', vs.gradeColor);
 		//
 		// stateThumbs = stateGs.selectAll('.state-thumb').data(function(d) { return [d]; }, function(d) { return d.properties.name; });
 		// stateThumbs.enter().append('svg:image').classed('state-thumb', true);
