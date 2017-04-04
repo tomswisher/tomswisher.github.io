@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width" />
+<title>Education Map</title>
+<style type="text/css">
+</style>
+<link href="css/map.css" rel="stylesheet" type="text/css"></link>
+</head>
+<body>
+<div id="visualization-container">
+	<div class="column column1">
+		<div id="map-container" class="row unselectable" attr="unselectable">
+			<svg id="map-svg">
+                <rect id="map-bg"></rect>
+            </svg>
+		</div><!--
+	 --><div id="filters-container" class="row unselectable" attr="unselectable">
+	 		<svg id="filters-svg"></svg>
+	    </div>
+	</div>
+	<div class="column column2">
+		<div class="row" id="dropdown-container">
+            <select id="states-dropdown"></select>
+        </div><!--
+	 --><div class="row" id="infobox-container">
+	 		<svg id="infobox-svg"></svg>
+	 	</div>
+	</div>
+</div>
+<script type="text/javascript" src="js/d3.v3.min.js"></script>
+<script type="text/javascript" src="js/map.js"></script>
+</body>
+</html>
