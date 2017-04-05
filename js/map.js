@@ -1,7 +1,7 @@
 // by Tom Swisher
 
 // window.debug = true;
-var animateDuration = 300;
+var animateDuration = 500;
 var animateEase = 'cubic-out';
 var hoverWidth = 0, hoverHeight = 0;
 var hoverText1 = '', hoverText2 = '';
@@ -39,13 +39,13 @@ var isMobile;
 var vs = {};
 vs.popupDX = 2;
 vs.popupDY = 2;
-vs.gradeMargin = 3;
+vs.gradeMargin = 2.5;
 vs.gradeRounded = false;
 vs.categoryRounded = false;
 vs.categoryGradeWidth = 30;
-vs.categoryMarginX = 3;
+vs.categoryMarginX = 4;
 vs.categoryMarginY = 2;
-
+//
 vs.c_salmon = '#ff5232';
 vs.c_peagreen = '#6eaa5e';
 vs.c_lightgainsboro = '#eeeeee';
@@ -59,23 +59,15 @@ vs.c_lightgainsboro = '#eeeeee';
 // vs.gradeColorArray = [vs.c_salmon, 'gold', 'lightyellow', 'lightgreen', vs.c_peagreen];
 // vs.gradeColorArray = ['#b22222', 'lightgray', 'lightgray', 'lightgray', '#3cb371']; // green - gray - red
 // vs.gradeColorArray = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']; // colorbrewer
-vs.gradeColorArray = ['crimson', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641'];
-// vs.gradeColorArray = [
-// #FF1800,
-// #FFDD6B,
-// #FFF696,
-// #9CCC49,
-// #000911A,
-// ]
+// vs.gradeColorArray = ['crimson', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641'];
+vs.gradeColorArray = ['#FF1800', '#FFDD6B', '#FFF696', '#9CCC49', '#00911A'];
 //
-vs.gradeColorYes = 'crimson';
-vs.categoryRectColor = 'white';
+vs.activeColor = '#D02626';
+vs.inactiveColor = 'white';
+vs.yesColor = '#D02626';
+vs.noColor = 'BDBBBB';
 vs.categoryTextColor = 'black';
-vs.categoryTextColorHigh = 'black';
-// vs.categoryRectColorHigh = 'darkorange';
-// vs.categoryRectColor = 'black';
-vs.categoryRectColorHigh = 'crimson';
-vs.gradeColor = 'white';
+vs.categoryTextColorHigh = 'whitesmoke';
 //
 var colorScale = d3.scale.quantize()
 	.domain([0, 5])
@@ -131,7 +123,8 @@ feMerge.append('feMergeNode')
 
 
 function InitializePage() {
-	var csvDataURL = 'data/3_16_reduced_privatization_report_card.csv';
+	// var csvDataURL = 'data/3_16_reduced_privatization_report_card.csv';
+    var csvDataURL = 'data/4_4_reduced_privatization_report_card.csv';
 	var jsonDataURL = 'data/us-states.json';
 	mapInstance = new MapObject()
 		.csvData(csvDataURL)
@@ -157,21 +150,21 @@ function UpdateFilters() {
 	var filtersHeight = Math.max(0, parseFloat(filtersContainer.style('height'))); 
 	filtersSVG
 		.attr('width', filtersWidth)
-		.attr('height', filtersHeight)
+		.attr('height', filtersHeight+3)
         .transition().duration(animateDuration).ease(animateEase)
         .style('opacity', function(d) {
             return mapInstance.Category() !== 'Overall Grade' ? 0 : 1;
         });
 	var gradeDataArray = gradeArray.slice();
 	// var gradeRectSize = (1/2)*(1/gradeDataArray.length)*filtersWidth;
-	var gradeRectSize = filtersHeight-2*vs.gradeMargin;
+	var gradeRectSize = filtersHeight - 2*vs.gradeMargin;
 	//
     var gradeGs = filtersSVG.selectAll('g.grade-g').data(gradeDataArray);
     gradeGs.enter().append('g').attr('class', 'grade-g');
     gradeGs
         .attr('transform', function(d,i) {
             var tx = (1/2)*filtersWidth + (1/2-1/2*gradeDataArray.length+i)*filtersHeight;
-            var ty = (1/2)*filtersHeight;
+            var ty = (1/2)*filtersHeight + 1;
             return 'translate('+tx+','+ty+')';
         })
         .on('mouseover', function(d) {
@@ -191,7 +184,7 @@ function UpdateFilters() {
             var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
             gradeBG.enter().append('rect').attr('class', 'grade-bg')
                 .attr('rx', vs.gradeBGRounded ? rxValue : 0)
-                .style('fill', vs.gradeColor);
+                .style('fill', vs.inactiveColor);
             gradeBG
                 .attr('x', (-1/2)*filtersHeight)
                 .attr('y', (-1/2)*filtersHeight)
@@ -222,7 +215,7 @@ function UpdateFilters() {
                 })
                 .transition().duration(animateDuration).ease(animateEase)
                 .style('fill', function(d) {
-                    return visibleGrades[d] === true ? colorScale(gradeScale(d)) : vs.gradeColor;
+                    return visibleGrades[d] === true ? colorScale(gradeScale(d)) : vs.inactiveColor
                 });
             //
             var gradeLabel = d3.select(this).selectAll('text.grade-label').data([grade]);
@@ -247,11 +240,11 @@ function UpdateInfobox() {
 		stateDataRow = {
             'State':'National',
             'Privately Managed Charter Schools':'-',
-            'Takes Charter Authorization from Local District-Directly or by Appeal':'-',
+            'Removes charter authority from districts':'-',
             'Virtual Charter Schools':'-',
             'Vouchers for Private Schools':'-',
             'Tax Credit Subsidies for Private Schools':'-',
-            'Taxpayer Funding for Private Schools and Home Schools (ESAs)':'-',
+            'Has ESA voucher program':'-',
             'Overall Grade':'-',
         };
 	} else {
@@ -262,7 +255,7 @@ function UpdateInfobox() {
 	var categoryRowsData = mapInstance._categoryNames.slice();
 	statesDropdown
         .attr('class', 'button-object')
-		// .style('background', 'url("img/orange-triangle-flipped.png") 90% no-repeat '+vs.categoryRectColor)
+		// .style('background', 'url("img/orange-triangle-flipped.png") 90% no-repeat '+vs.inactiveColor)
         .on('change', function() {
 			if (this.value === 'National') {
 				stateClicked = undefined;
@@ -357,12 +350,12 @@ function UpdateInfobox() {
             //     .attr('rx', vs.categoryRounded ? rxValue : 0)
             //     .attr('width', rowWidth-2)
             //     .attr('height', rowHeight)
-            //     .style('fill', vs.categoryRectColor);
+            //     .style('fill', vs.inactiveColor);
             //
 			var categoryRowRect = d3.select(this).selectAll('rect.category-row-rect').data([categoryName]);
 			categoryRowRect.enter().append('rect').attr('class', 'category-row-rect')
                 .style('fill', function(d) {
-                    return mapInstance._category === d ? vs.categoryRectColorHigh : vs.categoryRectColor;
+                    return mapInstance._category === d ? vs.activeColor : vs.inactiveColor;
                 });
 			categoryRowRect
                 .attr('x', function(d) {
@@ -383,7 +376,7 @@ function UpdateInfobox() {
                 })
                 .transition().duration(animateDuration).ease(animateEase)
 				.style('fill', function(d) {
-                    return mapInstance._category === d ? vs.categoryRectColorHigh : vs.categoryRectColor;
+                    return mapInstance._category === d ? vs.activeColor : vs.inactiveColor;
                 });
 			var categoryRowLabel = d3.select(this).selectAll('text.category-row-label').data([categoryName]);
 			categoryRowLabel.enter().append('text').attr('class', 'category-row-label button-text')
@@ -650,9 +643,9 @@ function MapObject() {
 			.style('fill', function(d) {
 				var grade = d.properties[that._category];
 				if (grade === undefined) { return '#ccc'; }
-				if (grade === '_') { return vs.gradeColor; }
-                if (grade === 'Yes') { return vs.gradeColorYes; }
-                if (grade === 'No') { return vs.gradeColor; }
+				if (grade === '_') { return vs.inactiveColor }
+                if (grade === 'Yes') { return vs.yesColor; }
+                if (grade === 'No') { return vs.noColor }
 				return colorScale(gradeScale(grade));
 			})
 			.each(function(d) {
@@ -791,10 +784,11 @@ function MapObject() {
 			.transition().duration(animateDuration).ease(animateEase)
 			.style('fill', function(d) {
 				var grade = d.properties[that._category];
+                if (grade === false) { return vs.inactiveColor; }
 				if (grade === undefined) { return '#ccc'; }
-				if (grade === '_') { return vs.gradeColor; }
-                if (grade === 'Yes') { return vs.gradeColorYes; }
-                if (grade === 'No') { return vs.gradeColor; }
+				if (grade === '_') { return vs.inactiveColor }
+                if (grade === 'Yes') { return vs.yesColor; }
+                if (grade === 'No') { return vs.noColor }
 				return colorScale(gradeScale(grade));
 			});
 		statePaths
@@ -803,7 +797,7 @@ function MapObject() {
 				return visibleGrades[gradeLetter] === false;
 			})
 			.transition().duration(animateDuration).ease(animateEase)
-			.style('fill', vs.gradeColor);
+			.style('fill', vs.inactiveColor);
 		//
 		// stateThumbs = stateGs.selectAll('.state-thumb').data(function(d) { return [d]; }, function(d) { return d.properties.name; });
 		// stateThumbs.enter().append('svg:image').classed('state-thumb', true);

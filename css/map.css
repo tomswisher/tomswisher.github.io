@@ -183,22 +183,22 @@ div.below-map-text div.footer-text div.inner-div {
 }
 @media screen and (min-width: 667px) {
   #visualization-container div.column.column1 {
-    width: 367px;
+    width: 347px;
   }
 }
 @media screen and (min-width: 736px) {
   #visualization-container div.column.column1 {
-    width: 436px;
+    width: 416px;
   }
 }
 @media screen and (min-width: 768px) {
   #visualization-container div.column.column1 {
-    width: 458px;
+    width: 438px;
   }
 }
 @media screen and (min-width: 1024px) {
   #visualization-container div.column.column1 {
-    width: 714px;
+    width: 694px;
   }
 }
 #visualization-container div.column.column2 {
@@ -222,22 +222,22 @@ div.below-map-text div.footer-text div.inner-div {
 }
 @media screen and (min-width: 667px) {
   #visualization-container div.column.column2 {
-    width: 290px;
+    width: 310px;
   }
 }
 @media screen and (min-width: 736px) {
   #visualization-container div.column.column2 {
-    width: 290px;
+    width: 310px;
   }
 }
 @media screen and (min-width: 768px) {
   #visualization-container div.column.column2 {
-    width: 290px;
+    width: 310px;
   }
 }
 @media screen and (min-width: 1024px) {
   #visualization-container div.column.column2 {
-    width: 290px;
+    width: 310px;
   }
 }
 #visualization-container div.column .row {
@@ -249,43 +249,43 @@ div.below-map-text div.footer-text div.inner-div {
 @media screen and (min-width: 320px) {
   #visualization-container #filters-container {
     width: 310px;
-    height: 45px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 375px) {
   #visualization-container #filters-container {
     width: 365px;
-    height: 45px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 414px) {
   #visualization-container #filters-container {
     width: 404px;
-    height: 45px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 667px) {
   #visualization-container #filters-container {
-    width: 367px;
-    height: 45px;
+    width: 347px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 736px) {
   #visualization-container #filters-container {
-    width: 436px;
-    height: 45px;
+    width: 416px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 768px) {
   #visualization-container #filters-container {
-    width: 458px;
-    height: 45px;
+    width: 438px;
+    height: 40px;
   }
 }
 @media screen and (min-width: 1024px) {
   #visualization-container #filters-container {
-    width: 714px;
-    height: 45px;
+    width: 694px;
+    height: 40px;
   }
 }
 #visualization-container #map-container {
@@ -311,30 +311,30 @@ div.below-map-text div.footer-text div.inner-div {
 }
 @media screen and (min-width: 667px) {
   #visualization-container #map-container {
-    width: 367px;
+    width: 347px;
     height: 315px;
   }
 }
 @media screen and (min-width: 736px) {
   #visualization-container #map-container {
-    width: 436px;
+    width: 416px;
     height: 315px;
   }
 }
 @media screen and (min-width: 768px) {
   #visualization-container #map-container {
-    width: 458px;
+    width: 438px;
     height: 315px;
   }
 }
 @media screen and (min-width: 1024px) {
   #visualization-container #map-container {
-    width: 714px;
+    width: 694px;
     height: 440px;
   }
 }
 #visualization-container #infobox-container {
-  width: 290px;
+  width: 310px;
   /*outline: 1px solid blue;*/
 }
 @media screen and (min-width: 320px) {
@@ -373,8 +373,8 @@ div.below-map-text div.footer-text div.inner-div {
   }
 }
 #visualization-container #dropdown-container {
-  width: 290px;
-  height: 45px;
+  width: 310px;
+  height: 40px;
   text-align: right;
 }
 #visualization-container #filters-svg {
@@ -413,9 +413,9 @@ div.below-map-text div.footer-text div.inner-div {
   font-size: 14px;
 }
 #visualization-container #states-dropdown {
-  height: 41px;
-  margin-top: 5px;
-  margin-right: 39px;
+  height: 36px;
+  margin-top: 3px;
+  margin-right: 42px;
   font-size: 14px;
   /*
 		-webkit-appearance: none;
