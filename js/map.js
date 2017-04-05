@@ -400,7 +400,7 @@ function UpdateInfobox() {
                 })
                 .text(function(d) { return d; })
                 .call(BostockTextWrap, categoryLabelWidth)
-                .transition().duration(animateDuration).ease(animateEase)
+                // .transition().duration(animateDuration).ease(animateEase)
                 .style('fill', function(d) {
                     return mapInstance._category === d ? vs.categoryTextColorHigh : vs.categoryTextColor;
                 });
