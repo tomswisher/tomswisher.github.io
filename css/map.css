@@ -28,18 +28,13 @@ div.below-map-text {
   font-weight: 300;
 }
 div.above-map-text {
-  width: 0px;
+  width: 290px;
   background-color: #3366FF;
   color: #fff;
   padding-bottom: 25px;
   margin-bottom: 20px;
   padding-left: 10px;
   padding-right: 10px;
-}
-@media screen and (min-width: 320px) {
-  div.above-map-text {
-    max-width: 290px;
-  }
 }
 @media screen and (min-width: 375px) {
   div.above-map-text {
@@ -69,16 +64,11 @@ div.above-map-text {
 div.above-map-text #header-image-container {
   margin-top: 10px;
   text-align: center;
+  width: 290px;
 }
 div.above-map-text #header-image-container img {
   max-width: 400px;
   max-height: 200px;
-}
-@media screen and (min-width: 320px) {
-  div.above-map-text #header-image-container img {
-    width: 290px;
-    height: 145px;
-  }
 }
 @media screen and (min-width: 375px) {
   div.above-map-text #header-image-container img {
@@ -118,6 +108,7 @@ div.below-map-text div.footer-text div.inner-div {
   color: white;
 }
 #visualization-container {
+  width: 310px;
   background-color: white;
   font-size: 0px;
   margin: auto;
@@ -126,11 +117,6 @@ div.below-map-text div.footer-text div.inner-div {
   /*target Internet Explorer 9 and Internet Explorer 10:*/
   /* General Styles */
   /* http://stackoverflow.com/questions/7415872/change-color-of-png-image-via-css */
-}
-@media screen and (min-width: 320px) {
-  #visualization-container {
-    width: 310px;
-  }
 }
 @media screen and (min-width: 375px) {
   #visualization-container {
@@ -166,10 +152,8 @@ div.below-map-text div.footer-text div.inner-div {
   display: inline-block;
   vertical-align: top;
 }
-@media screen and (min-width: 320px) {
-  #visualization-container div.column.column1 {
-    width: 310px;
-  }
+#visualization-container div.column.column1 {
+  width: 310px;
 }
 @media screen and (min-width: 375px) {
   #visualization-container div.column.column1 {
@@ -202,13 +186,9 @@ div.below-map-text div.footer-text div.inner-div {
   }
 }
 #visualization-container div.column.column2 {
+  width: 310px;
   text-align: center;
   vertical-align: bottom;
-}
-@media screen and (min-width: 320px) {
-  #visualization-container div.column.column2 {
-    width: 310px;
-  }
 }
 @media screen and (min-width: 375px) {
   #visualization-container div.column.column2 {
@@ -244,13 +224,9 @@ div.below-map-text div.footer-text div.inner-div {
   display: inline-block;
 }
 #visualization-container #filters-container {
+  width: 310px;
+  height: 40px;
   /*outline: 1px solid red;*/
-}
-@media screen and (min-width: 320px) {
-  #visualization-container #filters-container {
-    width: 310px;
-    height: 40px;
-  }
 }
 @media screen and (min-width: 375px) {
   #visualization-container #filters-container {
@@ -289,13 +265,9 @@ div.below-map-text div.footer-text div.inner-div {
   }
 }
 #visualization-container #map-container {
+  width: 310px;
+  height: 205px;
   /*outline: 1px solid orange;*/
-}
-@media screen and (min-width: 320px) {
-  #visualization-container #map-container {
-    width: 310px;
-    height: 205px;
-  }
 }
 @media screen and (min-width: 375px) {
   #visualization-container #map-container {
@@ -335,12 +307,8 @@ div.below-map-text div.footer-text div.inner-div {
 }
 #visualization-container #infobox-container {
   width: 310px;
+  height: 280px;
   /*outline: 1px solid blue;*/
-}
-@media screen and (min-width: 320px) {
-  #visualization-container #infobox-container {
-    height: 280px;
-  }
 }
 @media screen and (min-width: 375px) {
   #visualization-container #infobox-container {

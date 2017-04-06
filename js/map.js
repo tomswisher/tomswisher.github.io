@@ -123,8 +123,7 @@ feMerge.append('feMergeNode')
 
 
 function InitializePage() {
-	// var csvDataURL = 'data/3_16_reduced_privatization_report_card.csv';
-    var csvDataURL = 'data/4_4_reduced_privatization_report_card.csv';
+    var csvDataURL = 'data/4_6_reduced_privatization_report_card.csv';
 	var jsonDataURL = 'data/us-states.json';
 	mapInstance = new MapObject()
 		.csvData(csvDataURL)
@@ -168,14 +167,12 @@ function UpdateFilters() {
             return 'translate('+tx+','+ty+')';
         })
         .on('mouseover', function(d) {
-            console.log('mouseover');
             ToggleGrades(false);
             visibleGrades[d] = true;
             UpdateFilters();
             mapInstance.UpdateMap();
         })
         .on('mouseout', function(d) {
-            console.log('mouseout');
             ToggleGrades(true);
             UpdateFilters();
             mapInstance.UpdateMap();
@@ -237,16 +234,7 @@ function UpdateInfobox() {
 	// console.log('UpdateInfobox');
 	var stateDataRow;
 	if (stateHovered === 'National') {
-		stateDataRow = {
-            'State':'National',
-            'Privately Managed Charter Schools':'-',
-            'Removes charter authority from districts':'-',
-            'Virtual Charter Schools':'-',
-            'Vouchers for Private Schools':'-',
-            'Tax Credit Subsidies for Private Schools':'-',
-            'Has ESA voucher program':'-',
-            'Overall Grade':'-',
-        };
+		stateDataRow = {};
 	} else {
 		stateDataRow = mapInstance._csvData.filter(function(row) {
 			return row.State === stateHovered;
@@ -435,7 +423,7 @@ function ResizePage() {
 		var mapHeight = Math.max(0, parseFloat(mapContainer.style('height'))); 
 		// Check for a breakpoint change
 		if (newVisualizationWidth !== currentVisualizationWidth || newVisualizationHeight !== currentVisualizationHeight) {
-			console.log(newVisualizationWidth, newVisualizationHeight);
+			// console.log(newVisualizationWidth, newVisualizationHeight);
 			currentVisualizationWidth = newVisualizationWidth;
 			currentVisualizationHeight = newVisualizationHeight;
 			mapInstance
