@@ -1,0 +1,164 @@
+/*
+1   320     568     P iPhone 5
+2   375     627     P iPhone 6
+3   414     736     P iPhone 6+
+4   667     375     
+5   736     414
+6   768     1024    P iPad
+7   1024    768
+*/
+@font1Size:         14px;
+@statesStrokeColor: white;
+@statesStrokeWidth: 2px;
+@gradesStrokeColor: black;
+@gradesStrokeWidth: 0px;
+@hoverStrokeColor:  black;
+@hoverStrokeWidth:  0px;
+@hoverFillColor:    white;
+
+@labelSmallWidth:   80px;
+@labelMediumWidth:  180px;
+@debugSliderWidth:  200px;
+
+body {
+    margin: 0px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 400;
+    font-size: 0px;
+}
+#box0 {
+    display: inline-block;
+    text-align: center;
+    > * {
+        font-size: @font1Size;
+    }
+}
+#box1 {
+    display: inline-block;
+    vertical-align: top;
+    > * {
+        font-size: @font1Size;
+    }
+}
+#main-svg { 
+    #main-bg-rect {
+        opacity: 0;
+    }
+    path.state-path {
+        stroke: @statesStrokeColor;
+        stroke-width: @statesStrokeWidth;
+    }
+    circle.vertice-circle {
+        // fill: purple;
+        stroke: black;
+        stroke-width: 1.5px;
+    }
+    line.edge-line {
+        // visibility: hidden;
+        stroke: black;
+        stroke-width: 2px;
+        pointer-events: none;
+    }
+    #hover-g {
+        pointer-events: none;
+    }
+    #hover-text {
+        dominant-baseline: middle;
+        text-anchor: middle;
+    }
+    #hover-rect {
+        stroke: @hoverStrokeColor;
+        stroke-width: @hoverStrokeWidth;
+        fill: @hoverFillColor;
+    }
+}
+#filters-svg {
+    rect.grade-bg {
+        opacity: 0;
+    }
+    rect.grade-rect {
+        stroke: @gradesStrokeColor;
+        stroke-width: @gradesStrokeWidth;
+        pointer-events: none;
+    }
+    text.grade-label {
+        text-anchor: middle;
+        dominant-baseline: middle;
+        pointer-events: none;
+    }
+}
+#states-select {
+    height: 25px;
+}
+.force-div, #simulation-div {
+    display: inline-block;
+    width: @labelMediumWidth + 3*@labelSmallWidth + @debugSliderWidth;
+    font-size: 0px !important;
+    > * {
+        font-size: @font1Size;
+    }
+    div {
+        display: inline-block;
+    }
+    label {
+        display: inline-block;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        &.label-small {
+            width: @labelSmallWidth;
+        }
+        &.label-medium {
+            width: @labelMediumWidth
+        }
+    }
+    input[type='Range'] {
+        width: @debugSliderWidth;
+        margin: 0px;
+    }
+}
+#info-svg {
+    outline: 1px solid @statesStrokeColor;
+    text-align: center;
+}
+.vspacer-15 {
+    display: block;
+    height: 15px;
+}
+/* General Styles */
+.hovered {
+    opacity: 0.3;
+}
+.button-object {
+    cursor: pointer;
+}
+.unselectable {
+    -webkit-touch-callout: none;
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    /*
+     Introduced in IE 10.
+     See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+    */
+    -ms-user-select: none;
+    user-select: none;
+}
+.loading {
+    opacity: 0;
+}
+.inactive {
+    rect&, path& {
+        pointer-events: none !important;
+        fill: gainsboro !important;
+        opacity: 0.5 !important;
+    }
+    rect&, text& {
+        transform: translate(2px,2px) !important;
+    }
+}
+.collapsed {
+    visibility: hidden;
+    width: 0px;
+    height: 0px;
+}

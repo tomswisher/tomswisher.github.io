@@ -1,0 +1,152 @@
+/*
+1   320     568     P iPhone 5
+2   375     627     P iPhone 6
+3   414     736     P iPhone 6+
+4   667     375     
+5   736     414
+6   768     1024    P iPad
+7   1024    768
+*/
+body {
+  margin: 0px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 0px;
+}
+#box0 {
+  display: inline-block;
+  text-align: center;
+}
+#box0 > * {
+  font-size: 14px;
+}
+#box1 {
+  display: inline-block;
+  vertical-align: top;
+}
+#box1 > * {
+  font-size: 14px;
+}
+#main-svg #main-bg-rect {
+  opacity: 0;
+}
+#main-svg path.state-path {
+  stroke: white;
+  stroke-width: 2px;
+}
+#main-svg circle.vertice-circle {
+  stroke: black;
+  stroke-width: 1.5px;
+}
+#main-svg line.edge-line {
+  stroke: black;
+  stroke-width: 2px;
+  pointer-events: none;
+}
+#main-svg #hover-g {
+  pointer-events: none;
+}
+#main-svg #hover-text {
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+#main-svg #hover-rect {
+  stroke: black;
+  stroke-width: 0px;
+  fill: white;
+}
+#filters-svg rect.grade-bg {
+  opacity: 0;
+}
+#filters-svg rect.grade-rect {
+  stroke: black;
+  stroke-width: 0px;
+  pointer-events: none;
+}
+#filters-svg text.grade-label {
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+#states-select {
+  height: 25px;
+}
+.force-div,
+#simulation-div {
+  display: inline-block;
+  width: 620px;
+  font-size: 0px !important;
+}
+.force-div > *,
+#simulation-div > * {
+  font-size: 14px;
+}
+.force-div div,
+#simulation-div div {
+  display: inline-block;
+}
+.force-div label,
+#simulation-div label {
+  display: inline-block;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.force-div label.label-small,
+#simulation-div label.label-small {
+  width: 80px;
+}
+.force-div label.label-medium,
+#simulation-div label.label-medium {
+  width: 180px;
+}
+.force-div input[type='Range'],
+#simulation-div input[type='Range'] {
+  width: 200px;
+  margin: 0px;
+}
+#info-svg {
+  outline: 1px solid white;
+  text-align: center;
+}
+.vspacer-15 {
+  display: block;
+  height: 15px;
+}
+/* General Styles */
+.hovered {
+  opacity: 0.3;
+}
+.button-object {
+  cursor: pointer;
+}
+.unselectable {
+  -webkit-touch-callout: none;
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  /*
+     Introduced in IE 10.
+     See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+    */
+  -ms-user-select: none;
+  user-select: none;
+}
+.loading {
+  opacity: 0;
+}
+rect.inactive,
+path.inactive {
+  pointer-events: none !important;
+  fill: gainsboro !important;
+  opacity: 0.5 !important;
+}
+rect.inactive,
+text.inactive {
+  transform: translate(2px, 2px) !important;
+}
+.collapsed {
+  visibility: hidden;
+  width: 0px;
+  height: 0px;
+}
