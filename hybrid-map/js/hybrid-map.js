@@ -21,9 +21,9 @@ window.onresize = function () {
 // -------------------------------------------------------------------------------------------------
 // Global Variables
 
+var logsTest = true;
 var logs0 = true;
 var logs1 = false;
-var logsTest = true;
 var debugLayoutEnabled = false;
 var mapObj = null;
 var graphObj = null;
@@ -57,8 +57,9 @@ var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Dorris Fisher', 'Eli Broa
 // Global Selectors
 
 var body = d3.select('body');
-var box0 = d3.select('#box0');
 var box1 = d3.select('#box1');
+var box2 = d3.select('#box2');
+var box3 = d3.select('#box3');
 var mainSVG = body.select('#main-svg');
 var mainBGRect = body.select('#main-bg-rect');
 var statesG = body.select('#states-g');
@@ -70,7 +71,7 @@ var hoverG = body.select('#hover-g');
 var hoverRect = body.select('#hover-rect');
 var hoverText = body.select('#hover-text');
 var filtersSVG = body.select('#filters-svg');
-var statesSelect = body.select('#states-select');
+// var statesSelect = body.select('#states-select');
 var forcesContainer = body.select('#forces-container');
 var simulationDiv = body.select('#simulation-div');
 var alphaLabel = simulationDiv.selectAll('label.slider-value');
@@ -90,12 +91,13 @@ if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(naviga
 // Visual Styles
 
 var vs = {};
-vs.box0Width = null;
-vs.box0WidthMin = 400;
 vs.box1Width = null;
-vs.box1WidthMin = 200;
-vs.box1Height = null;
-vs.box1HeightMin = 300;
+vs.box1WidthMin = 400;
+vs.box2Width = null;
+vs.box2WidthMin = 200;
+vs.box2WidthMax = 200;
+vs.box2Height = null;
+vs.box2HeightMin = 300;
 vs.mapWidthHeightRatio = 1.7;
 vs.mapProjectionScale = 1.3;
 vs.statesSelectWidth = 100;
@@ -105,6 +107,7 @@ vs.stateNotClickedOpacity = 0.2;
 vs.hoverMargin = 5;
 vs.gradeMargin = 2.5;
 vs.gradeRounded = false;
+vs.infoSVGMargin = 10;
 // /*BH1*/ vs.gradeColorArray = ['rgb(50,50,50)','rgb(28,44,160)','rgb(240,6,55)','rgb(251,204,12)','rgb(239,230,221)'];
 // /*BH2*/ vs.gradeColorArray = ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'];
 /*red*/vs.gradeColorArray = ['#de2d26', '#fb6a4a', '#fc9272', '#fcbba1', '#fee5d9'];
@@ -137,27 +140,27 @@ function InitializePage(error, results) {
     hoverRect.attr('height', vs.hoverHeight).attr('y', -1 * vs.hoverHeight - vs.hoverMargin).style('filter', 'url(#drop-shadow)');
     hoverText.attr('x', 0).attr('y', -0.5 * vs.hoverHeight - vs.hoverMargin);
     //
-    mainBGRect.on('mouseover', function () {
-        var source = 'mainBGRect mouseover';
-        stateSelected = '';
-        idSelected = '';
-        console.log("idSelected = '';");
-        hoverText.text('');
-        mapObj.UpdateMap(source);
-        UpdateStatesDropdown(source);
-        UpdateHover('mouse');
-        graphObj.UpdateNodesEdges();
-    }).attr('x', 0).attr('y', 0);
+    mainBGRect
+    // .on('mouseover', function() {
+    //     var source = 'mainBGRect mouseover';
+    //     stateSelected = '';
+    //     // idSelected = '';
+    //     hoverText.text('');
+    //     mapObj
+    //         .UpdateMap(source);
+    //     UpdateStatesDropdown(source);
+    //     UpdateHover('mouse');
+    //     graphObj
+    //         .UpdateNodesEdges();
+    // })
+    .attr('x', 0).attr('y', 0);
     //
     filtersSVG.attr('width', 0).attr('height', 0);
     //
-    statesSelect.style('width', vs.statesSelectWidth + 'px');
+    // statesSelect
+    //     .style('width', vs.statesSelectWidth+'px');
     //
-    // var infoDefault = {
-    //     imageSrc: 'Mike_Bloomberg_Headshot.jpg',
-    //     textRows: ['Michael Bloomberg', 'Row 2', 'Row 3'],
-    // };
-    // UpdateInfo(infoDefault);
+    UpdateInfo([undefined]);
     //
     ResizePage();
     requestAnimationFrame(function () {
@@ -296,17 +299,21 @@ function MapClass() {
         statePaths = statePaths.enter().append('path').classed('state-path', true).each(function (d) {
             d.$Given = parseInt(_$GivenByState[d.properties.ansi]);
             d.$Received = parseInt(_$ReceivedByState[d.properties.ansi]);
-        }).on('mouseover', function (d) {
-            // if (isMobile === true) { return; }
-            stateSelected = d.properties.ansi;
-            var source = 'statePaths mouseover ' + stateSelected;
-            hoverText.text(d.properties.ansi + ': ' + d.$Given + ' ' + d.$Received);
-            mapObj.UpdateMap(source);
-            UpdateStatesDropdown(source);
-            UpdateHover('mouse');
-        }).on('mousemove', function (d) {
-            UpdateHover('mouse');
-        }).attr('d', _path).merge(statePaths);
+        })
+        // .on('mouseover', function(d) {
+        //     // if (isMobile === true) { return; }
+        //     stateSelected = d.properties.ansi;
+        //     var source = 'statePaths mouseover '+stateSelected;
+        //     hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
+        //     mapObj
+        //         .UpdateMap(source);
+        //     UpdateStatesDropdown(source);
+        //     UpdateHover('mouse');
+        // })
+        // .on('mousemove', function(d) {
+        //     UpdateHover('mouse');
+        // })
+        .attr('d', _path).merge(statePaths);
         statePaths.each(function (d) {
             _centroidByState[d.properties.ansi] = _path.centroid(d);
         }).classed('inactive', function (d) {
@@ -380,7 +387,8 @@ function UpdateFilters(source) {
     filtersSVG.attr('width', filtersWidth).attr('height', vs.filtersHeight + 3);
     var rectSize = vs.filtersHeight - 2 * vs.gradeMargin;
     //
-    filtersSVG.append('text').attr('x', 20).attr('y', 10).style('dominant-baseline', 'middle').text('$ Given Per State');
+    var filtersText = filtersSVG.selectAll('text.filters-text').data([null]);
+    filtersText = filtersText.enter().append('text').classed('filters-text', true).merge(filtersText).attr('x', 1 / 2 * filtersWidth - 150).attr('y', 1 / 2 * vs.filtersHeight + 1).text('$ Given / State');
     //
     var gradeArray = ['A', 'B', 'C', 'D', 'F'];
     var gradeGs = filtersSVG.selectAll('g.grade-g').data(gradeArray);
@@ -389,18 +397,23 @@ function UpdateFilters(source) {
         var tx = 1 / 2 * filtersWidth + (1 / 2 - 1 / 2 * gradeArray.length + i) * vs.filtersHeight;
         var ty = 1 / 2 * vs.filtersHeight + 1;
         return 'translate(' + tx + ',' + ty + ')';
-    }).on('mouseover', function (d) {
-        var source = 'gradeGs    mouseover ' + d;
-        ToggleGrades(false);
-        visibleGrades[d] = true;
-        mapObj.UpdateMap(source);
-        UpdateFilters(source);
-    }).on('mouseout', function (d) {
-        var source = 'gradeGs    mouseout  ' + d;
-        ToggleGrades(true);
-        mapObj.UpdateMap(source);
-        UpdateFilters(source);
-    }).each(function (grade) {
+    })
+    // .on('mouseover', function(d) {
+    //     var source = 'gradeGs    mouseover '+d;
+    //     ToggleGrades(false);
+    //     visibleGrades[d] = true;
+    //     mapObj
+    //         .UpdateMap(source);
+    //     UpdateFilters(source);
+    // })
+    // .on('mouseout', function(d) {
+    //     var source = 'gradeGs    mouseout  '+d;
+    //     ToggleGrades(true);
+    //     mapObj
+    //         .UpdateMap(source);
+    //     UpdateFilters(source);
+    // })
+    .each(function (grade) {
         var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
         gradeBG = gradeBG.enter().append('rect').classed('grade-bg', true).merge(gradeBG);
         gradeBG.attr('x', -1 / 2 * vs.filtersHeight).attr('y', -1 / 2 * vs.filtersHeight).attr('width', vs.filtersHeight).attr('height', vs.filtersHeight - 2);
@@ -424,55 +437,69 @@ function UpdateFilters(source) {
 }
 
 function UpdateStatesDropdown(source) {
-    if (logs1) console.log('UpdateStatesDropdown ' + source);
-    var statesSelectOptionsData = Object.keys(mapObj.$GivenByState());
-    statesSelectOptionsData.unshift('');
-    statesSelect.classed('button-object', true).on('change', function () {
-        var source = 'statesSelect change ' + this.value;
-        stateSelected = this.value;
-        if (stateSelected === '') {
-            hoverText.text('');
-        } else {
-            var d = mainSVG.selectAll('path.state-path').filter(function (d) {
-                return d.properties.ansi === stateSelected;
-            }).datum();
-            hoverText.text(stateSelected + ': ' + d.$Given + ' ' + d.$Received);
-        }
-        mapObj.UpdateMap(source);
-        UpdateStatesDropdown(source);
-        UpdateHover(source);
-    }).selectAll('option.states-select-option').data(statesSelectOptionsData).enter().append('option').classed('states-select-option', true).text(function (d) {
-        return d;
-    });
-    statesSelect.node().value = stateSelected;
+    // if (logs1) console.log('UpdateStatesDropdown '+source);
+    // var statesSelectOptionsData = Object.keys(mapObj.$GivenByState());
+    // statesSelectOptionsData.unshift('');
+    // statesSelect
+    //     .classed('button-object', true)
+    //     .on('change', function() {
+    //         var source = 'statesSelect change '+this.value;
+    //         stateSelected = this.value;
+    //         if (stateSelected === '') {
+    //             hoverText.text('');
+    //         } else {
+    //             var d = mainSVG.selectAll('path.state-path')
+    //                 .filter(function(d) { return d.properties.ansi === stateSelected; })
+    //                 .datum();
+    //             hoverText.text(stateSelected+': '+d.$Given+' '+d.$Received);
+    //         }
+    //         mapObj
+    //             .UpdateMap(source);
+    //         UpdateStatesDropdown(source);
+    //         UpdateHover(source);
+    //     })
+    //     .selectAll('option.states-select-option')
+    //         .data(statesSelectOptionsData)
+    //         .enter().append('option')
+    //             .classed('states-select-option', true)
+    //             .text(function(d) { return d; });
+    // statesSelect.node().value = stateSelected;
 }
 
-function UpdateInfo(datum) {
-    if (datum === undefined && !infoSVG.data()[0]) {
-        return;
+function UpdateInfo(data) {
+    infoSVG.style('outline', '1px solid ' + vs.colorScale(0));
+    //
+    console.log(data, infoSVG.data());
+    if (data === undefined) {
+        if (infoSVG.data()[0] === undefined) {
+            return;
+        }
+    } else {
+        infoSVG.data(data);
+        if (infoSVG.data()[0] === undefined) {
+            infoSVG.selectAll('*').transition().style('opacity', 0);
+            return;
+        }
     }
-    if (datum !== undefined && !topIds.includes(datum.id)) {
-        infoSVG.data([]);
-        infoSVG.selectAll('*').transition().style('opacity', 0).remove();
-        return;
-    }
-    if (datum !== undefined) {
-        infoSVG.data([datum]);
-    }
-    var infoText = infoSVG.selectAll('text').data(function (d) {
-        return [d.id, d.state];
+    //
+    var infoText = infoSVG.selectAll('text.info-text').data(function (d) {
+        return [d.id, 'State: ' + d.state];
     });
-    infoText = infoText.enter().append('text').attr('x', 10).attr('y', function (d, i) {
-        return +infoSVG.attr('height') - (3 - i) * 15;
-    }).merge(infoText).text(function (d) {
+    infoText = infoText.enter().append('text').classed('info-text', true).attr('x', +infoSVG.attr('width') * (1 / 2)).attr('y', function (d, i) {
+        return +infoSVG.attr('height') - (3 - i) * 15 - 5;
+    }).style('opacity', 0).merge(infoText).text(function (d) {
         return d;
     });
     //
     var infoImage = infoSVG.selectAll('image').data(function (d) {
         return [d.id];
     });
-    infoImage = infoImage.enter().append('image').merge(infoImage).attr('xlink:href', function (d) {
-        return 'img/' + d + '.jpg';
+    infoImage = infoImage.enter().append('image').style('opacity', 0).merge(infoImage).attr('xlink:href', function (d) {
+        if (!topIds.includes(d)) {
+            return null;
+        } else {
+            return 'img/' + d + '.jpg';
+        }
     });
     var imageInterval = setInterval(function () {
         var bbox = infoImage.node().getBBox();
@@ -480,8 +507,10 @@ function UpdateInfo(datum) {
         if (isNaN(heightWidthRatio)) {
             return;
         }
-        infoImage.attr('width', +infoSVG.attr('width')).attr('height', +infoSVG.attr('width') * heightWidthRatio);
         clearInterval(imageInterval);
+        infoImage.attr('width', +infoSVG.attr('width')).attr('height', +infoSVG.attr('width') * heightWidthRatio).transition().style('opacity', 1);
+        //
+        infoText.transition().style('opacity', 1);
     }, 10);
     //
     if (logsTest) TestApp('UpdateInfo');
@@ -490,28 +519,32 @@ function UpdateInfo(datum) {
 function ResizePage() {
     var source = 'ResizePage';
     var clientWidth = body.node().clientWidth;
-    if (vs.box0WidthMin < clientWidth - vs.box1WidthMin) {
-        vs.box0Width = clientWidth - vs.box1WidthMin;
-        vs.box1Width = vs.box1WidthMin;
-        vs.box1Height = vs.box1HeightMin;
+    if (clientWidth - vs.box2WidthMin > vs.box1WidthMin) {
+        vs.box1Width = clientWidth - vs.box2WidthMin;
+        vs.box2Width = vs.box2WidthMin;
+        vs.box2Height = vs.box2HeightMin;
+        vs.box2Margins = 0;
     } else {
-        vs.box0Width = vs.box0WidthMin;
-        vs.box1Width = vs.box0WidthMin;
-        vs.box1Height = vs.box1HeightMin;
+        vs.box1Width = vs.box1WidthMin;
+        vs.box2Width = vs.box2WidthMax;
+        vs.box2Height = vs.box2HeightMin;
+        vs.box2Margins = (vs.box1Width - vs.box2Width) / 2;
     }
-    box0.style('width', vs.box0Width + 'px');
     box1.style('width', vs.box1Width + 'px');
+    box2.style('width', vs.box2Width + 'px').style('margin-left', vs.box2Margins + 'px').style('margin-right', vs.box2Margins + 'px');
     //
-    mainSVG.attr('width', vs.box0Width).attr('height', vs.box0Width / vs.mapWidthHeightRatio);
-    mainBGRect.attr('width', vs.box0Width).attr('height', vs.box0Width / vs.mapWidthHeightRatio);
+    mainSVG.attr('width', vs.box1Width).attr('height', vs.box1Width / vs.mapWidthHeightRatio);
+    mainBGRect.attr('width', vs.box1Width).attr('height', vs.box1Width / vs.mapWidthHeightRatio);
     //
-    mapObj.width(vs.box0Width).height(vs.box0Width / vs.mapWidthHeightRatio).UpdateMap('ResizePage');
+    mapObj.width(vs.box1Width).height(vs.box1Width / vs.mapWidthHeightRatio).UpdateMap('ResizePage');
     //
     graphObj.UpdateNodesEdges().UpdateSimulation().UpdateForceSliders();
     //
-    statesSelect.style('margin-left', (vs.box0Width - vs.statesSelectWidth) / 2 + 'px').style('margin-right', (vs.box0Width - vs.statesSelectWidth) / 2 + 'px');
+    // statesSelect
+    //     .style('margin-left', (vs.box1Width - vs.statesSelectWidth)/2+'px')
+    //     .style('margin-right', (vs.box1Width - vs.statesSelectWidth)/2+'px');
     //
-    infoSVG.attr('width', vs.box1Width).attr('height', vs.box1Height);
+    infoSVG.attr('width', vs.box2Width - 2 * vs.infoSVGMargin).attr('height', vs.box2Height - 2 * vs.infoSVGMargin).style('margin', vs.infoSVGMargin + 'px');
     //
     UpdateFilters(source);
     UpdateStatesDropdown(source);
@@ -529,7 +562,7 @@ function GraphClass() {
     //
     that.simulation = d3.forceSimulation(mapObj.vertices())
     // .alpha(0.1)
-    // .alphaMin(0.001)
+    .alphaMin(0.1)
     // .alphaDecay(1-Math.pow(0.001,1/300))
     // .alphaTarget(0)
     // .velocityDecay(0.6)
@@ -564,9 +597,9 @@ function GraphClass() {
         forceCollide: {
             iterations: {
                 name: 'iterations',
-                value: 5,
+                value: 10,
                 min: 0,
-                max: 10,
+                max: 20,
                 step: 1
             },
             strength: {
@@ -714,7 +747,13 @@ function GraphClass() {
         verticeCircles = verticeCircles.enter().append('circle').classed('vertice-circle', true).on('mouseover', function (d) {
             idSelected = d.id;
             that.UpdateNodesEdges();
-            UpdateInfo(d);
+            // console.log('mouseover', idSelected);
+            UpdateInfo([d]);
+        }).on('mouseout', function () {
+            idSelected = '';
+            that.UpdateNodesEdges();
+            // console.log('mouseout ', idSelected);
+            UpdateInfo([undefined]);
         }).each(function (d) {
             d.x = mapObj.centroidByState()[d.state][0];
             d.y = mapObj.centroidByState()[d.state][1];
@@ -798,7 +837,7 @@ function GraphClass() {
                 that.simulation.force(forceType + state, forceNew);
             });
         });
-        that.simulation.alpha(0.5).restart();
+        that.simulation.alpha(1).restart();
         //
         if (logsTest) TestApp('UpdateSimulation');
         return that;

@@ -13,18 +13,16 @@ body {
   font-weight: 400;
   font-size: 0px;
 }
-#box0 {
+#box1,
+#box2,
+#box3 {
   display: inline-block;
   text-align: center;
-}
-#box0 > * {
-  font-size: 14px;
-}
-#box1 {
-  display: inline-block;
   vertical-align: top;
 }
-#box1 > * {
+#box1 > *,
+#box2 > *,
+#box3 > * {
   font-size: 14px;
 }
 #main-svg #main-bg-rect {
@@ -63,9 +61,10 @@ body {
   stroke-width: 0px;
   pointer-events: none;
 }
-#filters-svg text.grade-label {
-  text-anchor: middle;
+#filters-svg text.grade-label,
+#filters-svg text.filters-text {
   dominant-baseline: middle;
+  text-anchor: middle;
   pointer-events: none;
 }
 #states-select {
@@ -106,8 +105,11 @@ body {
   margin: 0px;
 }
 #info-svg {
-  outline: 1px solid white;
   text-align: center;
+}
+#info-svg text.info-text {
+  dominant-baseline: middle;
+  text-anchor: middle;
 }
 .vspacer-15 {
   display: block;
