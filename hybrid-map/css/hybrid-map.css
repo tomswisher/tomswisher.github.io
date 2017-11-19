@@ -75,6 +75,7 @@ body {
   display: inline-block;
   width: 620px;
   font-size: 0px !important;
+  float: left;
   outline: 1px solid gainsboro;
 }
 .force-div > *,
@@ -106,6 +107,7 @@ body {
   margin: 0px;
 }
 #info-svg {
+  outline: 1px solid gainsboro;
   text-align: center;
 }
 #info-svg text.info-text {

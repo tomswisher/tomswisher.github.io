@@ -546,10 +546,7 @@ function UpdateStatesDropdown(source) {
 }
 
 function UpdateInfo(data) {
-    infoSVG
-        .style('outline', '1px solid '+vs.colorScale(0));
-    //
-    console.log(data, infoSVG.data());
+    if (logs1) console.log(data, infoSVG.data());
     if (data === undefined) {
         if (infoSVG.data()[0] === undefined) {
             return;
