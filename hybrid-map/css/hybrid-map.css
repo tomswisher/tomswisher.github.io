@@ -72,8 +72,7 @@ body {
 }
 .force-div,
 #simulation-div {
-  display: inline-block;
-  width: 620px;
+  width: 660px;
   font-size: 0px !important;
   float: left;
   outline: 1px solid gainsboro;
@@ -81,10 +80,6 @@ body {
 .force-div > *,
 #simulation-div > * {
   font-size: 14px;
-}
-.force-div div,
-#simulation-div div {
-  display: inline-block;
 }
 .force-div label,
 #simulation-div label {
@@ -99,12 +94,15 @@ body {
 }
 .force-div label.label-medium,
 #simulation-div label.label-medium {
-  width: 180px;
+  width: 150px;
 }
 .force-div input[type='Range'],
 #simulation-div input[type='Range'] {
-  width: 200px;
+  width: 270px;
   margin: 0px;
+}
+#simulation-div label.slider-value {
+  text-align: left;
 }
 #info-svg {
   outline: 1px solid gainsboro;

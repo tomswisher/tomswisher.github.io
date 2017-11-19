@@ -549,7 +549,7 @@ function GraphClass() {
     alphaSlider.on('mousedown', function () {
         that.simulation.stop();
     }).on('change', function () {
-        alphaLabel.text(this.value);
+        alphaLabel.text(parseFloat(this.value).toFixed(8));
         that.simulation.alpha(this.value).restart();
     });
     //
@@ -836,7 +836,7 @@ function GraphClass() {
         //
         var forceDivs = forcesContainer.selectAll('div.force-div').data(that.forcesData);
         var forceDivsEnter = forceDivs.enter().append('div').classed('force-div', true);
-        forceDivsEnter.append('p').text(function (d) {
+        forceDivsEnter.append('div').text(function (d) {
             return d[0];
         });
         forceDivs = forceDivsEnter.merge(forceDivs)
@@ -847,7 +847,7 @@ function GraphClass() {
             return d[1];
         });
         forceOptionDivs = forceOptionDivs.enter().append('div').classed('force-option-div', true).each(function (optionDatum) {
-            d3.select(this).append('label').classed('label-medium', true).text(optionDatum.name);
+            d3.select(this).append('label').classed('label-small', true).text(optionDatum.name);
             d3.select(this).append('label').classed('label-small', true).classed('slider-value', true).text(optionDatum.value);
             d3.select(this).append('label').classed('label-small', true).text(optionDatum.min);
             d3.select(this).append('input').attr('type', 'range').attr('min', optionDatum.min).attr('max', optionDatum.max).attr('step', optionDatum.step).attr('value', optionDatum.value).on('change', function () {
@@ -916,7 +916,7 @@ function GraphClass() {
             }
         });
         //
-        alphaLabel.text(that.simulation.alpha());
+        alphaLabel.text(parseFloat(that.simulation.alpha()).toFixed(8));
         alphaSlider.property('value', that.simulation.alpha());
         // if (logsTest) TestApp('_Tick');
     }

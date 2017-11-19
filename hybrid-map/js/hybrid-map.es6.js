@@ -682,7 +682,7 @@ function GraphClass() {
         })
         .on('change', function() {
             alphaLabel
-                .text(this.value);
+                .text(parseFloat(this.value).toFixed(8));
             that.simulation
                 .alpha(this.value)
                 .restart();
@@ -992,7 +992,7 @@ function GraphClass() {
             .data(that.forcesData);
         var forceDivsEnter = forceDivs.enter().append('div')
             .classed('force-div', true);
-        forceDivsEnter.append('p')
+        forceDivsEnter.append('div')
             .text(function(d) { return d[0]; });
         forceDivs = forceDivsEnter.merge(forceDivs)
             // .classed('collapsed', function(d) { return d[1].length === 0; })
@@ -1004,7 +1004,7 @@ function GraphClass() {
             .classed('force-option-div', true)
             .each(function(optionDatum) {
                 d3.select(this).append('label')
-                    .classed('label-medium', true)
+                    .classed('label-small', true)
                     .text(optionDatum.name);
                 d3.select(this).append('label')
                     .classed('label-small', true).classed('slider-value', true)
@@ -1098,7 +1098,7 @@ function GraphClass() {
             });
         //
         alphaLabel
-            .text(that.simulation.alpha());
+            .text(parseFloat(that.simulation.alpha()).toFixed(8));
         alphaSlider
             .property('value', that.simulation.alpha());
         // if (logsTest) TestApp('_Tick');
