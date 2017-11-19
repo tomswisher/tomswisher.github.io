@@ -72,7 +72,7 @@ body {
 }
 .force-div,
 #simulation-div {
-  width: 660px;
+  width: 600px;
   font-size: 0px !important;
   float: left;
   outline: 1px solid gainsboro;
@@ -98,7 +98,7 @@ body {
 }
 .force-div input[type='Range'],
 #simulation-div input[type='Range'] {
-  width: 270px;
+  width: 200px;
   margin: 0px;
 }
 #simulation-div label.slider-value {

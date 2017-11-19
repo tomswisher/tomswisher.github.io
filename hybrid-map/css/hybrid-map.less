@@ -16,9 +16,10 @@
 @hoverStrokeWidth:  0px;
 @hoverFillColor:    white;
 
+@forceDivWidth:     600px;
 @labelSmallWidth:   80px;
 @labelMediumWidth:  150px;
-@debugSliderWidth:  270px;
+@sliderWidth:       200px;
 
 body {
     margin: 0px;
@@ -85,7 +86,7 @@ body {
     height: 25px;
 }
 .force-div, #simulation-div {
-    width: @labelMediumWidth + 3*@labelSmallWidth + @debugSliderWidth;
+    width: @forceDivWidth;
     font-size: 0px !important;
     float: left;
     outline: 1px solid gainsboro;
@@ -105,7 +106,7 @@ body {
         }
     }
     input[type='Range'] {
-        width: @debugSliderWidth;
+        width: @sliderWidth;
         margin: 0px;
     }
 }

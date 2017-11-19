@@ -524,7 +524,7 @@ function ResizePage() {
     //
     infoSVG.attr('width', vs.box2Width - 2 * vs.infoSVGMargin).attr('height', vs.box2Height - 2 * vs.infoSVGMargin).style('margin', vs.infoSVGMargin + 'px');
     //
-    UpdateFilters(source);
+    // UpdateFilters(source);
     UpdateStatesDropdown(source);
     UpdateHover('event');
     UpdateInfo();
@@ -828,6 +828,7 @@ function GraphClass() {
             Object.keys(optionsObj).forEach(function (optionName) {
                 var optionDatum = optionsObj[optionName];
                 if (optionDatum.min !== undefined && optionDatum.max !== undefined) {
+                    optionDatum.forceType = forceType;
                     optionsDataFiltered.push(optionDatum);
                 }
             });
@@ -835,11 +836,7 @@ function GraphClass() {
         });
         //
         var forceDivs = forcesContainer.selectAll('div.force-div').data(that.forcesData);
-        var forceDivsEnter = forceDivs.enter().append('div').classed('force-div', true);
-        forceDivsEnter.append('div').text(function (d) {
-            return d[0];
-        });
-        forceDivs = forceDivsEnter.merge(forceDivs)
+        forceDivs = forceDivs.enter().append('div').classed('force-div', true).merge(forceDivs)
         // .classed('collapsed', function(d) { return d[1].length === 0; })
         ;
         //
@@ -847,6 +844,7 @@ function GraphClass() {
             return d[1];
         });
         forceOptionDivs = forceOptionDivs.enter().append('div').classed('force-option-div', true).each(function (optionDatum) {
+            d3.select(this).append('label').classed('label-small', true).text(optionDatum.forceType);
             d3.select(this).append('label').classed('label-small', true).text(optionDatum.name);
             d3.select(this).append('label').classed('label-small', true).classed('slider-value', true).text(optionDatum.value);
             d3.select(this).append('label').classed('label-small', true).text(optionDatum.min);
