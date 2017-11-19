@@ -111,8 +111,10 @@ body {
   dominant-baseline: middle;
   text-anchor: middle;
 }
+.vspacer-10 {
+  height: 10px;
+}
 .vspacer-15 {
-  display: block;
   height: 15px;
 }
 /* General Styles */

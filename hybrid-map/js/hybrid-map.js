@@ -71,7 +71,7 @@ var hoverG = body.select('#hover-g');
 var hoverRect = body.select('#hover-rect');
 var hoverText = body.select('#hover-text');
 var filtersSVG = body.select('#filters-svg');
-// var statesSelect = body.select('#states-select');
+var statesSelect = body.select('#states-select');
 var forcesContainer = body.select('#forces-container');
 var simulationDiv = body.select('#simulation-div');
 var alphaLabel = simulationDiv.selectAll('label.slider-value');
@@ -96,8 +96,7 @@ vs.box1WidthMin = 400;
 vs.box2Width = null;
 vs.box2WidthMin = 200;
 vs.box2WidthMax = 200;
-vs.box2Height = null;
-vs.box2HeightMin = 300;
+vs.box2Height = 300;
 vs.mapWidthHeightRatio = 1.7;
 vs.mapProjectionScale = 1.3;
 vs.statesSelectWidth = 100;
@@ -140,25 +139,20 @@ function InitializePage(error, results) {
     hoverRect.attr('height', vs.hoverHeight).attr('y', -1 * vs.hoverHeight - vs.hoverMargin).style('filter', 'url(#drop-shadow)');
     hoverText.attr('x', 0).attr('y', -0.5 * vs.hoverHeight - vs.hoverMargin);
     //
-    mainBGRect
-    // .on('mouseover', function() {
-    //     var source = 'mainBGRect mouseover';
-    //     stateSelected = '';
-    //     // idSelected = '';
-    //     hoverText.text('');
-    //     mapObj
-    //         .UpdateMap(source);
-    //     UpdateStatesDropdown(source);
-    //     UpdateHover('mouse');
-    //     graphObj
-    //         .UpdateNodesEdges();
-    // })
-    .attr('x', 0).attr('y', 0);
+    mainBGRect.on('mouseover', function () {
+        var source = 'mainBGRect mouseover';
+        stateSelected = '';
+        // idSelected = '';
+        hoverText.text('');
+        mapObj.UpdateMap(source);
+        UpdateStatesDropdown(source);
+        UpdateHover('mouse');
+        graphObj.UpdateNodesEdges();
+    }).attr('x', 0).attr('y', 0);
     //
     filtersSVG.attr('width', 0).attr('height', 0);
     //
-    // statesSelect
-    //     .style('width', vs.statesSelectWidth+'px');
+    statesSelect.style('width', vs.statesSelectWidth + 'px');
     //
     UpdateInfo([undefined]);
     //
@@ -299,21 +293,17 @@ function MapClass() {
         statePaths = statePaths.enter().append('path').classed('state-path', true).each(function (d) {
             d.$Given = parseInt(_$GivenByState[d.properties.ansi]);
             d.$Received = parseInt(_$ReceivedByState[d.properties.ansi]);
-        })
-        // .on('mouseover', function(d) {
-        //     // if (isMobile === true) { return; }
-        //     stateSelected = d.properties.ansi;
-        //     var source = 'statePaths mouseover '+stateSelected;
-        //     hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
-        //     mapObj
-        //         .UpdateMap(source);
-        //     UpdateStatesDropdown(source);
-        //     UpdateHover('mouse');
-        // })
-        // .on('mousemove', function(d) {
-        //     UpdateHover('mouse');
-        // })
-        .attr('d', _path).merge(statePaths);
+        }).on('mouseover', function (d) {
+            // if (isMobile === true) { return; }
+            stateSelected = d.properties.ansi;
+            var source = 'statePaths mouseover ' + stateSelected;
+            hoverText.text(d.properties.ansi + ': ' + d.$Given + ' ' + d.$Received);
+            mapObj.UpdateMap(source);
+            UpdateStatesDropdown(source);
+            UpdateHover('mouse');
+        }).on('mousemove', function (d) {
+            UpdateHover('mouse');
+        }).attr('d', _path).merge(statePaths);
         statePaths.each(function (d) {
             _centroidByState[d.properties.ansi] = _path.centroid(d);
         }).classed('inactive', function (d) {
@@ -437,33 +427,27 @@ function UpdateFilters(source) {
 }
 
 function UpdateStatesDropdown(source) {
-    // if (logs1) console.log('UpdateStatesDropdown '+source);
-    // var statesSelectOptionsData = Object.keys(mapObj.$GivenByState());
-    // statesSelectOptionsData.unshift('');
-    // statesSelect
-    //     .classed('button-object', true)
-    //     .on('change', function() {
-    //         var source = 'statesSelect change '+this.value;
-    //         stateSelected = this.value;
-    //         if (stateSelected === '') {
-    //             hoverText.text('');
-    //         } else {
-    //             var d = mainSVG.selectAll('path.state-path')
-    //                 .filter(function(d) { return d.properties.ansi === stateSelected; })
-    //                 .datum();
-    //             hoverText.text(stateSelected+': '+d.$Given+' '+d.$Received);
-    //         }
-    //         mapObj
-    //             .UpdateMap(source);
-    //         UpdateStatesDropdown(source);
-    //         UpdateHover(source);
-    //     })
-    //     .selectAll('option.states-select-option')
-    //         .data(statesSelectOptionsData)
-    //         .enter().append('option')
-    //             .classed('states-select-option', true)
-    //             .text(function(d) { return d; });
-    // statesSelect.node().value = stateSelected;
+    if (logs1) console.log('UpdateStatesDropdown ' + source);
+    var statesSelectOptionsData = Object.keys(mapObj.$GivenByState());
+    statesSelectOptionsData.unshift('');
+    statesSelect.classed('button-object', true).on('change', function () {
+        var source = 'statesSelect change ' + this.value;
+        stateSelected = this.value;
+        if (stateSelected === '') {
+            hoverText.text('');
+        } else {
+            var d = mainSVG.selectAll('path.state-path').filter(function (d) {
+                return d.properties.ansi === stateSelected;
+            }).datum();
+            hoverText.text(stateSelected + ': ' + d.$Given + ' ' + d.$Received);
+        }
+        mapObj.UpdateMap(source);
+        UpdateStatesDropdown(source);
+        UpdateHover(source);
+    }).selectAll('option.states-select-option').data(statesSelectOptionsData).enter().append('option').classed('states-select-option', true).text(function (d) {
+        return d;
+    });
+    statesSelect.node().value = stateSelected;
 }
 
 function UpdateInfo(data) {
@@ -522,12 +506,10 @@ function ResizePage() {
     if (clientWidth - vs.box2WidthMin > vs.box1WidthMin) {
         vs.box1Width = clientWidth - vs.box2WidthMin;
         vs.box2Width = vs.box2WidthMin;
-        vs.box2Height = vs.box2HeightMin;
         vs.box2Margins = 0;
     } else {
         vs.box1Width = vs.box1WidthMin;
         vs.box2Width = vs.box2WidthMax;
-        vs.box2Height = vs.box2HeightMin;
         vs.box2Margins = (vs.box1Width - vs.box2Width) / 2;
     }
     box1.style('width', vs.box1Width + 'px');
@@ -540,9 +522,7 @@ function ResizePage() {
     //
     graphObj.UpdateNodesEdges().UpdateSimulation().UpdateForceSliders();
     //
-    // statesSelect
-    //     .style('margin-left', (vs.box1Width - vs.statesSelectWidth)/2+'px')
-    //     .style('margin-right', (vs.box1Width - vs.statesSelectWidth)/2+'px');
+    statesSelect.style('margin-left', (vs.box1Width - vs.statesSelectWidth) / 2 + 'px').style('margin-right', (vs.box1Width - vs.statesSelectWidth) / 2 + 'px');
     //
     infoSVG.attr('width', vs.box2Width - 2 * vs.infoSVGMargin).attr('height', vs.box2Height - 2 * vs.infoSVGMargin).style('margin', vs.infoSVGMargin + 'px');
     //
