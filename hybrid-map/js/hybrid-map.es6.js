@@ -653,7 +653,7 @@ function ResizePage() {
         .attr('height', vs.box2Height - 2*vs.infoSVGMargin)
         .style('margin', vs.infoSVGMargin+'px');
     //
-    // UpdateFilters(source);
+    UpdateFilters(source);
     UpdateStatesDropdown(source);
     UpdateHover('event');
     UpdateInfo();

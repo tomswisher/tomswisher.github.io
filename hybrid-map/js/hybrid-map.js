@@ -524,7 +524,7 @@ function ResizePage() {
     //
     infoSVG.attr('width', vs.box2Width - 2 * vs.infoSVGMargin).attr('height', vs.box2Height - 2 * vs.infoSVGMargin).style('margin', vs.infoSVGMargin + 'px');
     //
-    // UpdateFilters(source);
+    UpdateFilters(source);
     UpdateStatesDropdown(source);
     UpdateHover('event');
     UpdateInfo();
