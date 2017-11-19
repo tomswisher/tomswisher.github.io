@@ -19,6 +19,16 @@ window.onresize = function () {
 };
 
 // -------------------------------------------------------------------------------------------------
+// Performance
+
+var nodesCount = 0;
+var nStr;
+var usedJSHeapSize = 0;
+var uStr;
+var totalJSHeapSize = 0;
+var tStr;
+
+// -------------------------------------------------------------------------------------------------
 // Global Variables
 
 var logsTest = true;
@@ -27,9 +37,6 @@ var logs1 = false;
 var debugLayoutEnabled = false;
 var mapObj = null;
 var graphObj = null;
-var sizeOfDOM = 0;
-var usedJSHeapSize = 0;
-var totalJSHeapSize = 0;
 var stateSelected = '';
 var idSelected = '';
 var verticesSelected = [];
@@ -146,7 +153,7 @@ function InitializePage(error, results) {
         hoverText.text('');
         mapObj.UpdateMap(source);
         UpdateStatesDropdown(source);
-        UpdateHover('mouse');
+        // UpdateHover('mouse');
         graphObj.UpdateNodesEdges();
     }).attr('x', 0).attr('y', 0);
     //
@@ -300,9 +307,9 @@ function MapClass() {
             hoverText.text(d.properties.ansi + ': ' + d.$Given + ' ' + d.$Received);
             mapObj.UpdateMap(source);
             UpdateStatesDropdown(source);
-            UpdateHover('mouse');
+            // UpdateHover('mouse');
         }).on('mousemove', function (d) {
-            UpdateHover('mouse');
+            // UpdateHover('mouse');
         }).attr('d', _path).merge(statePaths);
         statePaths.each(function (d) {
             _centroidByState[d.properties.ansi] = _path.centroid(d);
@@ -326,37 +333,33 @@ function MapClass() {
 }
 
 function UpdateHover(source) {
-    if (logs1) console.log('UpdateHover', source);
-    // var hoverWidth = 0;
-    // if (hoverText.text() !== '') {
-    //     hoverWidth = hoverText.node().getBBox().width+2*vs.hoverMargin;
-    // }
-    // hoverRect
-    //     .attr('width', hoverWidth)
-    //     .attr('x', -0.5*hoverWidth);
-    // hoverG
-    //     .attr('transform', function() {
-    //         var tx, ty;
-    //         if (source === 'mouse') {
-    //             tx = d3.mouse(mainSVG.node())[0];
-    //             ty = d3.mouse(mainSVG.node())[1];
-    //         } else if (mapObj && mapObj.centroidByState()[stateSelected]) {
-    //             tx = mapObj.centroidByState()[stateSelected][0];
-    //             ty = mapObj.centroidByState()[stateSelected][1]+0.5*(vs.hoverHeight+2*vs.hoverMargin);
-    //         } else {
-    //             tx = mapObj.width()/2;
-    //             ty = mapObj.height()/2;
-    //         }
-    //         if (tx < hoverWidth/2 + 1) {
-    //             tx = hoverWidth/2 + 1;
-    //         } else if (tx > parseInt(mainSVG.style('width')) - hoverWidth/2 - 1) {
-    //             tx = parseInt(mainSVG.style('width')) - hoverWidth/2 - 1;
-    //         }
-    //         if (ty < vs.hoverHeight + 5 + 1) {
-    //             ty = vs.hoverHeight + 5 + 1;
-    //         }
-    //         return 'translate('+tx+','+ty+')';
-    //     });
+    var hoverWidth = 0;
+    if (hoverText.text() !== '') {
+        hoverWidth = hoverText.node().getBBox().width + 2 * vs.hoverMargin;
+    }
+    hoverRect.attr('width', hoverWidth).attr('x', -0.5 * hoverWidth);
+    hoverG.attr('transform', function () {
+        var tx, ty;
+        if (source === 'mouse') {
+            tx = d3.mouse(mainSVG.node())[0];
+            ty = d3.mouse(mainSVG.node())[1];
+        } else if (mapObj && mapObj.centroidByState()[stateSelected]) {
+            tx = mapObj.centroidByState()[stateSelected][0];
+            ty = mapObj.centroidByState()[stateSelected][1] + 0.5 * (vs.hoverHeight + 2 * vs.hoverMargin);
+        } else {
+            tx = mapObj.width() / 2;
+            ty = mapObj.height() / 2;
+        }
+        if (tx < hoverWidth / 2 + 1) {
+            tx = hoverWidth / 2 + 1;
+        } else if (tx > parseInt(mainSVG.style('width')) - hoverWidth / 2 - 1) {
+            tx = parseInt(mainSVG.style('width')) - hoverWidth / 2 - 1;
+        }
+        if (ty < vs.hoverHeight + 5 + 1) {
+            ty = vs.hoverHeight + 5 + 1;
+        }
+        return 'translate(' + tx + ',' + ty + ')';
+    });
     if (logsTest) TestApp('UpdateHover');
 }
 
@@ -443,7 +446,7 @@ function UpdateStatesDropdown(source) {
         }
         mapObj.UpdateMap(source);
         UpdateStatesDropdown(source);
-        UpdateHover(source);
+        // UpdateHover(source);
     }).selectAll('option.states-select-option').data(statesSelectOptionsData).enter().append('option').classed('states-select-option', true).text(function (d) {
         return d;
     });
@@ -526,7 +529,7 @@ function ResizePage() {
     //
     UpdateFilters(source);
     UpdateStatesDropdown(source);
-    UpdateHover('event');
+    // UpdateHover('event');
     UpdateInfo();
     if (logsTest) TestApp('ResizePage');
 }
@@ -920,39 +923,26 @@ function GraphClass() {
     }
 }
 
-function TestJSHeapSize() {
-    if (!window.performance || !window.performance.memory) {
-        return '';
-    }
-    var usedString = '';
-    var totalString = '';
-    if (window.performance.memory.usedJSHeapSize > usedJSHeapSize) {
-        usedJSHeapSize = window.performance.memory.usedJSHeapSize;
-        usedString = 'usedJSHeapSize: ' + ((usedJSHeapSize / (1024 * 1024)).toFixed(2) + ' Mb');
-    }
-    if (window.performance.memory.totalJSHeapSize > totalJSHeapSize) {
-        totalJSHeapSize = window.performance.memory.totalJSHeapSize;
-        totalString = 'totalJSHeapSize: ' + ((totalJSHeapSize / (1024 * 1024)).toFixed(2) + ' Mb');
-    }
-    if (usedString || totalString) {
-        return usedString.padEnd(30) + totalString.padEnd(30);
-    } else {
-        return '';
-    }
-}
-
-function TestDOMSize() {
-    if (sizeOfDOM !== d3.selectAll('*').size()) {
-        sizeOfDOM = d3.selectAll('*').size();
-        return (sizeOfDOM + ' nodes').padStart(13);
-    } else {
-        return '';
-    }
-}
-
 function TestApp(source) {
-    var result = TestJSHeapSize() + TestDOMSize();
-    if (result !== '') {
-        console.log(String(source).padEnd(20) + result);
+    if (nodesCount !== d3.selectAll('*').size()) {
+        nodesCount = d3.selectAll('*').size();
+        nStr = 'nodes: ' + String(nodesCount).padStart(4);
+    } else {
+        nStr = '';
+    }
+    if (performance && window.performance.memory.usedJSHeapSize !== usedJSHeapSize) {
+        usedJSHeapSize = window.performance.memory.usedJSHeapSize;
+        uStr = 'usedJS: ' + ((usedJSHeapSize / (1024 * 1024)).toFixed(2) + ' Mb').padStart(9);
+    } else {
+        uStr = '';
+    }
+    if (performance && window.performance.memory.totalJSHeapSize !== totalJSHeapSize) {
+        totalJSHeapSize = window.performance.memory.totalJSHeapSize;
+        tStr = 'totalJS: ' + ((totalJSHeapSize / (1024 * 1024)).toFixed(2) + ' Mb').padStart(9);
+    } else {
+        tStr = '';
+    }
+    if (nStr || uStr || tStr) {
+        console.log(String(source).padEnd(22) + uStr.padEnd(20) + tStr.padEnd(20) + nStr.padEnd(14));
     }
 }
