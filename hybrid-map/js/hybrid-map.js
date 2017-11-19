@@ -540,7 +540,7 @@ function GraphClass() {
     //
     that.simulation = d3.forceSimulation(mapObj.vertices())
     // .alpha(0.1)
-    .alphaMin(0.1)
+    .alphaMin(0.05)
     // .alphaDecay(1-Math.pow(0.001,1/300))
     // .alphaTarget(0)
     // .velocityDecay(0.6)
