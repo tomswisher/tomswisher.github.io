@@ -593,12 +593,23 @@ function UpdateInfo() {
         .each(function(datum) {
             d3.select(this).append('text')
                 .attr('x', 0)
-                .attr('y', function(d, i) {
-                    return (i+1)*15;
-                })
+                .attr('y', 1*15)
                 .text(function() {
                     return datum.id;
-                });        
+                });
+            d3.select(this).append('text')
+                .attr('x', 0)
+                .attr('y', 2*15)
+                .text(function() {
+                    return 'State: '+datum.state;
+                });
+            d3.select(this).append('text')
+                .attr('x', 0)
+                .attr('y', 3*15)
+                .text(function() {
+                    if (datum.$Given) { return 'Given: '+d3.format('$,')(datum.$Given); }
+                    if (datum.$Received) { return 'Received: '+d3.format('$,')(datum.$Received); }
+                });
         })
         .style('opacity', 0)
         .merge(infoTextGs);
@@ -687,6 +698,17 @@ function GraphClass() {
         // .velocityDecay(0.6)
         .on('tick', _Tick);
     //
+    that.simulationObj = {
+        alpha: {
+            name: 'alpha',
+            value: 1,
+            min: 0.05,
+            max: 1,
+            step: 0.01,
+            category: 'simulation',
+        },
+    };
+    //
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
@@ -707,17 +729,17 @@ function GraphClass() {
         forceCollide: {
             iterations: {
                 name: 'iterations',
-                value: 10,
+                value: 1, // 1
                 min: 0,
-                max: 20,
+                max: 10,
                 step: 1,
             },
             strength: {
                 name: 'strength',
-                value: 1,
+                value: 1, // 1
                 min: 0,
-                max: 10,
-                step: 0.5,
+                max: 1,
+                step: 0.05,
             },
             radius: {
                 name: 'radius',
@@ -818,40 +840,31 @@ function GraphClass() {
         forceX: {
             strength: {
                 name: 'strength',
-                value: 1, // function(node, i, nodes) { return 0.1; },
+                value: 0.1, // function(node, i, nodes) { return 0.1; },
                 min: 0,
-                max: 2,
-                step: 0.1,
+                max: 1,
+                step: 0.05,
             },
             x: {
                 name: 'x',
                 value: 'cx', // value: function(node, i, nodes) { return node.x; },
             },
+            _IsolateForce: true,
         },
         forceY: {
             strength: {
                 name: 'strength',
-                value: 1, // function(node, i, nodes) { return 0.1; },
+                value: 0.1, // function(node, i, nodes) { return 0.1; },
                 min: 0,
-                max: 2,
-                step: 0.1,
+                max: 1,
+                step: 0.05,
             },
             y: {
                 name: 'y',
                 value: 'cy', // value: function(node, i, nodes) { return node.y; },
             },
+            _IsolateForce: true,
         }
-    };
-    //
-    that.simulationObj = {
-        alpha: {
-            name: 'alpha',
-            value: 1,
-            min: 0.05,
-            max: 1,
-            step: 0.01,
-            category: 'simulation',
-        },
     };
     //
     that.UpdateNodesEdges = function() {
@@ -949,35 +962,43 @@ function GraphClass() {
     that.UpdateSimulation = function() {
         // TestApp('UpdateSimulation', 1);
         //
-        Object.keys(mapObj.$GivenByState()).forEach(function(state) {
-            var cx = mapObj.centroidByState()[state][0];
-            var cy = mapObj.centroidByState()[state][1];
-            Object.keys(that.forcesObj).forEach(function(forceType) {
-                var forceNew = _IsolateForce(d3[forceType](), function(d) {
-                    return d.state === state;
+        Object.keys(that.forcesObj).forEach(function(forceType) {
+            var optionsObj = that.forcesObj[forceType];
+            if (optionsObj['_IsolateForce'] === true) {
+                Object.keys(mapObj.$GivenByState()).forEach(function(state) {
+                    var cx = mapObj.centroidByState()[state][0];
+                    var cy = mapObj.centroidByState()[state][1];
+                    var forceNew = _IsolateForce(d3[forceType](), function(d) {
+                        return d.state === state;
+                    });
+                    Object.keys(optionsObj).forEach(function(optionName) {
+                        if (optionName[0] === '_') { return; }
+                        var optionDatum = optionsObj[optionName];
+                        var optionValue = optionDatum.value; // do not mutate original value
+                        switch (optionValue) {
+                            case 'cx':
+                                optionValue = cx;
+                                break;
+                            case 'cy':
+                                optionValue = cy;
+                                break;
+                        }
+                        forceNew[optionName](optionValue);
+                    });
+                    that.simulation
+                        .force(forceType+state, forceNew);
                 });
-                var optionsObj = that.forcesObj[forceType];
+            } else {
+                var forceNew = d3[forceType]();
                 Object.keys(optionsObj).forEach(function(optionName) {
-                    var optionDatum = optionsObj[optionName];
-                    var optionValue = optionDatum.value; // do not mutate original value
-                    switch (optionValue) {
-                        case 'cx':
-                            optionValue = cx;
-                            break;
-                        case 'cy':
-                            optionValue = cy;
-                            break;
-                    }
-                    forceNew[optionName](optionValue);
-                    if (logsLvl2) console.log(state, forceType, optionName, (optionValue.toString) ? optionValue.toString().split('\n')[0] : optionValue);
+                    if (optionName[0] === '_') { return; }
+                    forceNew[optionName](optionsObj[optionName].value);
                 });
                 that.simulation
-                    .force(forceType+state, forceNew);
-            });
+                    .force(forceType, forceNew);
+            }
         });
-        that.simulation
-            .alpha(1)
-            .restart();
+        that.simulation.alpha(1).restart();
         //
         TestApp('UpdateSimulation');
         return that;
@@ -990,6 +1011,7 @@ function GraphClass() {
         Object.keys(that.forcesObj).forEach(function(forceType) {
             var optionsObj = that.forcesObj[forceType];
             Object.keys(optionsObj).forEach(function(optionName) {
+                if (optionName[0] === '_') { return; }
                 var optionDatum = optionsObj[optionName];
                 if (optionDatum.min !== undefined && optionDatum.max !== undefined) {
                     optionDatum.category = forceType;
@@ -1027,8 +1049,7 @@ function GraphClass() {
                         } else {
                             optionDatum.value = parseFloat(this.value);
                         }
-                        that
-                            .simulation.alpha(0);
+                        that.simulation.alpha(0);
                         that
                             .UpdateSimulation()
                             .UpdateForceSliders();
