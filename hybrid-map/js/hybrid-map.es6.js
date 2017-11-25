@@ -16,7 +16,6 @@ var logsLvl2 = false;
 var memoryTest = false && performance && performance.memory ? MemoryTest() : false;
 var transitionDuration = 250;
 var transitionEase = d3.easeCircleOut;
-var debugLayoutEnabled = false;
 var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 var isMobile = navigator && mobileOptions.test(navigator.userAgent);
 
@@ -113,6 +112,7 @@ var vs = {
     },
     statesSelect: {
         w: 100,
+        h: 0,
     },
     hover: {
         w: null,
@@ -153,7 +153,7 @@ defs.append('filter')
 // Functions
 
 function InitializePage(error, results) {
-    TestApp('InitializePage', 0);
+    TestApp('InitializePage', 1);
     //
     var usStatesFeaturesJSON = results[0];
     var nodesEdgesJSON = results[1];
@@ -176,11 +176,10 @@ function InitializePage(error, results) {
     //
     mainBGRect
         .on('mouseover', function() {
-            var source = 'mainBGRect mouseover';
             stateSelected = '';
-            UpdateStatesSelect(source);
+            // UpdateStatesSelect();
             // mapObj
-            //     .UpdateMap(source);
+            //     .UpdateMap();
             // hoverText
             //     .text('');
             // UpdateHover('mouse');
@@ -188,18 +187,21 @@ function InitializePage(error, results) {
             //     .UpdateNodesEdges();
         })
         .attr('x', 0)
-        .attr('y', 0);
+        .attr('y', 0)
+        ;
     //
     statesSelect
-        .style('width', vs.statesSelect.w+'px');
+        .style('width', vs.statesSelect.w+'px')
+        .style('height', vs.statesSelect.h+'px')
+        .style('display', vs.statesSelect.h ? 'inline-block' : 'none');
     //
     ResizePage();
     //
-    TestApp('InitializePage', 1);
+    TestApp('InitializePage', -1);
 }
 
 function MapClass() {
-    TestApp('MapClass', 0);
+    // TestApp('MapClass', 1);
     //
     var that = this;
     var _verticeById = null;
@@ -293,7 +295,7 @@ function MapClass() {
     };
     //
     that.UpdateMap = function(source) {
-        TestApp('UpdateMap', 0);
+        // TestApp('UpdateMap', 1);
         if (logsLvl2) console.log('UpdateMap');
         //
         var $GivenByStatesArray = Object.keys(_$GivenByState)
@@ -343,10 +345,9 @@ function MapClass() {
             .on('mouseover', function(d) {
                 // if (isMobile === true) { return; }
                 stateSelected = d.properties.ansi;
-                var source = 'statePaths mouseover '+stateSelected;
-                UpdateStatesSelect(source);
+                // UpdateStatesSelect();
                 // mapObj
-                //     .UpdateMap(source);
+                //     .UpdateMap();
                 // hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
                 // UpdateHover('mouse');
             })
@@ -364,23 +365,22 @@ function MapClass() {
             })
             .attr('d', _path)
             .style('opacity', function(d) {
-                if (stateSelected === d.properties.ansi) { return vs.map.selectedOpacity; }
+                // if (stateSelected === d.properties.ansi) { return vs.map.selectedOpacity; }
                 return 1;
             })
             .style('fill', function(d) {
                 return vs.colorScale(_$GivenByStateScale(d.$Given));
             });
         //
-        if (debugLayoutEnabled === true) { DebugMap(); }
-        TestApp('UpdateMap', 1);
+        TestApp('UpdateMap');
         return that;
     };
     //
-    TestApp('MapClass', 1);
+    TestApp('MapClass');
 }
 
 function UpdateHover(source) {
-    TestApp('UpdateHover', 0);
+    // TestApp('UpdateHover', 1);
     //
     vs.hover.w = 0;
     if (hoverText.text() !== '') {
@@ -413,26 +413,7 @@ function UpdateHover(source) {
             return 'translate('+tx+','+ty+')';
         });
     //
-    TestApp('UpdateHover', 1);
-}
-
-function DebugMap() {
-    TestApp('DebugMap', 0);
-    //
-    body.selectAll('*').style('outline', '1px solid green');
-    var verticalGuid = mainSVG.selectAll('rect.vertical-guide')
-        .data([null]);
-    verticalGuid = verticalGuid.enter().append('rect')
-        .classed('vertical-guide', true)
-        .merge(verticalGuid);
-    verticalGuid
-        .attr('x', mapObj.width()/2-1)
-        .attr('y', 0)
-        .attr('width', 2)
-        .attr('height', mapObj.height())
-        .style('fill', 'darkorange');
-    //
-    TestApp('DebugMap', 1);
+    TestApp('UpdateHover');
 }
 
 function ToggleGrades(bool) {
@@ -441,7 +422,7 @@ function ToggleGrades(bool) {
 }
 
 function UpdateFilters(source) {
-    TestApp('UpdateFilters', 0);
+    // TestApp('UpdateFilters', 1);
     if (logsLvl2) console.log('UpdateFilters   '+source);
     //
     filtersG
@@ -525,11 +506,11 @@ function UpdateFilters(source) {
                 });
         });
         //
-        TestApp('UpdateFilters', 1);
+        TestApp('UpdateFilters');
 }
 
 function UpdateStatesSelect(source) {
-    TestApp('UpdateStatesSelect', 0);
+    // TestApp('UpdateStatesSelect', 1);
     if (logsLvl2) console.log('UpdateStatesSelect '+source);
     //
     var statesSelectData = Object.keys(mapObj.$GivenByState());
@@ -560,12 +541,13 @@ function UpdateStatesSelect(source) {
     statesSelect
         .property('value', stateSelected);
     //
-    TestApp('UpdateStatesSelect', 1);
+    TestApp('UpdateStatesSelect');
 }
 
 function UpdateInfo() {
-    TestApp('UpdateInfo', 0);
+    // TestApp('UpdateInfo', 1);
     if (logsLvl0) console.log('UpdateInfo', nodeSelected);
+    //
     if (nodeSelected && !(infoData.filter(d => d.id === nodeSelected.id)[0])) {
         infoData.push(nodeSelected);
     }
@@ -630,11 +612,11 @@ function UpdateInfo() {
             }
         });
     //
-    TestApp('UpdateInfo', 1);
+    TestApp('UpdateInfo');
 }
 
 function ResizePage() {
-    TestApp('ResizePage', 0);
+    TestApp('ResizePage', 1);
     //
     var source = 'ResizePage';
     var clientWidth = body.node().clientWidth;
@@ -673,19 +655,20 @@ function ResizePage() {
         .style('margin-left', (vs.map.w - vs.statesSelect.w)/2+'px')
         .style('margin-right', (vs.map.w - vs.statesSelect.w)/2+'px');
     //
-    UpdateFilters(source);
+    UpdateFilters();
+    //
     // UpdateHover('event');
-    
-    UpdateStatesSelect(source);
+    //
+    // UpdateStatesSelect();
     //
     body
         .classed('loading', false);
     //
-    TestApp('ResizePage', 1);
+    TestApp('ResizePage', -1);
 }
 
 function GraphClass() {
-    TestApp('GraphClass', 0);
+    // TestApp('GraphClass', 1);
     //
     var that = this;
     //
@@ -872,7 +855,7 @@ function GraphClass() {
     };
     //
     that.UpdateNodesEdges = function() {
-        TestApp('UpdateNodesEdges', 0);
+        // TestApp('UpdateNodesEdges', 1);
         //
         verticesG
             .attr('transform', function() {
@@ -959,12 +942,12 @@ function GraphClass() {
                 }
             });
         //
-        TestApp('UpdateNodesEdges', 1);
+        TestApp('UpdateNodesEdges');
         return that;
     };
     //
     that.UpdateSimulation = function() {
-        TestApp('UpdateSimulation', 0);
+        // TestApp('UpdateSimulation', 1);
         //
         Object.keys(mapObj.$GivenByState()).forEach(function(state) {
             var cx = mapObj.centroidByState()[state][0];
@@ -996,12 +979,12 @@ function GraphClass() {
             .alpha(1)
             .restart();
         //
-        TestApp('UpdateSimulation', 1);
+        TestApp('UpdateSimulation');
         return that;
     };
     //
     that.UpdateForceSliders = function() {
-        TestApp('UpdateForceSliders', 0);
+        // TestApp('UpdateForceSliders', 1);
         //
         that.optionsData = [that.simulationObj['alpha']];
         Object.keys(that.forcesObj).forEach(function(forceType) {
@@ -1044,12 +1027,11 @@ function GraphClass() {
                         } else {
                             optionDatum.value = parseFloat(this.value);
                         }
-                        that.simulation.alpha(0);
                         that
-                            .UpdateNodesEdges()
+                            .simulation.alpha(0);
+                        that
                             .UpdateSimulation()
-                            .UpdateForceSliders()
-                            ;
+                            .UpdateForceSliders();
                     });
                 d3.select(this).append('label')
                     .classed('label-small', true)
@@ -1064,7 +1046,7 @@ function GraphClass() {
         _alphaLabel = optionsContainer.select('label.slider-value');
         _alphaSlider = optionsContainer.select('input[type="range"]');
         //
-        TestApp('UpdateForceSliders', 1);
+        TestApp('UpdateForceSliders');
         return that;
     };
     //
@@ -1077,7 +1059,7 @@ function GraphClass() {
     }
     //
     function _Tick() {
-        // TestApp('_Tick', 0);
+        // TestApp('_Tick', 1);
         //
         verticeCircles
             // .interrupt('vertices-transition')
@@ -1126,52 +1108,10 @@ function GraphClass() {
         _alphaSlider
             .property('value', that.optionsData[0].value);
         //
-        // TestApp('_Tick', 1);
+        // TestApp('_Tick', -1);
     }
     //
-    TestApp('GraphClass', 1);
-}
-
-function TestFunction() {
-    TestApp('TestFunction', 0);
-    //
-    TestApp('TestFunction', 1);
-}
-
-function TestApp(source, position) {
-    // var usedJSHeapDiffs = [];
-    // var totalJSHeapDiffs = [];
-    if (!logsTest) { return; }
-    usedJSHeapSize = performance.memory.usedJSHeapSize;
-    totalJSHeapSize = performance.memory.totalJSHeapSize;
-    if (position === 0) {
-        testStr = (''.padStart(2*stackLvl,' ')+'v '+String(source));
-        stackLvl += 1;
-    } else if (position === 1) {
-        stackLvl -= 1;
-        testStr = (''.padStart(2*stackLvl,' ')+'^ '+String(source));
-    }
-    testStr = testStr.padEnd(25);
-    if (nodesCount !== d3.selectAll('*').size()) {
-        nodesCount = d3.selectAll('*').size();
-        nStr = 'nodes: '+String(nodesCount).padStart(3,' ');
-    } else {
-        nStr = '';
-    }
-    if (performance.memory.usedJSHeapSize !== usedJSHeapSize) {
-        uStr = 'used: '+((usedJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
-    } else {
-        uStr = '';
-    }
-    if (performance.memory.totalJSHeapSize !== totalJSHeapSize) {
-        tStr = 'total: '+((totalJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
-    } else {
-        tStr = '';
-    }
-    if (nStr || uStr || tStr) {
-        testStr = testStr+uStr.padEnd(20,' ')+tStr.padEnd(20,' ')+nStr.padEnd(14,' ');
-    }
-    console.log(testStr);
+    TestApp('GraphClass');
 }
 
 function MemoryTest() {
@@ -1273,4 +1213,44 @@ function MemoryTest() {
     }
     //
     return myInterval;
+}
+
+function TestApp(source, position) {
+    // var usedJSHeapDiffs = [];
+    // var totalJSHeapDiffs = [];
+    if (!logsTest) { return; }
+    usedJSHeapSize = performance.memory.usedJSHeapSize;
+    totalJSHeapSize = performance.memory.totalJSHeapSize;
+    if (position === 1) {
+        testStr = (''.padStart(2*stackLvl,' ')+'> '+String(source));
+        stackLvl += 1;
+    } else if (position === -1) {
+        stackLvl -= 1;
+        testStr = (''.padStart(2*stackLvl,' ')+'< '+String(source));
+    } else if (position === undefined) {
+        testStr = (''.padStart(2*stackLvl,' ')+'• '+String(source));
+    }
+    testStr = testStr.padEnd(25);
+    if (nodesCount !== d3.selectAll('*').size()) {
+        nodesCount = d3.selectAll('*').size();
+        nStr = 'nodes: '+String(nodesCount).padStart(3,' ');
+    } else {
+        nStr = '';
+    }
+    if (performance.memory.usedJSHeapSize !== usedJSHeapSize) {
+        uStr = 'used: '+((usedJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
+    } else {
+        uStr = '';
+    }
+    if (performance.memory.totalJSHeapSize !== totalJSHeapSize) {
+        tStr = 'total: '+((totalJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
+    } else {
+        tStr = '';
+    }
+    if (nStr || uStr || tStr) {
+        testStr = testStr+uStr.padEnd(20,' ')+tStr.padEnd(20,' ')+nStr.padEnd(14,' ');
+    }
+    // if (position === 0) {
+        console.log(testStr);
+    // }
 }
