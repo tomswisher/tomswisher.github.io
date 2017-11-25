@@ -11,39 +11,24 @@
 </head>
 
 <body class="loading">
-    <div id="box1">
-        <svg id="main-svg">
-            <rect id="main-bg-rect"></rect>
-            <g id="states-g"></g>
-            <g id="vertices-g"></g>
-            <g id="edges-g"></g>
-            <g id="hover-g" class="unselectable" attr="unselectable">
-                <rect id="hover-rect"></rect>
-                <text id="hover-text"></text>
-            </g>
-        </svg>
-        <div class="vspacer-10"></div>
-        <svg id="filters-svg" class="unselectable" attr="unselectable"></svg>
-        <div class="vspacer-10"></div>
-        <select id="states-select"></select>
-        <div class="vspacer-10"></div>
-    </div>
-    <div id="box2">
-        <svg id="info-svg"></svg>
-    </div>
-    <div id="box3">
-        <div id="simulation-div">
-            <div>
-                <label class="label-small">simulation</label><!--
-             --><label class="label-small">alpha</label><!--
-             --><label class="label-small slider-value">1</label><!--
-             --><label class="label-small">0</label><!--
-             --><input type="range" min="0" max="1" step="0.01" value="1"><!--
-             --><label class="label-small">1</label>
-            </div>
-        </div>
-        <div id="forces-container"></div>
-    </div>
+    <svg id="main-svg" class="unselectable" attr="unselectable">
+        <rect id="main-bg-rect"></rect>
+        <g id="states-g"></g>
+        <g id="vertices-g"></g>
+        <g id="edges-g"></g>
+        <g id="hover-g" class="unselectable" attr="unselectable">
+            <rect id="hover-rect"></rect>
+            <text id="hover-text"></text>
+        </g>
+        <g id="info-g"></g>
+        <g id="filters-g"></g>
+    </svg>
+    <div class="vspacer-10"></div>
+    <select id="states-select"></select>
+    <div class="vspacer-10"></div>
+    <div id="options-container"></div>
+    <div id="memory-container"></div>
+    <!-- -->
     <script src=js/hybrid-map.js></script>
 </body>
 

@@ -4,8 +4,21 @@
 
 /* globals d3, console, nodes, count */
 /* jshint -W069, unused:false */
-
 'use strict';
+
+// -------------------------------------------------------------------------------------------------
+// Settings
+
+var logsTest = true && performance && performance.memory;
+var logsLvl0 = false;
+var logsLvl1 = false;
+var logsLvl2 = false;
+var memoryTest = false && performance && performance.memory ? MemoryTest() : false;
+var transitionDuration = 250;
+var transitionEase = d3.easeCircleOut;
+var debugLayoutEnabled = false;
+var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+var isMobile = navigator && mobileOptions.test(navigator.userAgent);
 
 // -------------------------------------------------------------------------------------------------
 // Event Listeners
@@ -16,46 +29,46 @@ window.onload = function() {
         .defer(d3.json, 'data/nodes-edges-04-06-2017.json')
         .awaitAll(InitializePage);
 };
-window.onresize = function() {
-    // requestAnimationFrame(ResizePage);
-    ResizePage();
-};
-
+window.onresize = ResizePage;
 
 // -------------------------------------------------------------------------------------------------
 // Performance
 
-var nodesCount = 0;
-var nStr;
-var usedJSHeapSize = 0;
-var uStr;
+var stackLvl        = 0;
+var nodesCount      = 0;
+var usedJSHeapSize  = 0;
 var totalJSHeapSize = 0;
-var tStr;
+var usedJSHeapDiffs = [];
+var totalJSHeapDiffs = [];
+var nStr = '';
+var uStr = '';
+var tStr = '';
+var testStr = '';
 
 // -------------------------------------------------------------------------------------------------
 // Global Variables
 
-var logsTest = true;
-var logs0 = true;
-var logs1 = false;
-var debugLayoutEnabled = false;
 var mapObj = null;
 var graphObj = null;
 var stateSelected = '';
-var idSelected = '';
-var verticesSelected = [];
-var edgesSelected = [];
-var visibleGrades = {'A':true,'B':true,'C':true,'D':true,'F':true};
-var gradeScale = function(letter) {
-    switch (letter) {
-        case 'A': return 4;
-        case 'B': return 3;
-        case 'C': return 2;
-        case 'D': return 1;
-        case 'F': return 0;
-        default: return NaN;
-    }
-};
+var nodeSelected = null;
+var infoData = [];
+var body = d3.select('body');
+var mainSVG = body.select('#main-svg');
+var mainBGRect = body.select('#main-bg-rect');
+var statesG = body.select('#states-g');
+var verticesG = body.select('#vertices-g');
+var verticeCircles;
+var edgesG = body.select('#edges-g');
+var edgeLines;
+var hoverG = body.select('#hover-g');
+var hoverRect = body.select('#hover-rect');
+var hoverText = body.select('#hover-text');
+var filtersG = body.select('#filters-g');
+var defs = filtersG.append('defs');
+var statesSelect = body.select('#states-select');
+var optionsContainer = body.select('#options-container');
+var infoG = body.select('#info-g');
 var topIds = [
     'Alice Walton',
     'Carrie Walton Penner',
@@ -71,68 +84,48 @@ var topIds = [
     'Reed Hastings',
     'Stacy Schusterman'
 ];
-
-// -------------------------------------------------------------------------------------------------
-// Global Selectors
-
-var body = d3.select('body');
-var box1 = d3.select('#box1');
-var box2 = d3.select('#box2');
-var box3 = d3.select('#box3');
-var mainSVG = body.select('#main-svg');
-var mainBGRect = body.select('#main-bg-rect');
-var statesG = body.select('#states-g');
-var verticesG = body.select('#vertices-g');
-var verticeCircles;
-var edgesG = body.select('#edges-g');
-var edgeLines;
-var hoverG = body.select('#hover-g');
-var hoverRect = body.select('#hover-rect');
-var hoverText = body.select('#hover-text');
-var filtersSVG = body.select('#filters-svg');
-var statesSelect = body.select('#states-select');
-var forcesContainer = body.select('#forces-container');
-var simulationDiv = body.select('#simulation-div');
-var alphaLabel = simulationDiv.selectAll('label.slider-value');
-var alphaSlider = simulationDiv.selectAll('input[type="range"');
-var infoSVG = body.select('#info-svg');
-var defs = filtersSVG.append('defs');
-
-// -------------------------------------------------------------------------------------------------
-// Detected Settings
-
-var isMobile = false;
-if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    if (logsTest) console.log('isMobile', isMobile = true);
-}
+var visibleGrades = {'A':true,'B':true,'C':true,'D':true,'F':true};
 
 // -------------------------------------------------------------------------------------------------
 // Visual Styles
 
-var vs = {};
-vs.box1Width = null;
-vs.box1WidthMin = 400;
-vs.box2Width = null;
-vs.box2WidthMin = 200;
-vs.box2WidthMax = 200;
-vs.box2Height = 300;
-vs.mapWidthHeightRatio = 1.7;
-vs.mapProjectionScale = 1.3;
-vs.statesSelectWidth = 100;
-vs.filtersHeight = 40;
-vs.stateSelectedOpacity = 0.3;
-vs.stateNotClickedOpacity = 0.2;
-vs.hoverMargin = 5;
-vs.gradeMargin = 2.5;
-vs.gradeRounded = false;
-vs.infoSVGMargin = 10;
-// /*BH1*/ vs.gradeColorArray = ['rgb(50,50,50)','rgb(28,44,160)','rgb(240,6,55)','rgb(251,204,12)','rgb(239,230,221)'];
-// /*BH2*/ vs.gradeColorArray = ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'];
-/*red*/ vs.gradeColorArray = ['#de2d26','#fb6a4a','#fc9272','#fcbba1','#fee5d9'];
+var vs = {
+    svg: {
+        w: null,
+        h: null,
+    },
+    map: {
+        w: null,
+        wMin: 300,
+        h: null,
+        ratioWH: 1.7,
+        projectionScale: 1.3,
+        selectedOpacity: 0.3,
+    },
+    info: {
+        w: 396/2,
+        h: 432/2,
+    },
+    filters: {
+        w: null,
+        h: 40,
+        gradeMargin: 2.5,
+    },
+    statesSelect: {
+        w: 100,
+    },
+    hover: {
+        w: null,
+        h: null,
+        margin: 5,
+    },
+    // gradeColorArray: ['rgb(50,50,50)','rgb(28,44,160)','rgb(240,6,55)','rgb(251,204,12)','rgb(239,230,221)'], /*BH1*/
+    // gradeColorArray: ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'], /*BH2*/ 
+    gradeColorArray: ['#de2d26','#fb6a4a','#fc9272','#fcbba1','#fee5d9'], /*red*/
+};
 vs.colorScale = d3.scaleQuantize()
     .domain([0, 5])
     .range(vs.gradeColorArray);
-
 defs.append('filter')
     .attr('id', 'drop-shadow')
     .attr('height', '130%') // so the shadow is not clipped
@@ -160,6 +153,8 @@ defs.append('filter')
 // Functions
 
 function InitializePage(error, results) {
+    TestApp('InitializePage', 0);
+    //
     var usStatesFeaturesJSON = results[0];
     var nodesEdgesJSON = results[1];
     //
@@ -170,97 +165,92 @@ function InitializePage(error, results) {
     //
     graphObj = (new GraphClass());
     //
-    vs.hoverHeight = parseFloat(mainSVG.style('font-size'))+2*vs.hoverMargin;
+    vs.hover.h = parseFloat(mainSVG.style('font-size'))+2*vs.hover.margin;
     hoverRect
-        .attr('height', vs.hoverHeight)
-        .attr('y', -1*vs.hoverHeight-vs.hoverMargin)
+        .attr('height', vs.hover.h)
+        .attr('y', -1*vs.hover.h-vs.hover.margin)
         .style('filter', 'url(#drop-shadow)');
     hoverText
         .attr('x', 0)
-        .attr('y', -0.5*vs.hoverHeight-vs.hoverMargin);
+        .attr('y', -0.5*vs.hover.h-vs.hover.margin);
     //
     mainBGRect
         .on('mouseover', function() {
             var source = 'mainBGRect mouseover';
             stateSelected = '';
-            // idSelected = '';
-            hoverText.text('');
-            mapObj
-                .UpdateMap(source);
-            UpdateStatesDropdown(source);
+            UpdateStatesSelect(source);
+            // mapObj
+            //     .UpdateMap(source);
+            // hoverText
+            //     .text('');
             // UpdateHover('mouse');
-            graphObj
-                .UpdateNodesEdges();
+            // graphObj
+            //     .UpdateNodesEdges();
         })
         .attr('x', 0)
         .attr('y', 0);
     //
-    filtersSVG
-        .attr('width', 0)
-        .attr('height', 0);
-    //
     statesSelect
-        .style('width', vs.statesSelectWidth+'px');
-    //
-    UpdateInfo([undefined]);
+        .style('width', vs.statesSelect.w+'px');
     //
     ResizePage();
-    requestAnimationFrame(function() {
-        body
-            .classed('loading', false);
-    });
+    //
+    TestApp('InitializePage', 1);
 }
 
 function MapClass() {
+    TestApp('MapClass', 0);
+    //
+    var that = this;
     var _verticeById = null;
     var _projection = d3.geoAlbersUsa();
     var _path = d3.geoPath();
     var _width = 0;
-    this.width = function(_) {
-        return arguments.length ? (_width = _, this) : _width;
+    that.width = function(_) {
+        return arguments.length ? (_width = _, that) : _width;
     };
     var _height = 0;
-    this.height = function(_) {
-        return arguments.length ? (_height = _, this) : _height;
+    that.height = function(_) {
+        return arguments.length ? (_height = _, that) : _height;
     };
     var _mapFeatures = null;
-    this.mapFeatures = function(_) {
-        return arguments.length ? (_mapFeatures = _, this) : _mapFeatures;
+    that.mapFeatures = function(_) {
+        return arguments.length ? (_mapFeatures = _, that) : _mapFeatures;
     };
     var _centroidByState = {};
-    this.centroidByState = function(_) {
-        return arguments.length ? (_centroidByState = _, this) : _centroidByState;
+    that.centroidByState = function(_) {
+        return arguments.length ? (_centroidByState = _, that) : _centroidByState;
     };
     var _$GivenByState = {};
-    this.$GivenByState = function(_) {
-        return arguments.length ? (_$GivenByState = _, this) : _$GivenByState;
+    that.$GivenByState = function(_) {
+        return arguments.length ? (_$GivenByState = _, that) : _$GivenByState;
     };
     var _$ReceivedByState = {};
-    this.$ReceivedByState = function(_) {
-        return arguments.length ? (_$ReceivedByState = _, this) : _$ReceivedByState;
+    that.$ReceivedByState = function(_) {
+        return arguments.length ? (_$ReceivedByState = _, that) : _$ReceivedByState;
     };
     var _$GivenByStateScale = d3.scaleLinear().range([0, 5]);
-    this.$GivenByStateScale = function(_) {
-        return arguments.length ? (_$GivenByStateScale = _, this) : _$GivenByStateScale;
+    that.$GivenByStateScale = function(_) {
+        return arguments.length ? (_$GivenByStateScale = _, that) : _$GivenByStateScale;
     };
     var _$ReceivedByStateScale = d3.scaleLinear().range([0, 5]);
-    this.$ReceivedByStateScale = function(_) {
-        return arguments.length ? (_$ReceivedByStateScale = _, this) : _$ReceivedByStateScale;
+    that.$ReceivedByStateScale = function(_) {
+        return arguments.length ? (_$ReceivedByStateScale = _, that) : _$ReceivedByStateScale;
     };
     var _$EdgeScale = d3.scaleLinear().range([0.5, 10]);
-    this.$EdgeScale = function(_) {
-        return arguments.length ? (_$EdgeScale = _, this) : _$EdgeScale;
+    that.$EdgeScale = function(_) {
+        return arguments.length ? (_$EdgeScale = _, that) : _$EdgeScale;
     };
     var _$GivenByVerticeScale = d3.scaleLinear().range([3, 20]);
-    this.$GivenByVerticeScale = function(_) {
-        return arguments.length ? (_$GivenByVerticeScale = _, this) : _$GivenByVerticeScale;
+    that.$GivenByVerticeScale = function(_) {
+        return arguments.length ? (_$GivenByVerticeScale = _, that) : _$GivenByVerticeScale;
     };
     var _$ReceivedByVerticeScale = d3.scaleLinear().range([1, 10]);
-    this.$ReceivedByVerticeScale = function(_) {
-        return arguments.length ? (_$ReceivedByVerticeScale = _, this) : _$ReceivedByVerticeScale;
+    that.$ReceivedByVerticeScale = function(_) {
+        return arguments.length ? (_$ReceivedByVerticeScale = _, that) : _$ReceivedByVerticeScale;
     };
     var _vertices = null;
-    this.vertices = function(vertices) {
+    that.vertices = function(vertices) {
         if (!arguments.length) { return _vertices; }
         _vertices = vertices;
         _vertices.forEach(function(vertice) {
@@ -270,10 +260,11 @@ function MapClass() {
             _$ReceivedByState[vertice.state] = 0;
         });
         _verticeById = d3.map(_vertices, function(d) { return d.id; });
-        return this;
+        //
+        return that;
     };
     var _edges = null;
-    this.edges = function(edges) {
+    that.edges = function(edges) {
         if (!arguments.length) { return _edges; }
         _edges = edges;
         _edges.forEach(function(edge) {
@@ -298,11 +289,13 @@ function MapClass() {
         _vertices = _vertices.filter(function(vertice) {
             return vertice.keep;
         });
-        return this;
+        return that;
     };
     //
-    this.UpdateMap = function(source) {
-        // if (logs0) console.log('UpdateMap');
+    that.UpdateMap = function(source) {
+        TestApp('UpdateMap', 0);
+        if (logsLvl2) console.log('UpdateMap');
+        //
         var $GivenByStatesArray = Object.keys(_$GivenByState)
             .map(function(d) { return _$GivenByState[d]; });
         _$GivenByStateScale.domain([
@@ -329,10 +322,15 @@ function MapClass() {
         ]);
         //
         _projection
-            .scale(_width*vs.mapProjectionScale)
+            .scale(_width*vs.map.projectionScale)
             .translate([_width/2, _height/2]);
         _path
             .projection(_projection);
+        //
+        statesG
+            .attr('transform', function() {
+                return 'translate('+(0)+','+((vs.svg.h-vs.filters.h-vs.map.h)/2)+')';
+            });
         //
         var statePaths = statesG.selectAll('path.state-path')
             .data(_mapFeatures, function(d) { return d.properties.ansi; });
@@ -346,10 +344,10 @@ function MapClass() {
                 // if (isMobile === true) { return; }
                 stateSelected = d.properties.ansi;
                 var source = 'statePaths mouseover '+stateSelected;
-                hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
-                mapObj
-                    .UpdateMap(source);
-                UpdateStatesDropdown(source);
+                UpdateStatesSelect(source);
+                // mapObj
+                //     .UpdateMap(source);
+                // hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
                 // UpdateHover('mouse');
             })
             .on('mousemove', function(d) {
@@ -366,7 +364,7 @@ function MapClass() {
             })
             .attr('d', _path)
             .style('opacity', function(d) {
-                if (stateSelected === d.properties.ansi) { return vs.stateSelectedOpacity; }
+                if (stateSelected === d.properties.ansi) { return vs.map.selectedOpacity; }
                 return 1;
             })
             .style('fill', function(d) {
@@ -374,19 +372,23 @@ function MapClass() {
             });
         //
         if (debugLayoutEnabled === true) { DebugMap(); }
-        if (logsTest) TestApp('UpdateMap');
-        return this;
+        TestApp('UpdateMap', 1);
+        return that;
     };
+    //
+    TestApp('MapClass', 1);
 }
 
 function UpdateHover(source) {
-    var hoverWidth = 0;
+    TestApp('UpdateHover', 0);
+    //
+    vs.hover.w = 0;
     if (hoverText.text() !== '') {
-        hoverWidth = hoverText.node().getBBox().width+2*vs.hoverMargin;
+        vs.hover.w = hoverText.node().getBBox().width+2*vs.hover.margin;
     }
     hoverRect
-        .attr('width', hoverWidth)
-        .attr('x', -0.5*hoverWidth);
+        .attr('width', vs.hover.w)
+        .attr('x', -0.5*vs.hover.w);
     hoverG
         .attr('transform', function() {
             var tx, ty;
@@ -395,37 +397,42 @@ function UpdateHover(source) {
                 ty = d3.mouse(mainSVG.node())[1];
             } else if (mapObj && mapObj.centroidByState()[stateSelected]) {
                 tx = mapObj.centroidByState()[stateSelected][0];
-                ty = mapObj.centroidByState()[stateSelected][1]+0.5*(vs.hoverHeight+2*vs.hoverMargin);
+                ty = mapObj.centroidByState()[stateSelected][1]+0.5*(vs.hover.h+2*vs.hover.margin);
             } else {
                 tx = mapObj.width()/2;
                 ty = mapObj.height()/2;
             }
-            if (tx < hoverWidth/2 + 1) {
-                tx = hoverWidth/2 + 1;
-            } else if (tx > parseInt(mainSVG.style('width')) - hoverWidth/2 - 1) {
-                tx = parseInt(mainSVG.style('width')) - hoverWidth/2 - 1;
+            if (tx < vs.hover.w/2 + 1) {
+                tx = vs.hover.w/2 + 1;
+            } else if (tx > parseInt(mainSVG.style('width')) - vs.hover.w/2 - 1) {
+                tx = parseInt(mainSVG.style('width')) - vs.hover.w/2 - 1;
             }
-            if (ty < vs.hoverHeight + 5 + 1) {
-                ty = vs.hoverHeight + 5 + 1;
+            if (ty < vs.hover.h + 5 + 1) {
+                ty = vs.hover.h + 5 + 1;
             }
             return 'translate('+tx+','+ty+')';
         });
-    if (logsTest) TestApp('UpdateHover');
+    //
+    TestApp('UpdateHover', 1);
 }
 
 function DebugMap() {
+    TestApp('DebugMap', 0);
+    //
     body.selectAll('*').style('outline', '1px solid green');
-    var verticalGuid = mainSVG.selectAll('rect.vertical-guide').data([null]);
-    verticalGuid = verticalGuid
-        .enter().append('rect')
-            .classed('vertical-guide', true)
-            .merge(verticalGuid);
+    var verticalGuid = mainSVG.selectAll('rect.vertical-guide')
+        .data([null]);
+    verticalGuid = verticalGuid.enter().append('rect')
+        .classed('vertical-guide', true)
+        .merge(verticalGuid);
     verticalGuid
         .attr('x', mapObj.width()/2-1)
         .attr('y', 0)
         .attr('width', 2)
         .attr('height', mapObj.height())
         .style('fill', 'darkorange');
+    //
+    TestApp('DebugMap', 1);
 }
 
 function ToggleGrades(bool) {
@@ -434,98 +441,99 @@ function ToggleGrades(bool) {
 }
 
 function UpdateFilters(source) {
-    if (logs1) console.log('UpdateFilters   '+source);
-    var filtersWidth = mapObj.width();
-    filtersSVG
-        .attr('width', filtersWidth)
-        .attr('height', vs.filtersHeight+3);
-    var rectSize = vs.filtersHeight - 2*vs.gradeMargin;
+    TestApp('UpdateFilters', 0);
+    if (logsLvl2) console.log('UpdateFilters   '+source);
     //
-    var filtersText = filtersSVG.selectAll('text.filters-text')
+    filtersG
+        .attr('transform', function() {
+            return 'translate('+(0)+','+(vs.svg.h-vs.filters.h)+')';
+        });
+    var rectSize = vs.filters.h - 2*vs.filters.gradeMargin - 2;
+    //
+    var filtersText = filtersG.selectAll('text.filters-text')
         .data([null]);
     filtersText = filtersText.enter().append('text')
         .classed('filters-text', true)
         .merge(filtersText)
-        .attr('x', (1/2)*filtersWidth - 150)
-        .attr('y', (1/2)*vs.filtersHeight + 1)
-        .text('$ Given / State');
+        .attr('x', (1/2)*vs.filters.w - 130)
+        .attr('y', (1/2)*vs.filters.h + 1)
+        .text('$ Given');
     //
     var gradeArray = ['A','B','C','D','F'];
-    var gradeGs = filtersSVG.selectAll('g.grade-g')
+    var gradeGs = filtersG.selectAll('g.grade-g')
         .data(gradeArray);
     gradeGs = gradeGs.enter().append('g')
         .classed('grade-g', true)
         .merge(gradeGs);
     gradeGs
         .attr('transform', function(d,i) {
-            var tx = (1/2)*filtersWidth + (1/2-1/2*gradeArray.length+i)*vs.filtersHeight;
-            var ty = (1/2)*vs.filtersHeight + 1;
+            var tx = (1/2)*vs.filters.w + (1/2-1/2*gradeArray.length+i)*vs.filters.h;
+            var ty = (1/2)*vs.filters.h + 1;
             return 'translate('+tx+','+ty+')';
         })
-        // .on('mouseover', function(d) {
-        //     var source = 'gradeGs    mouseover '+d;
-        //     ToggleGrades(false);
-        //     visibleGrades[d] = true;
-        //     mapObj
-        //         .UpdateMap(source);
-        //     UpdateFilters(source);
-        // })
-        // .on('mouseout', function(d) {
-        //     var source = 'gradeGs    mouseout  '+d;
-        //     ToggleGrades(true);
-        //     mapObj
-        //         .UpdateMap(source);
-        //     UpdateFilters(source);
-        // })
+        .on('mouseover', function(d) {
+            // ToggleGrades(false);
+            // visibleGrades[d] = true;
+            // UpdateFilters();
+            // mapObj
+            //     .UpdateMap();
+        })
+        .on('mouseout', function(d) {
+            // ToggleGrades(true);
+            // UpdateFilters();
+            // mapObj
+            //     .UpdateMap();
+        })
         .each(function(grade) {
             var gradeBG = d3.select(this).selectAll('rect.grade-bg')
                 .data([grade]);
             gradeBG = gradeBG.enter().append('rect')
                 .classed('grade-bg', true)
-                .merge(gradeBG);
-            gradeBG
-                .attr('x', (-1/2)*vs.filtersHeight)
-                .attr('y', (-1/2)*vs.filtersHeight)
-                .attr('width', vs.filtersHeight)
-                .attr('height', vs.filtersHeight-2);
+                .merge(gradeBG)
+                .attr('x', (-1/2)*vs.filters.h)
+                .attr('y', (-1/2)*vs.filters.h)
+                .attr('width', vs.filters.h)
+                .attr('height', vs.filters.h-2);
             //
             var gradeRect = d3.select(this).selectAll('rect.grade-rect')
                 .data([grade]);
-            gradeRect = gradeRect
-                .enter().append('rect')
-                    .classed('grade-rect', true)
+            gradeRect = gradeRect.enter().append('rect')
+                .classed('grade-rect', true)
                 .merge(gradeRect)
-                    .classed('inactive', function(d) {
-                        return !visibleGrades[d];
-                    })
-                    .attr('x', -0.5*rectSize)
-                    .attr('y', -0.5*rectSize)
-                    .attr('width', rectSize)
-                    .attr('height', rectSize)
-                    .style('filter', function(d) {
-                        return visibleGrades[d] ? 'url(#drop-shadow)' : null;
-                    })
-                    .style('fill', function(d) {
-                        return vs.colorScale(gradeScale(d));
-                    });
+                .classed('inactive', function(d) {
+                    return !visibleGrades[d];
+                })
+                .attr('x', -0.5*rectSize)
+                .attr('y', -0.5*rectSize)
+                .attr('width', rectSize)
+                .attr('height', rectSize)
+                .style('filter', function(d) {
+                    return visibleGrades[d] ? 'url(#drop-shadow)' : null;
+                })
+                .style('fill', function(d) {
+                    return vs.colorScale(['F','D','C','B','A'].indexOf(d));
+                });
             //
             var gradeLabel = d3.select(this).selectAll('text.grade-label')
                 .data([grade]);
-            gradeLabel = gradeLabel
-                .enter().append('text')
-                    .classed('grade-label', true).classed('button-text', true)
-                    .text(function(d) { return d; })
+            gradeLabel = gradeLabel.enter().append('text')
+                .classed('grade-label', true).classed('button-text', true)
+                .text(function(d) { return d; })
                 .merge(gradeLabel)
-                    .classed('inactive', function(d) {
-                        return !visibleGrades[d];
-                    });
+                .classed('inactive', function(d) {
+                    return !visibleGrades[d];
+                });
         });
+        //
+        TestApp('UpdateFilters', 1);
 }
 
-function UpdateStatesDropdown(source) {
-    if (logs1) console.log('UpdateStatesDropdown '+source);
-    var statesSelectOptionsData = Object.keys(mapObj.$GivenByState());
-    statesSelectOptionsData.unshift('');
+function UpdateStatesSelect(source) {
+    TestApp('UpdateStatesSelect', 0);
+    if (logsLvl2) console.log('UpdateStatesSelect '+source);
+    //
+    var statesSelectData = Object.keys(mapObj.$GivenByState());
+    statesSelectData.unshift('');
     statesSelect
         .classed('button-object', true)
         .on('change', function() {
@@ -541,134 +549,148 @@ function UpdateStatesDropdown(source) {
             }
             mapObj
                 .UpdateMap(source);
-            UpdateStatesDropdown(source);
+            UpdateStatesSelect(source);
             // UpdateHover(source);
         })
         .selectAll('option.states-select-option')
-            .data(statesSelectOptionsData)
+            .data(statesSelectData)
             .enter().append('option')
                 .classed('states-select-option', true)
                 .text(function(d) { return d; });
-    statesSelect.node().value = stateSelected;
+    statesSelect
+        .property('value', stateSelected);
+    //
+    TestApp('UpdateStatesSelect', 1);
 }
 
-function UpdateInfo(data) {
-    if (logs1) console.log(data, infoSVG.data());
-    if (data === undefined) {
-        if (infoSVG.data()[0] === undefined) {
-            return;
-        }
-    } else {
-        infoSVG.data(data);
-        if (infoSVG.data()[0] === undefined) {
-            infoSVG.selectAll('*')
-                .transition()
-                .style('opacity', 0);
-            return;    
-        }
+function UpdateInfo() {
+    TestApp('UpdateInfo', 0);
+    if (logsLvl0) console.log('UpdateInfo', nodeSelected);
+    if (nodeSelected && !(infoData.filter(d => d.id === nodeSelected.id)[0])) {
+        infoData.push(nodeSelected);
     }
     //
-    var infoText = infoSVG.selectAll('text.info-text')
-        .data(function(d) {
-            return [d.id, 'State: '+d.state];
-        });
-    infoText = infoText.enter().append('text')
-        .classed('info-text', true)
-        .attr('x', +infoSVG.attr('width')*(1/2))
-        .attr('y', function(d, i) {
-            return +infoSVG.attr('height') - (3-i)*15 - 5;
+    infoG
+        .attr('transform', 'translate('+(vs.map.w)+','+(0)+')');
+    //
+    var infoImageGs = infoG.selectAll('g.info-image-g')
+        .data(infoData);
+    infoImageGs = infoImageGs.enter().append('g')
+        .classed('info-image-g', true)
+        .each(function(datum) {
+            d3.select(this).append('image')
+                .attr('x', 0)
+                .attr('y', 0)
+                .attr('width', vs.info.w)
+                .attr('height', vs.info.h)
+                .attr('xlink:href', function() {
+                    if (!topIds.includes(datum.id)) {
+                        return 'img/mu.png';
+                    } else {
+                        return 'img/'+datum.id+'.jpg';
+                    }
+                });
         })
         .style('opacity', 0)
-        .merge(infoText)
-        .text(function(d) { return d; });
-    //
-    var infoImage = infoSVG.selectAll('image')
-        .data(function(d) {
-            return [d.id];
-        });
-    infoImage = infoImage.enter().append('image')
-        .style('opacity', 0)
-        .merge(infoImage)
-        .attr('xlink:href', function(d) {
-            if (!topIds.includes(d)) {
-                return null;
+        .merge(infoImageGs);
+    infoImageGs
+        .transition().duration(transitionDuration).ease(transitionEase)
+        .style('opacity', function(d) {
+            if (nodeSelected && d.id === nodeSelected.id) {
+                return 1;
             } else {
-                return 'img/'+d+'.jpg';
+                return 0;
             }
         });
-    var imageInterval = setInterval(function() {
-        var bbox = infoImage.node().getBBox();
-        var heightWidthRatio = bbox.height/bbox.width;
-        if (isNaN(heightWidthRatio)) { return; }
-        clearInterval(imageInterval);
-        infoImage
-            .attr('width', +infoSVG.attr('width'))
-            .attr('height', +infoSVG.attr('width')*heightWidthRatio)
-            .transition()
-            .style('opacity', 1);
-        //
-        infoText
-            .transition()
-            .style('opacity', 1);
-    }, 10);
     //
-    if (logsTest) TestApp('UpdateInfo');
+    var infoTextGs = infoG.selectAll('g.info-text-g')
+        .data(infoData);
+    infoTextGs = infoTextGs.enter().append('g')
+        .classed('info-text-g', true)
+        .attr('transform', 'translate('+(vs.info.w/2)+','+(vs.info.h)+')')
+        .each(function(datum) {
+            d3.select(this).append('text')
+                .attr('x', 0)
+                .attr('y', function(d, i) {
+                    return (i+1)*15;
+                })
+                .text(function() {
+                    return datum.id;
+                });        
+        })
+        .style('opacity', 0)
+        .merge(infoTextGs);
+    infoTextGs
+        .transition().duration(transitionDuration).ease(transitionEase)
+        .style('opacity', function(d) {
+            if (nodeSelected && d.id === nodeSelected.id) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+    //
+    TestApp('UpdateInfo', 1);
 }
 
 function ResizePage() {
+    TestApp('ResizePage', 0);
+    //
     var source = 'ResizePage';
     var clientWidth = body.node().clientWidth;
-    if (clientWidth-vs.box2WidthMin > vs.box1WidthMin) {
-        vs.box1Width = clientWidth-vs.box2WidthMin;
-        vs.box2Width = vs.box2WidthMin;
-        vs.box2Margins = 0;
+    if (clientWidth >= vs.map.wMin + vs.info.w) {
+        vs.map.w = clientWidth - vs.info.w;
+        vs.svg.w = clientWidth;
     } else {
-        vs.box1Width = vs.box1WidthMin;
-        vs.box2Width = vs.box2WidthMax;
-        vs.box2Margins = (vs.box1Width - vs.box2Width)/2;
+        vs.map.w = vs.map.wMin;
+        vs.svg.w = vs.map.wMin + vs.info.w;
     }
-    box1
-        .style('width', vs.box1Width+'px');
-    box2
-        .style('width', vs.box2Width+'px')
-        .style('margin-left', vs.box2Margins+'px')
-        .style('margin-right', vs.box2Margins+'px');
+    vs.map.h = vs.map.w/vs.map.ratioWH;
+    vs.svg.h = Math.max(vs.map.h, vs.info.h) + vs.filters.h;
+    vs.filters.w = vs.map.w;
     //
     mainSVG
-        .attr('width', vs.box1Width)
-        .attr('height', vs.box1Width/vs.mapWidthHeightRatio);
+        .attr('width', vs.svg.w)
+        .attr('height', vs.svg.h);
+    //
     mainBGRect
-        .attr('width', vs.box1Width)
-        .attr('height', vs.box1Width/vs.mapWidthHeightRatio);
+        .attr('width', vs.map.w)
+        .attr('height', vs.map.h);
     //
     mapObj
-        .width(vs.box1Width)
-        .height(vs.box1Width/vs.mapWidthHeightRatio)
+        .width(vs.map.w)
+        .height(vs.map.h)
         .UpdateMap('ResizePage');
     //
     graphObj
         .UpdateNodesEdges()
-        .UpdateSimulation()
-        .UpdateForceSliders();
+        .UpdateForceSliders()
+        .UpdateSimulation();
+    //
+    UpdateInfo();
     //
     statesSelect
-        .style('margin-left', (vs.box1Width - vs.statesSelectWidth)/2+'px')
-        .style('margin-right', (vs.box1Width - vs.statesSelectWidth)/2+'px');
-    //
-    infoSVG
-        .attr('width', vs.box2Width - 2*vs.infoSVGMargin)
-        .attr('height', vs.box2Height - 2*vs.infoSVGMargin)
-        .style('margin', vs.infoSVGMargin+'px');
+        .style('margin-left', (vs.map.w - vs.statesSelect.w)/2+'px')
+        .style('margin-right', (vs.map.w - vs.statesSelect.w)/2+'px');
     //
     UpdateFilters(source);
-    UpdateStatesDropdown(source);
     // UpdateHover('event');
-    UpdateInfo();
-    if (logsTest) TestApp('ResizePage');
+    
+    UpdateStatesSelect(source);
+    //
+    body
+        .classed('loading', false);
+    //
+    TestApp('ResizePage', 1);
 }
 
 function GraphClass() {
+    TestApp('GraphClass', 0);
+    //
     var that = this;
+    //
+    var _alphaLabel;
+    var _alphaSlider;
     //
     that.bundle = {
         // 'target': true,
@@ -676,27 +698,13 @@ function GraphClass() {
     //
     that.simulation = d3.forceSimulation(mapObj.vertices())
         // .alpha(0.1)
-        .alphaMin(0.05)
+        .alphaMin(0.1)
         // .alphaDecay(1-Math.pow(0.001,1/300))
         // .alphaTarget(0)
         // .velocityDecay(0.6)
         .on('tick', _Tick);
     //
-    alphaSlider
-        .on('mousedown', function() {
-            that.simulation
-                .stop();
-        })
-        .on('change', function() {
-            alphaLabel
-                .text(parseFloat(this.value).toFixed(8));
-            that.simulation
-                .alpha(this.value)
-                .restart();
-        });
-    //
     that.forcesObj = {
-        
         // forceCenter: { // visual centering based on mass
         //     x: {
         //         name: 'x',
@@ -713,7 +721,6 @@ function GraphClass() {
         //         // step: 0.1,
         //     },
         // },
-        
         forceCollide: {
             iterations: {
                 name: 'iterations',
@@ -737,7 +744,6 @@ function GraphClass() {
                 // step: 0.1,
             },
         },
-        
         // forceLink: {
         //     // links: {
         //     //     name: 'links',
@@ -766,7 +772,6 @@ function GraphClass() {
         //         step: 1,
         //     },
         // },
-        
         // forceManyBody: {
         //     strength: {
         //         name: 'strength',
@@ -797,7 +802,6 @@ function GraphClass() {
         //         step: 0.1,
         //     },
         // },
-        
         // forceRadial: {
         //     strength: {
         //         name: 'strength',
@@ -828,7 +832,6 @@ function GraphClass() {
         //         // step: 0.1,
         //     },
         // },
-        
         forceX: {
             strength: {
                 name: 'strength',
@@ -839,11 +842,9 @@ function GraphClass() {
             },
             x: {
                 name: 'x',
-                value: 'cx',
-                // value: function(node, i, nodes) { return node.x; },
+                value: 'cx', // value: function(node, i, nodes) { return node.x; },
             },
         },
-        
         forceY: {
             strength: {
                 name: 'strength',
@@ -854,28 +855,43 @@ function GraphClass() {
             },
             y: {
                 name: 'y',
-                value: 'cy',
-                // value: function(node, i, nodes) { return node.y; },
+                value: 'cy', // value: function(node, i, nodes) { return node.y; },
             },
         }
     };
     //
+    that.simulationObj = {
+        alpha: {
+            name: 'alpha',
+            value: 1,
+            min: 0.05,
+            max: 1,
+            step: 0.01,
+            category: 'simulation',
+        },
+    };
+    //
     that.UpdateNodesEdges = function() {
+        TestApp('UpdateNodesEdges', 0);
+        //
+        verticesG
+            .attr('transform', function() {
+                return 'translate('+(0)+','+((vs.svg.h-vs.filters.h-vs.map.h)/2)+')';
+            });
+        //
         verticeCircles = verticesG.selectAll('circle.vertice-circle')
             .data(mapObj.vertices());
         verticeCircles = verticeCircles.enter().append('circle')
             .classed('vertice-circle', true)
             .on('mouseover', function(d) {
-                idSelected = d.id;
+                nodeSelected = d;
                 that.UpdateNodesEdges();
-                // console.log('mouseover', idSelected);
-                UpdateInfo([d]);
+                UpdateInfo();
             })
             .on('mouseout', function() {
-                idSelected = '';
+                nodeSelected = null;
                 that.UpdateNodesEdges();
-                // console.log('mouseout ', idSelected);
-                UpdateInfo([undefined]);
+                UpdateInfo();
             })
             .each(function(d) {
                 d.x = mapObj.centroidByState()[d.state][0];
@@ -896,17 +912,20 @@ function GraphClass() {
             })
             .merge(verticeCircles);
         verticeCircles
-            .transition()
+            .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', function(d) {
-                return 1;
-                // if (idSelected === '') {
-                //     return 1;
-                // }
-                // if (d.id === idSelected) {
-                //     return 1;
-                // } else {
-                //     return 0.05;
-                // }
+                if (!nodeSelected) {
+                    return 1;
+                } else if (nodeSelected.id === d.id) {
+                    return 1;
+                } else {
+                    return 0.2;
+                }
+            });
+        //
+        edgesG
+            .attr('transform', function() {
+                return 'translate('+(0)+','+((vs.svg.h-vs.filters.h-vs.map.h)/2)+')';
             });
         //
         edgeLines = edgesG.selectAll('line.edge-line')
@@ -927,24 +946,26 @@ function GraphClass() {
             })
             .merge(edgeLines);
         edgeLines
-            .transition()
+            .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', function(d) {
-                var opacityValue = 1 - (1/5)*mapObj.$GivenByStateScale()(d.source.$Given);
-                if (idSelected !== '') {
-                    if (d.source.id === idSelected) {
-                        // opacityValue = 1;
-                    } else {
-                        opacityValue = 0.0;
-                    }
+                // var opacityValue = 1 - (1/5)*mapObj.$GivenByStateScale()(d.source.$Given);
+                var opacityValue = 0.1;
+                if (!nodeSelected) {
+                    return opacityValue;
+                } else if (nodeSelected.id === d.source.id || nodeSelected.id === d.target.id) {
+                    return opacityValue;
+                } else {
+                    return 0;
                 }
-                return opacityValue;
             });
         //
-        if (logsTest) TestApp('UpdateNodesEdges');
+        TestApp('UpdateNodesEdges', 1);
         return that;
     };
     //
     that.UpdateSimulation = function() {
+        TestApp('UpdateSimulation', 0);
+        //
         Object.keys(mapObj.$GivenByState()).forEach(function(state) {
             var cx = mapObj.centroidByState()[state][0];
             var cy = mapObj.centroidByState()[state][1];
@@ -965,7 +986,7 @@ function GraphClass() {
                             break;
                     }
                     forceNew[optionName](optionValue);
-                    if (logs1) console.log(state, forceType, optionName, (optionValue.toString) ? optionValue.toString().split('\n')[0] : optionValue);
+                    if (logsLvl2) console.log(state, forceType, optionName, (optionValue.toString) ? optionValue.toString().split('\n')[0] : optionValue);
                 });
                 that.simulation
                     .force(forceType+state, forceNew);
@@ -975,43 +996,33 @@ function GraphClass() {
             .alpha(1)
             .restart();
         //
-        if (logsTest) TestApp('UpdateSimulation');
+        TestApp('UpdateSimulation', 1);
         return that;
     };
     //
     that.UpdateForceSliders = function() {
-        that.forcesData = Object.keys(that.forcesObj).map(function(forceType) {
+        TestApp('UpdateForceSliders', 0);
+        //
+        that.optionsData = [that.simulationObj['alpha']];
+        Object.keys(that.forcesObj).forEach(function(forceType) {
             var optionsObj = that.forcesObj[forceType];
-            var optionsDataFiltered = [];
             Object.keys(optionsObj).forEach(function(optionName) {
                 var optionDatum = optionsObj[optionName];
                 if (optionDatum.min !== undefined && optionDatum.max !== undefined) {
-                    optionDatum.forceType = forceType;
-                    optionsDataFiltered.push(optionDatum);
+                    optionDatum.category = forceType;
+                    that.optionsData.push(optionDatum);
                 }
             });
-            return [
-                forceType,
-                optionsDataFiltered,
-            ];
         });
         //
-        var forceDivs = forcesContainer.selectAll('div.force-div')
-            .data(that.forcesData);
-        forceDivs = forceDivs.enter().append('div')
-            .classed('force-div', true)
-            .merge(forceDivs)
-            // .classed('collapsed', function(d) { return d[1].length === 0; })
-            ;
-        //
-        var forceOptionDivs = forceDivs.selectAll('div.force-option-div')
-            .data(function(d) { return d[1]; });
-        forceOptionDivs = forceOptionDivs.enter().append('div')
-            .classed('force-option-div', true)
+        var optionDivs = optionsContainer.selectAll('div.option-div')
+            .data(that.optionsData);
+        optionDivs = optionDivs.enter().append('div')
+            .classed('option-div', true)
             .each(function(optionDatum) {
                 d3.select(this).append('label')
                     .classed('label-small', true)
-                    .text(optionDatum.forceType);
+                    .text(optionDatum.category);
                 d3.select(this).append('label')
                     .classed('label-small', true)
                     .text(optionDatum.name);
@@ -1044,15 +1055,16 @@ function GraphClass() {
                     .classed('label-small', true)
                     .text(optionDatum.max);
             })
-            .merge(forceOptionDivs)
+            .merge(optionDivs)
             .each(function(optionDatum) {
                 d3.select(this).selectAll('label.slider-value')
                     .text(optionDatum.value);
             });
-        // forceOptionDivs.selectAll('label.slider-value')
-        //     .text(function(d) { return d.value; });
         //
-        if (logsTest) TestApp('UpdateForceSliders');
+        _alphaLabel = optionsContainer.select('label.slider-value');
+        _alphaSlider = optionsContainer.select('input[type="range"]');
+        //
+        TestApp('UpdateForceSliders', 1);
         return that;
     };
     //
@@ -1065,6 +1077,8 @@ function GraphClass() {
     }
     //
     function _Tick() {
+        // TestApp('_Tick', 0);
+        //
         verticeCircles
             // .interrupt('vertices-transition')
             // .transition('vertices-transition')
@@ -1106,34 +1120,157 @@ function GraphClass() {
                 }
             });
         //
-        alphaLabel
-            .text(parseFloat(that.simulation.alpha()).toFixed(8));
-        alphaSlider
-            .property('value', that.simulation.alpha());
-        // if (logsTest) TestApp('_Tick');
+        that.optionsData[0].value = parseFloat(that.simulation.alpha()).toFixed(8);
+        _alphaLabel
+            .text(that.optionsData[0].value);
+        _alphaSlider
+            .property('value', that.optionsData[0].value);
+        //
+        // TestApp('_Tick', 1);
     }
+    //
+    TestApp('GraphClass', 1);
 }
 
-function TestApp(source) {
+function TestFunction() {
+    TestApp('TestFunction', 0);
+    //
+    TestApp('TestFunction', 1);
+}
+
+function TestApp(source, position) {
+    // var usedJSHeapDiffs = [];
+    // var totalJSHeapDiffs = [];
+    if (!logsTest) { return; }
+    usedJSHeapSize = performance.memory.usedJSHeapSize;
+    totalJSHeapSize = performance.memory.totalJSHeapSize;
+    if (position === 0) {
+        testStr = (''.padStart(2*stackLvl,' ')+'v '+String(source));
+        stackLvl += 1;
+    } else if (position === 1) {
+        stackLvl -= 1;
+        testStr = (''.padStart(2*stackLvl,' ')+'^ '+String(source));
+    }
+    testStr = testStr.padEnd(25);
     if (nodesCount !== d3.selectAll('*').size()) {
         nodesCount = d3.selectAll('*').size();
-        nStr = 'nodes: '+String(nodesCount).padStart(4);
+        nStr = 'nodes: '+String(nodesCount).padStart(3,' ');
     } else {
         nStr = '';
     }
-    if (performance && window.performance.memory.usedJSHeapSize !== usedJSHeapSize) {
-        usedJSHeapSize = window.performance.memory.usedJSHeapSize;
-        uStr = 'usedJS: '+((usedJSHeapSize/(1024*1024)).toFixed(2)+' Mb').padStart(9);
+    if (performance.memory.usedJSHeapSize !== usedJSHeapSize) {
+        uStr = 'used: '+((usedJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
     } else {
         uStr = '';
     }
-    if (performance && window.performance.memory.totalJSHeapSize !== totalJSHeapSize) {
-        totalJSHeapSize = window.performance.memory.totalJSHeapSize;
-        tStr = 'totalJS: '+((totalJSHeapSize/(1024*1024)).toFixed(2)+' Mb').padStart(9);
+    if (performance.memory.totalJSHeapSize !== totalJSHeapSize) {
+        tStr = 'total: '+((totalJSHeapSize/(1024*1024)).toFixed(3)+' Mb').padStart(9,' ');
     } else {
         tStr = '';
     }
     if (nStr || uStr || tStr) {
-        console.log(String(source).padEnd(22)+uStr.padEnd(20)+tStr.padEnd(20)+nStr.padEnd(14));
+        testStr = testStr+uStr.padEnd(20,' ')+tStr.padEnd(20,' ')+nStr.padEnd(14,' ');
     }
+    console.log(testStr);
+}
+
+function MemoryTest() {
+    var htmlString = `
+        <div id="memory-container"><!--
+            --><div class="cell"><div>elapsed</div><div id="elapsed"></div></div><!--
+            --><div class="cell"><div>interval</div><div id="interval"></div></div><!--
+            --><br><br><!--
+            --><div class="cell"><div>usedVal</div><div id="usedVal"></div></div><!--
+            --><div class="cell"><div>totalVal</div><div id="totalVal"></div></div><!--
+            --><br><br><!--
+            --><div class="cell"><div>usedRate</div><div id="usedRate"></div></div><!--
+            --><div class="cell"><div>totalRate</div><div id="totalRate"></div></div><!--
+            --><br><br><!--`+
+            // --><div class="cell"><div>usedMeanRate</div><div id="usedMeanRate"></div></div><!--
+            // --><div class="cell"><div>totalMeanRate</div><div id="totalMeanRate"></div></div><!--
+            // --><br><br><!--
+            // --><div class="cell"><div>itersForMean</div><div id="itersForMean"></div></div><!--
+            // --><div class="cell"><div>iters</div><div id="iters"></div></div><!--
+           `-->
+        </div>`;
+    var memoryContainer = d3.select('body')
+        .select('#memory-container')
+        .data([null]);
+    memoryContainer.enter().append('div')
+        .attr('id', 'memory-container')
+        .merge(memoryContainer)
+        .property('outerHTML', htmlString);
+    var elapsedNode = document.querySelector('#elapsed');
+    var intervalNode = document.querySelector('#interval');
+    var usedValNode = document.querySelector('#usedVal');
+    var totalValNode = document.querySelector('#totalVal');
+    var usedRateNode = document.querySelector('#usedRate');
+    var totalRateNode = document.querySelector('#totalRate');
+    var usedMeanRateNode = document.querySelector('#usedMeanRate');
+    var totalMeanRateNode = document.querySelector('#totalMeanRate');
+    var itersForMeanNode = document.querySelector('#itersForMean');
+    // var itersNode = document.querySelector('#iters');
+    var start = Date.now();
+    var intervalSetting = 0.5;
+    var interval = 0;
+    var iters = 0;
+    var itersForMean = 0;
+    var decimals = 7;
+    var padding = 15;
+    var pad = ' ';
+    var scale = 1/Math.pow(1024,2);
+    var units = ' MB';
+    var elapsedOld = 0;
+    var elapsed = 0;
+    var oldVals = [0,0];
+    var newVals = [performance.memory.usedJSHeapSize,performance.memory.totalJSHeapSize];
+    var minVals = [Infinity,Infinity];
+    var maxVals = [0,0];
+    var newRates = [0,0];
+    var minRates = [Infinity,Infinity];
+    var maxRates = [0,0];
+    var sumRates = [0,0];
+    var newMeanRates = [0,0];
+    var minMeanRates = [Infinity,Infinity];
+    var maxMeanRates = [0,0];
+    var myInterval = setInterval(function() {
+        iters                           = iters + 1;
+        elapsedOld                      = elapsed;
+        elapsed                         = (Date.now()-start)/1000;
+        interval                        = elapsed-elapsedOld;
+        // itersNode.innerHTML             = iters;
+        elapsedNode.innerHTML           = elapsed+' s';
+        intervalNode.innerHTML          = interval+' s';
+        oldVals                         = [newVals[0],newVals[1]];
+        newVals                         = [performance.memory.usedJSHeapSize,performance.memory.totalJSHeapSize];
+        minVals                         = [Math.min(newVals[0],minVals[0]),Math.min(newVals[1],minVals[1])];
+        maxVals                         = [Math.max(newVals[0],maxVals[0]),Math.max(newVals[1],maxVals[1])];
+        newRates                        = [(newVals[0]-oldVals[0])/interval,(newVals[1]-oldVals[1])/interval];
+        minRates                        = [Math.min(newRates[0],minRates[0]),Math.min(newRates[1],minRates[1])];
+        maxRates                        = [Math.max(newRates[0],maxRates[0]),Math.max(newRates[1],maxRates[1])];
+        usedValNode.innerHTML           = MakeDiv(minVals[0],'min')+MakeDiv(newVals[0],'new')+MakeDiv(maxVals[0],'max');
+        totalValNode.innerHTML          = MakeDiv(minVals[1],'min')+MakeDiv(newVals[1],'new')+MakeDiv(maxVals[1],'max');
+        usedRateNode.innerHTML          = MakeDiv(minRates[0],'min','/s')+MakeDiv(newRates[0],'new','/s')+MakeDiv(maxRates[0],'max','/s');
+        totalRateNode.innerHTML         = MakeDiv(minRates[1],'min','/s')+MakeDiv(newRates[1],'new','/s')+MakeDiv(maxRates[1],'max','/s');
+        // // if (newRates[0] > 0 && newRates[1] > 0) {
+        //     itersForMean                = itersForMean + 1;
+        // // }
+        // if (itersForMean < 2) { return; }
+        // sumRates                        = [sumRates[0]+newRates[0],sumRates[1]+newRates[1]];
+        // newMeanRates                    = [sumRates[0]/(itersForMean-1), sumRates[1]/(itersForMean-1)];
+        // minMeanRates                    = [Math.min(newMeanRates[0],minMeanRates[0]),Math.min(newMeanRates[1],minMeanRates[1])];
+        // maxMeanRates                    = [Math.max(newMeanRates[0],maxMeanRates[0]),Math.max(newMeanRates[1],maxMeanRates[1])];
+        // usedMeanRateNode.innerHTML      = MakeDiv(minMeanRates[0],'min','/s')+MakeDiv(newMeanRates[0],'new','/s')+MakeDiv(maxMeanRates[0],'max','/s');
+        // totalMeanRateNode.innerHTML     = MakeDiv(minMeanRates[1],'min','/s')+MakeDiv(newMeanRates[1],'new','/s')+MakeDiv(maxMeanRates[1],'max','/s');
+        // itersForMeanNode.innerHTML      = itersForMean+'/'+iters+' ('+(100*(itersForMean/iters)).toFixed(3)+'%)';
+    }, intervalSetting*1000);
+    //
+    function MakeDiv(input, classType, suffix) {
+        suffix = (suffix !== undefined) ? String(suffix) : '';
+        return '<div class="'+classType+'">'+
+                String((input*scale).toFixed(decimals)).padStart(padding,pad)+units+suffix+
+                '</div>';
+    }
+    //
+    return myInterval;
 }

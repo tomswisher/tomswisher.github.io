@@ -16,7 +16,7 @@
 @hoverStrokeWidth:  0px;
 @hoverFillColor:    white;
 
-@forceDivWidth:     600px;
+@optionDivWidth:    600px;
 @labelSmallWidth:   80px;
 @labelMediumWidth:  150px;
 @sliderWidth:       200px;
@@ -26,16 +26,15 @@ body {
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     font-size: 0px;
+    // > * {
+    //     outline: 1px solid blue;
+    // }
 }
-#box1, #box2, #box3 {
-    display: inline-block;
-    text-align: center;
-    vertical-align: top;
-    > * {
-        font-size: @font1Size;
-    }
-}
-#main-svg { 
+#main-svg {
+    font-size: @font1Size;
+    // > * {
+    //     outline: 1px solid orange;
+    // }
     #main-bg-rect {
         opacity: 0;
     }
@@ -66,30 +65,35 @@ body {
         stroke-width: @hoverStrokeWidth;
         fill: @hoverFillColor;
     }
-}
-#filters-svg {
-    rect.grade-bg {
-        opacity: 0;
-    }
-    rect.grade-rect {
-        stroke: @gradesStrokeColor;
-        stroke-width: @gradesStrokeWidth;
-        pointer-events: none;
-    }
-    text.grade-label, text.filters-text {
-        dominant-baseline: middle;
-        text-anchor: middle;
-        pointer-events: none;
+    #filters-g {
+        rect.grade-bg {
+            opacity: 0;
+        }
+        rect.grade-rect {
+            stroke: @gradesStrokeColor;
+            stroke-width: @gradesStrokeWidth;
+            pointer-events: none;
+        }
+        text.grade-label, text.filters-text {
+            dominant-baseline: middle;
+            text-anchor: middle;
+            pointer-events: none;
+        }
     }
 }
 #states-select {
     height: 25px;
 }
-.force-div, #simulation-div {
-    width: @forceDivWidth;
-    font-size: 0px !important;
+#options-container {
+    display: inline-block;
+    width: 100%;
+    height: auto;
+}
+.option-div {
+    display: inline-block;
+    width: @optionDivWidth;
+    height: 16px;
     float: left;
-    outline: 1px solid gainsboro;
     > * {
         font-size: @font1Size;
     }
@@ -115,12 +119,17 @@ body {
         text-align: left;
     }
 }
-#info-svg {
-    outline: 1px solid gainsboro;
-    text-align: center;
-    text.info-text {
-        dominant-baseline: middle;
-        text-anchor: middle;
+#info-g {
+    g.info-image-g {
+        image {
+            pointer-events: none;
+        }
+    }
+    g.info-text-g {
+        text{
+            dominant-baseline: middle;
+            text-anchor: middle;
+        }
     }
 }
 .vspacer-10 {
@@ -165,4 +174,27 @@ body {
     visibility: hidden;
     width: 0px;
     height: 0px;
+}
+#memory-container {
+    display: inline-block;
+    width: 100%;
+    height: auto;
+    font-family: monospace;
+    font-size: @font1Size;
+}
+#memory-container div {
+    display: inline-block;
+    width: 100%;
+    height: 16px;
+}
+#memory-container div.cell {
+    display: inline-block;
+    width: 50%;
+    height: auto;
+}
+#memory-container div.min {
+    color: green;
+}
+#memory-container div.max {
+    color: firebrick;
 }

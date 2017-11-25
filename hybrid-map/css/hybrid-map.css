@@ -13,16 +13,7 @@ body {
   font-weight: 400;
   font-size: 0px;
 }
-#box1,
-#box2,
-#box3 {
-  display: inline-block;
-  text-align: center;
-  vertical-align: top;
-}
-#box1 > *,
-#box2 > *,
-#box3 > * {
+#main-svg {
   font-size: 14px;
 }
 #main-svg #main-bg-rect {
@@ -53,16 +44,16 @@ body {
   stroke-width: 0px;
   fill: white;
 }
-#filters-svg rect.grade-bg {
+#main-svg #filters-g rect.grade-bg {
   opacity: 0;
 }
-#filters-svg rect.grade-rect {
+#main-svg #filters-g rect.grade-rect {
   stroke: black;
   stroke-width: 0px;
   pointer-events: none;
 }
-#filters-svg text.grade-label,
-#filters-svg text.filters-text {
+#main-svg #filters-g text.grade-label,
+#main-svg #filters-g text.filters-text {
   dominant-baseline: middle;
   text-anchor: middle;
   pointer-events: none;
@@ -70,45 +61,43 @@ body {
 #states-select {
   height: 25px;
 }
-.force-div,
-#simulation-div {
-  width: 600px;
-  font-size: 0px !important;
-  float: left;
-  outline: 1px solid gainsboro;
+#options-container {
+  display: inline-block;
+  width: 100%;
+  height: auto;
 }
-.force-div > *,
-#simulation-div > * {
+.option-div {
+  display: inline-block;
+  width: 600px;
+  height: 16px;
+  float: left;
+}
+.option-div > * {
   font-size: 14px;
 }
-.force-div label,
-#simulation-div label {
+.option-div label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
 }
-.force-div label.label-small,
-#simulation-div label.label-small {
+.option-div label.label-small {
   width: 80px;
 }
-.force-div label.label-medium,
-#simulation-div label.label-medium {
+.option-div label.label-medium {
   width: 150px;
 }
-.force-div input[type='Range'],
-#simulation-div input[type='Range'] {
+.option-div input[type='Range'] {
   width: 200px;
   margin: 0px;
 }
 #simulation-div label.slider-value {
   text-align: left;
 }
-#info-svg {
-  outline: 1px solid gainsboro;
-  text-align: center;
+#info-g g.info-image-g image {
+  pointer-events: none;
 }
-#info-svg text.info-text {
+#info-g g.info-text-g text {
   dominant-baseline: middle;
   text-anchor: middle;
 }
@@ -154,4 +143,27 @@ text.inactive {
   visibility: hidden;
   width: 0px;
   height: 0px;
+}
+#memory-container {
+  display: inline-block;
+  width: 100%;
+  height: auto;
+  font-family: monospace;
+  font-size: 14px;
+}
+#memory-container div {
+  display: inline-block;
+  width: 100%;
+  height: 16px;
+}
+#memory-container div.cell {
+  display: inline-block;
+  width: 50%;
+  height: auto;
+}
+#memory-container div.min {
+  color: green;
+}
+#memory-container div.max {
+  color: firebrick;
 }
