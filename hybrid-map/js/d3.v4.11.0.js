@@ -6148,10 +6148,6 @@ var simulation = function(nodes) {
       return arguments.length > 1 ? ((_ == null ? forces.remove(name) : forces.set(name, initializeForce(_))), simulation) : forces.get(name);
     },
 
-    forces: function() {
-      return forces;
-    },
-
     find: function(x, y, radius) {
       var i = 0,
           n = nodes.length,

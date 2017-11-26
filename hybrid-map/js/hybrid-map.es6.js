@@ -7,32 +7,22 @@
 'use strict';
 
 // -------------------------------------------------------------------------------------------------
-// Settings
+// Globl Settings
 
-var logsTest = true && performance && performance.memory;
-var logsLvl0 = false;
-var logsLvl1 = false;
-var logsLvl2 = false;
-var memoryTest = false && performance && performance.memory ? MemoryTest() : false;
 var transitionDuration = 250;
-var transitionEase = d3.easeCircleOut;
-var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-var isMobile = navigator && mobileOptions.test(navigator.userAgent);
-
-// -------------------------------------------------------------------------------------------------
-// Event Listeners
-
-window.onload = function() {
-    d3.queue()
-        .defer(d3.json, 'data/us-states-features.json')
-        .defer(d3.json, 'data/nodes-edges-04-06-2017.json')
-        .awaitAll(InitializePage);
-};
-window.onresize = ResizePage;
+var transitionEase = d3.easeCubic;
 
 // -------------------------------------------------------------------------------------------------
 // Performance
 
+var logsLvl0 = 0;
+var logsLvl1 = 0;
+var logsLvl2 = 0;
+var logsTest = 1 && performance && performance.memory;
+var memWatch = 0 && performance && performance.memory ? MemoryTester() : 0;
+var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+var isMobile = navigator && mobileOptions.test(navigator.userAgent);
+var resizingCounter = 0;
 var stackLvl        = 0;
 var nodesCount      = 0;
 var usedJSHeapSize  = 0;
@@ -45,13 +35,8 @@ var tStr = '';
 var testStr = '';
 
 // -------------------------------------------------------------------------------------------------
-// Global Variables
+// Window Variables
 
-var mapObj = null;
-var graphObj = null;
-var stateSelected = '';
-var nodeSelected = null;
-var infoData = [];
 var body = d3.select('body');
 var mainSVG = body.select('#main-svg');
 var mainBGRect = body.select('#main-bg-rect');
@@ -68,7 +53,29 @@ var defs = filtersG.append('defs');
 var statesSelect = body.select('#states-select');
 var optionsContainer = body.select('#options-container');
 var infoG = body.select('#info-g');
-var topIds = [
+window.onload = function() {
+    d3.queue()
+        .defer(d3.json, 'data/us-states-features.json')
+        .defer(d3.json, 'data/nodes-edges-04-06-2017.json')
+        .awaitAll(InitializePage);
+};
+window.onresize = function() {
+    resizingCounter = Math.max(1, resizingCounter + 1); // restart a negative counter
+    body.classed('resizing', true);
+    // console.log(''.padStart(resizingCounter*2,' ')+resizingCounter);
+    setTimeout(function() {
+        if (resizingCounter >= 1) {
+            resizingCounter -= 1;
+            // console.log(''.padStart(resizingCounter*2,' ')+resizingCounter);
+        }
+        if (resizingCounter === 0) {
+            resizingCounter = -1;
+            body.classed('resizing', false);
+            UpdatePageDimensions();
+        }
+    }, 200);
+};
+var allTopIds = [
     'Alice Walton',
     'Carrie Walton Penner',
     'Dorris Fisher',
@@ -83,6 +90,11 @@ var topIds = [
     'Reed Hastings',
     'Stacy Schusterman'
 ];
+var mapObj = null;
+var graphObj = null;
+var stateSelected = '';
+var nodeSelected = null;
+var infoData = [];
 var visibleGrades = {'A':true,'B':true,'C':true,'D':true,'F':true};
 
 // -------------------------------------------------------------------------------------------------
@@ -195,7 +207,14 @@ function InitializePage(error, results) {
         .style('height', vs.statesSelect.h+'px')
         .style('display', vs.statesSelect.h ? 'inline-block' : 'none');
     //
-    ResizePage();
+    UpdatePageDimensions();
+    //
+    requestAnimationFrame(function() {
+        graphObj
+            .UpdateForceSliders();
+        body
+            .classed('loading', false);
+    });
     //
     TestApp('InitializePage', -1);
 }
@@ -231,23 +250,19 @@ function MapClass() {
     that.$ReceivedByState = function(_) {
         return arguments.length ? (_$ReceivedByState = _, that) : _$ReceivedByState;
     };
-    var _$GivenByStateScale = d3.scaleLinear().range([0, 5]);
+    var _$GivenByStateScale = d3.scaleLinear().range([0, 1]);
     that.$GivenByStateScale = function(_) {
         return arguments.length ? (_$GivenByStateScale = _, that) : _$GivenByStateScale;
     };
-    var _$ReceivedByStateScale = d3.scaleLinear().range([0, 5]);
+    var _$ReceivedByStateScale = d3.scaleLinear().range([0, 1]);
     that.$ReceivedByStateScale = function(_) {
         return arguments.length ? (_$ReceivedByStateScale = _, that) : _$ReceivedByStateScale;
     };
-    var _$EdgeScale = d3.scaleLinear().range([0.5, 10]);
-    that.$EdgeScale = function(_) {
-        return arguments.length ? (_$EdgeScale = _, that) : _$EdgeScale;
-    };
-    var _$GivenByVerticeScale = d3.scaleLinear().range([3, 20]);
+    var _$GivenByVerticeScale = d3.scaleLinear().range([0, 1]);
     that.$GivenByVerticeScale = function(_) {
         return arguments.length ? (_$GivenByVerticeScale = _, that) : _$GivenByVerticeScale;
     };
-    var _$ReceivedByVerticeScale = d3.scaleLinear().range([1, 10]);
+    var _$ReceivedByVerticeScale = d3.scaleLinear().range([0, 1]);
     that.$ReceivedByVerticeScale = function(_) {
         return arguments.length ? (_$ReceivedByVerticeScale = _, that) : _$ReceivedByVerticeScale;
     };
@@ -279,17 +294,17 @@ function MapClass() {
             _$GivenByState[edge.source.state] += edge.dollars;
             _$ReceivedByState[edge.target.state] += edge.dollars;
             //
-            edge.keep = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
-            if (edge.keep) {
-                edge.source.keep = true;
-                edge.target.keep = true;
+            edge.isTopId = allTopIds.includes(edge.source.id) || allTopIds.includes(edge.target.id);
+            if (edge.isTopId) {
+                edge.source.isTopId = true;
+                edge.target.isTopId = true;
             }
         });
         _edges = _edges.filter(function(edge) {
-            return edge.keep;
+            return edge.isTopId;
         });
         _vertices = _vertices.filter(function(vertice) {
-            return vertice.keep;
+            return vertice.isTopId;
         });
         return that;
     };
@@ -317,10 +332,6 @@ function MapClass() {
         _$ReceivedByVerticeScale.domain([
             d3.min(_vertices, function(vertice) { return vertice.$Received; }),
             d3.max(_vertices, function(vertice) { return vertice.$Received; })
-        ]);
-        _$EdgeScale.domain([
-            d3.min(_edges, function(edge) { return edge.dollars; }),
-            d3.max(_edges, function(edge) { return edge.dollars; })
         ]);
         //
         _projection
@@ -369,7 +380,7 @@ function MapClass() {
                 return 1;
             })
             .style('fill', function(d) {
-                return vs.colorScale(_$GivenByStateScale(d.$Given));
+                return vs.colorScale(5*_$GivenByStateScale(d.$Given));
             });
         //
         TestApp('UpdateMap');
@@ -566,7 +577,7 @@ function UpdateInfo() {
                 .attr('width', vs.info.w)
                 .attr('height', vs.info.h)
                 .attr('xlink:href', function() {
-                    if (!topIds.includes(datum.id)) {
+                    if (!allTopIds.includes(datum.id)) {
                         return 'img/mu.png';
                     } else {
                         return 'img/'+datum.id+'.jpg';
@@ -594,22 +605,19 @@ function UpdateInfo() {
             d3.select(this).append('text')
                 .attr('x', 0)
                 .attr('y', 1*15)
-                .text(function() {
-                    return datum.id;
-                });
+                .text(datum.id);
             d3.select(this).append('text')
                 .attr('x', 0)
                 .attr('y', 2*15)
-                .text(function() {
-                    return 'State: '+datum.state;
-                });
+                .text('State: '+datum.state);
             d3.select(this).append('text')
                 .attr('x', 0)
                 .attr('y', 3*15)
-                .text(function() {
-                    if (datum.$Given) { return 'Given: '+d3.format('$,')(datum.$Given); }
-                    if (datum.$Received) { return 'Received: '+d3.format('$,')(datum.$Received); }
-                });
+                .text('Given: '+d3.format('$,')(datum.$Given));
+            d3.select(this).append('text')
+                .attr('x', 0)
+                .attr('y', 4*15)
+                .text('Received: '+d3.format('$,')(datum.$Received));
         })
         .style('opacity', 0)
         .merge(infoTextGs);
@@ -626,10 +634,10 @@ function UpdateInfo() {
     TestApp('UpdateInfo');
 }
 
-function ResizePage() {
-    TestApp('ResizePage', 1);
+function UpdatePageDimensions() {
+    TestApp('UpdatePageDimensions', 1);
     //
-    var source = 'ResizePage';
+    var source = 'UpdatePageDimensions';
     var clientWidth = body.node().clientWidth;
     if (clientWidth >= vs.map.wMin + vs.info.w) {
         vs.map.w = clientWidth - vs.info.w;
@@ -653,11 +661,10 @@ function ResizePage() {
     mapObj
         .width(vs.map.w)
         .height(vs.map.h)
-        .UpdateMap('ResizePage');
+        .UpdateMap('UpdatePageDimensions');
     //
     graphObj
         .UpdateNodesEdges()
-        .UpdateForceSliders()
         .UpdateSimulation();
     //
     UpdateInfo();
@@ -672,10 +679,7 @@ function ResizePage() {
     //
     // UpdateStatesSelect();
     //
-    body
-        .classed('loading', false);
-    //
-    TestApp('ResizePage', -1);
+    TestApp('UpdatePageDimensions', -1);
 }
 
 function GraphClass() {
@@ -692,85 +696,67 @@ function GraphClass() {
     //
     that.simulation = d3.forceSimulation(mapObj.vertices())
         // .alpha(0.1)
-        .alphaMin(0.1)
+        .alphaMin(0.2)
         // .alphaDecay(1-Math.pow(0.001,1/300))
-        // .alphaTarget(0)
+        // .alphaTarget(0.3)
         // .velocityDecay(0.6)
         .on('tick', _Tick);
     //
     that.simulationObj = {
         alpha: {
-            name: 'alpha',
             value: 1,
             min: 0.05,
             max: 1,
             step: 0.01,
             category: 'simulation',
+            name: 'alpha',
         },
     };
     //
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
-        //         name: 'x',
         //         value: 'cx',
-        //         // min: 0,
-        //         // max: 1,
-        //         // step: 0.1,
         //     },
         //     y: {
-        //         name: 'y',
         //         value: 'cy',
-        //         // min: 0,
-        //         // max: 1,
-        //         // step: 0.1,
         //     },
+        //     _IsolateForce: true,
         // },
         forceCollide: {
             iterations: {
-                name: 'iterations',
                 value: 1, // 1
                 min: 0,
                 max: 10,
                 step: 1,
             },
             strength: {
-                name: 'strength',
                 value: 1, // 1
                 min: 0,
                 max: 1,
                 step: 0.05,
             },
             radius: {
-                name: 'radius',
                 value: function(node, i, nodes) { return node.r; },
-                // min: 0,
-                // max: 1,
-                // step: 0.1,
             },
         },
         // forceLink: {
         //     // links: {
-        //     //     name: 'links',
         //     //     value: [],
         //     // },
         //     // id: {
-        //     //     name: 'id',
         //     //     value: function(node) { return node.index; },
         //     // },
         //     iterations: {
-        //         name: 'iterations',
         //         value: 1,
         //         min: 0,
         //         max: 10,
         //         step: 1,
         //     },
         //     // strength: {
-        //     //     name: 'strength',
         //     //     value: function(link, i, links) { return 1/Math.min(count[link.source.index],count[link.target.index]); },
         //     // },
         //     distance: {
-        //         name: 'distance',
         //         value: 30, // function(link, i, links) { return 30; },
         //         min: 0,
         //         max: 100,
@@ -779,92 +765,72 @@ function GraphClass() {
         // },
         // forceManyBody: {
         //     strength: {
-        //         name: 'strength',
         //         value: -30, // function(node, i, nodes) { return -30; },
         //         min: -100,
         //         max: 0,
         //         step: 1,
         //     },
-        //     // distanceMin: {
-        //     //     name: 'distanceMin',
-        //     //     value: 1,
-        //     //     min: 0,
-        //     //     max: 10000,
-        //     //     step: 1,
-        //     // },
-        //     // distanceMax: {
-        //     //     name: 'distanceMax',
-        //     //     value: 100, // Infinity
-        //     //     min: 0,
-        //     //     max: 200,
-        //     //     step: 1,
-        //     // },
+        //     distanceMin: {
+        //         value: 1,
+        //         min: 0,
+        //         max: 10000,
+        //         step: 1,
+        //     },
+        //     distanceMax: {
+        //         value: 100, // Infinity
+        //         min: 0,
+        //         max: 200,
+        //         step: 1,
+        //     },
         //     theta: {
-        //         name: 'theta',
         //         value: 0.81,
         //         min: 0,
         //         max: 1,
         //         step: 0.1,
         //     },
+        //     _IsolateForce: true,
         // },
         // forceRadial: {
         //     strength: {
-        //         name: 'strength',
         //         value: 0.1, // function(node, i, nodes) { return 0.1; },
         //         min: 0,
         //         max: 1,
         //         step: 0.01,
         //     },
         //     radius: {
-        //         name: 'radius',
         //         value: function(node, i, nodes) { return node.r; },
-        //         // min: 0,
-        //         // max: 1,
-        //         // step: 0.1,
         //     },
         //     x: {
-        //         name: 'x',
         //         value: 'cx',
-        //         // min: 0,
-        //         // max: 1,
-        //         // step: 0.1,
         //     },
         //     y: {
-        //         name: 'y',
         //         value: 'cy',
-        //         // min: 0,
-        //         // max: 1,
-        //         // step: 0.1,
         //     },
         // },
         forceX: {
             strength: {
-                name: 'strength',
                 value: 0.1, // function(node, i, nodes) { return 0.1; },
                 min: 0,
                 max: 1,
                 step: 0.05,
             },
             x: {
-                name: 'x',
                 value: 'cx', // value: function(node, i, nodes) { return node.x; },
             },
             _IsolateForce: true,
         },
         forceY: {
             strength: {
-                name: 'strength',
                 value: 0.1, // function(node, i, nodes) { return 0.1; },
                 min: 0,
                 max: 1,
                 step: 0.05,
             },
             y: {
-                name: 'y',
                 value: 'cy', // value: function(node, i, nodes) { return node.y; },
             },
             _IsolateForce: true,
-        }
+        },
     };
     //
     that.UpdateNodesEdges = function() {
@@ -881,43 +847,58 @@ function GraphClass() {
             .classed('vertice-circle', true)
             .on('mouseover', function(d) {
                 nodeSelected = d;
-                that.UpdateNodesEdges();
+                that
+                    .UpdateNodesEdges();
+                    // .UpdateSimulation();
                 UpdateInfo();
             })
             .on('mouseout', function() {
                 nodeSelected = null;
-                that.UpdateNodesEdges();
+                that
+                    .UpdateNodesEdges();
+                    // .UpdateSimulation();
                 UpdateInfo();
             })
             .each(function(d) {
                 d.x = mapObj.centroidByState()[d.state][0];
                 d.y = mapObj.centroidByState()[d.state][1];
-                // d.r = 5;
-                d.r = mapObj.$GivenByVerticeScale()(d.$Given);
             })
             .attr('cx', function(d) { return d.x; })
             .attr('cy', function(d) { return d.y; })
-            .attr('r', function(d) { return d.r; })
+            .call(d3.drag()
+                .on('start', _DragStarted)
+                .on('drag', _Dragged)
+                .on('end', _DragEnded))
+            .merge(verticeCircles);
+        verticeCircles
+            .each(function(d) {
+                if (nodeSelected && nodeSelected.id === d.id) {
+                    //
+                } else if (nodeSelected) {
+                    d.r = 2+15*Math.sqrt(mapObj.$ReceivedByVerticeScale()(d.$Received));
+                } else {
+                    d.r = 2+15*Math.sqrt(mapObj.$GivenByVerticeScale()(d.$Given));
+                }
+            })
             .style('fill', function(d) {
                 return 'white';
-                // if (topIds.includes(d.id)) {
+                // if (allTopIds.includes(d.id)) {
                 //     return 'white';
                 // }
                 // var fillValue = mapObj.$GivenByStateScale()(mapObj.$GivenByState()[d.state]);
                 // return vs.colorScale(fillValue);
             })
-            .merge(verticeCircles);
-        verticeCircles
             .transition().duration(transitionDuration).ease(transitionEase)
-            .style('opacity', function(d) {
-                if (!nodeSelected) {
-                    return 1;
-                } else if (nodeSelected.id === d.id) {
-                    return 1;
-                } else {
-                    return 0.2;
-                }
-            });
+            .attr('r', function(d) { return d.r; });
+        //     .style('opacity', function(d) {
+        //         if (!nodeSelected) {
+        //             return 1;
+        //         } else if (nodeSelected.id === d.id) {
+        //             return 1;
+        //         } else {
+        //             return 0.2;
+        //         }
+        //     });
         //
         edgesG
             .attr('transform', function() {
@@ -942,7 +923,7 @@ function GraphClass() {
             })
             .merge(edgeLines);
         edgeLines
-            .transition().duration(transitionDuration).ease(transitionEase)
+            // .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', function(d) {
                 // var opacityValue = 1 - (1/5)*mapObj.$GivenByStateScale()(d.source.$Given);
                 var opacityValue = 0.1;
@@ -1012,11 +993,9 @@ function GraphClass() {
             var optionsObj = that.forcesObj[forceType];
             Object.keys(optionsObj).forEach(function(optionName) {
                 if (optionName[0] === '_') { return; }
-                var optionDatum = optionsObj[optionName];
-                if (optionDatum.min !== undefined && optionDatum.max !== undefined) {
-                    optionDatum.category = forceType;
-                    that.optionsData.push(optionDatum);
-                }
+                optionsObj[optionName].category = forceType;
+                optionsObj[optionName].name = optionName;
+                that.optionsData.push(optionsObj[optionName]);
             });
         });
         //
@@ -1032,36 +1011,47 @@ function GraphClass() {
                     .classed('label-small', true)
                     .text(optionDatum.name);
                 d3.select(this).append('label')
-                    .classed('label-small', true).classed('slider-value', true)
-                    .text(optionDatum.value);
-                d3.select(this).append('label')
-                    .classed('label-small', true)
-                    .text(optionDatum.min);
-                d3.select(this).append('input')
-                    .attr('type', 'range')
-                    .attr('min', optionDatum.min)
-                    .attr('max', optionDatum.max)
-                    .attr('step', optionDatum.step)
-                    .attr('value', optionDatum.value)
-                    .on('change', function() {
-                        if (optionDatum.step === parseInt(optionDatum.step)) {
-                            optionDatum.value = parseInt(this.value);
-                        } else {
-                            optionDatum.value = parseFloat(this.value);
-                        }
-                        that.simulation.alpha(0);
-                        that
-                            .UpdateSimulation()
-                            .UpdateForceSliders();
-                    });
-                d3.select(this).append('label')
-                    .classed('label-small', true)
-                    .text(optionDatum.max);
+                    .classed('label-small', true).classed('slider-value', true);
+                if (optionDatum.min !== undefined) {
+                    d3.select(this).append('label')
+                        .classed('label-small', true)
+                        .text(optionDatum.min);
+                }
+                if (optionDatum.step !== undefined) {
+                    d3.select(this).append('input')
+                        .attr('type', 'range')
+                        .attr('min', optionDatum.min)
+                        .attr('max', optionDatum.max)
+                        .attr('step', optionDatum.step)
+                        .attr('value', optionDatum.value)
+                        .on('change', function() {
+                            if (optionDatum.step === parseInt(optionDatum.step)) {
+                                optionDatum.value = parseInt(this.value);
+                            } else {
+                                optionDatum.value = parseFloat(this.value);
+                            }
+                            that.simulation.alpha(0);
+                            that
+                                .UpdateSimulation()
+                                .UpdateForceSliders();
+                        });
+                }
+                if (optionDatum.max !== undefined) {
+                    d3.select(this).append('label')
+                        .classed('label-small', true)
+                        .text(optionDatum.max);
+                }
             })
             .merge(optionDivs)
             .each(function(optionDatum) {
                 d3.select(this).selectAll('label.slider-value')
-                    .text(optionDatum.value);
+                    .text(function() {
+                        if (typeof(optionDatum.value) === 'function') {
+                            return 'function';
+                        } else {
+                            return optionDatum.value;
+                        }
+                    });
             });
         //
         _alphaLabel = optionsContainer.select('label.slider-value');
@@ -1077,6 +1067,23 @@ function GraphClass() {
             initialize.call(force, mapObj.vertices().filter(filter));
         };
         return force;
+    }
+    //
+    function _DragStarted(d) {
+        if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    //
+    function _Dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+    //
+    function _DragEnded(d) {
+        if (!d3.event.active) { that.simulation.alphaTarget(0); }
+        d.fx = null;
+        d.fy = null;
     }
     //
     function _Tick() {
@@ -1123,11 +1130,12 @@ function GraphClass() {
                 }
             });
         //
-        that.optionsData[0].value = parseFloat(that.simulation.alpha()).toFixed(8);
+        if (!_alphaLabel || !_alphaSlider) { return; }
+        that.simulationObj['alpha'].value = parseFloat(that.simulation.alpha()).toFixed(8);
         _alphaLabel
-            .text(that.optionsData[0].value);
+            .text(that.simulationObj['alpha'].value);
         _alphaSlider
-            .property('value', that.optionsData[0].value);
+            .property('value', that.simulationObj['alpha'].value);
         //
         // TestApp('_Tick', -1);
     }
@@ -1135,7 +1143,7 @@ function GraphClass() {
     TestApp('GraphClass');
 }
 
-function MemoryTest() {
+function MemoryTester() {
     var htmlString = `
         <div id="memory-container"><!--
             --><div class="cell"><div>elapsed</div><div id="elapsed"></div></div><!--

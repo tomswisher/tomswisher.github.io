@@ -69,17 +69,19 @@ body {
 .option-div {
   display: inline-block;
   width: 600px;
-  height: 16px;
-  float: left;
+  outline: 1px solid gainsboro;
 }
 .option-div > * {
   font-size: 14px;
+  height: 30px;
+  line-height: 30px;
 }
 .option-div label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
+  dominant-baseline: central;
 }
 .option-div label.label-small {
   width: 80px;
@@ -143,6 +145,11 @@ text.inactive {
   visibility: hidden;
   width: 0px;
   height: 0px;
+}
+.resizing {
+  -webkit-filter: grayscale(100%);
+  /* Safari 6.0 - 9.0 */
+  filter: grayscale(100%);
 }
 #memory-container {
   display: inline-block;
