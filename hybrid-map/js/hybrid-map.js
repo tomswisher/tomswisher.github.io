@@ -9,9 +9,10 @@
 // -------------------------------------------------------------------------------------------------
 // Globl Settings
 
-var transitionDuration = 250;
+var defaultRadius = 20;
+var minimumRaidus = 5;
+var transitionDuration = 300;
 var transitionEase = d3.easeCubic;
-var defaultRadius = 5;
 
 // -------------------------------------------------------------------------------------------------
 // Performance
@@ -19,10 +20,9 @@ var defaultRadius = 5;
 var logsLvl0 = 0;
 var logsLvl1 = 0;
 var logsLvl2 = 0;
-var logsTest = 1 && performance && performance.memory;
+var logsTest = 0 && performance && performance.memory;
 var memWatch = 0 && performance && performance.memory ? MemoryTester() : 0;
-var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-var isMobile = navigator && mobileOptions.test(navigator.userAgent);
+var resizeWait = 200;
 var resizingCounter = 0;
 var stackLvl = 0;
 var nodesCount = 0;
@@ -34,6 +34,8 @@ var nStr = '';
 var uStr = '';
 var tStr = '';
 var testStr = '';
+var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+var isMobile = navigator && mobileOptions.test(navigator.userAgent);
 
 // -------------------------------------------------------------------------------------------------
 // Window Variables
@@ -41,6 +43,7 @@ var testStr = '';
 var body = d3.select('body');
 var mainSVG = body.select('#main-svg');
 var mainBGRect = body.select('#main-bg-rect');
+var mainClipPathRect = body.select('#main-clip-path-rect');
 var statesG = body.select('#states-g');
 var verticesG = body.select('#vertices-g');
 var verticeCircles;
@@ -54,27 +57,29 @@ var defs = filtersG.append('defs');
 var statesSelect = body.select('#states-select');
 var optionsContainer = body.select('#options-container');
 var infoG = body.select('#info-g');
+var infoBGRect = infoG.selectAll('rect.info-bg-rect');
+var infoImageGs = infoG.selectAll('g.info-image-g');
+var infoTextGs = infoG.selectAll('g.info-text-g');
 window.onload = function () {
     d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-edges-04-06-2017.json').awaitAll(InitializePage);
 };
 window.onresize = function () {
+    // if (resizingCounter === 0) {
+    //     if (logsLvl1) console.log('Waiting to resize...');
+    // }
     resizingCounter += 1;
-    body.classed('resizing', true);
-    console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
+    if (logsLvl1) console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
     setTimeout(function () {
         if (resizingCounter > 1) {
             resizingCounter -= 1;
         } else if (resizingCounter === 1) {
             resizingCounter = 0;
-            body.classed('resizing', false);
             UpdatePageDimensions();
-        } else {
-            //
         }
-        console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
-    }, 500);
+        if (logsLvl1) console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
+    }, resizeWait);
 };
-var allTopIds = ['Alice Walton', 'Carrie Walton Penner', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jim Walton', 'John Arnold', 'Jonathan Sackler', 'Laura Arnold', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman'];
+var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Jim Walton', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jonathan Sackler', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman', 'John Arnold', 'Laura Arnold'];
 var mapObj = null;
 var graphObj = null;
 var stateSelected = '';
@@ -94,7 +99,7 @@ var vs = {
         w: null,
         wMin: 300,
         h: null,
-        ratioMapWH: 1.7,
+        ratioMapWH: 1.6,
         projectionScale: 1.3,
         selectedOpacity: 0.3
     },
@@ -102,6 +107,8 @@ var vs = {
         w: 396 / 2,
         h: 250, // h: 432/2,
         ratioImageWH: 396 / 432
+        // margin: 5,
+        // strokeWidth: 10,
     },
     filters: {
         w: null,
@@ -256,18 +263,18 @@ function MapClass() {
             _$GivenByState[edge.source.state] += edge.dollars;
             _$ReceivedByState[edge.target.state] += edge.dollars;
             //
-            edge.isTopId = allTopIds.includes(edge.source.id) || allTopIds.includes(edge.target.id);
-            if (edge.isTopId) {
-                edge.source.isTopId = true;
-                edge.target.isTopId = true;
-            }
+            // edge.topId = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
+            // if (edge.topId) {
+            //     edge.source.topId = true;
+            //     edge.target.topId = true;
+            // }
         });
-        _edges = _edges.filter(function (edge) {
-            return edge.isTopId;
-        });
-        _vertices = _vertices.filter(function (vertice) {
-            return vertice.isTopId;
-        });
+        // _edges = _edges.filter(function(edge) {
+        //     return edge.topId;
+        // });
+        // _vertices = _vertices.filter(function(vertice) {
+        //     return vertice.topId;
+        // });
         return that;
     };
     //
@@ -321,7 +328,8 @@ function MapClass() {
         statePaths.each(function (d) {
             _centroidByState[d.properties.ansi] = _path.centroid(d);
         }).classed('inactive', function (d) {
-            return isNaN(d.$Given) && isNaN(d.$Received);
+            return true;
+            // return isNaN(d.$Given) && isNaN(d.$Received);
         }).attr('d', _path).style('opacity', function (d) {
             // if (stateSelected === d.properties.ansi) { return vs.map.selectedOpacity; }
             return 1;
@@ -458,7 +466,7 @@ function UpdateStatesSelect(source) {
 
 function UpdateInfo() {
     // TestApp('UpdateInfo', 1);
-    if (logsLvl0) console.log('UpdateInfo', nodeSelected);
+    if (logsLvl2) console.log('UpdateInfo', nodeSelected);
     //
     if (nodeSelected && !infoData.filter(function (d) {
         return d.id === nodeSelected.id;
@@ -467,26 +475,33 @@ function UpdateInfo() {
     }
     //
     infoG.attr('transform', 'translate(' + vs.map.w + ',' + 0 + ')');
+    // infoBGRect
+    //     .attr('transform', 'translate('+(vs.map.w+vs.info.margin+0.5*vs.info.strokeWidth)+','+(vs.info.margin+0.5*vs.info.strokeWidth)+')');
+    //     .style('stroke-width', vs.info.strokeWidth)
+    //     .attr('x', -0.5*vs.info.strokeWidth)
+    //     .attr('y', -0.5*vs.info.strokeWidth)
+    //     .attr('width', vs.info.w-2*vs.info.margin)
+    //     .attr('height', vs.info.h-2*vs.info.margin);
     //
-    var infoImageGs = infoG.selectAll('g.info-image-g').data(infoData);
+    infoImageGs = infoG.selectAll('g.info-image-g').data(infoData);
     infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
-        d3.select(this).append('image').attr('x', 0).attr('y', 0).attr('width', vs.info.w).attr('height', vs.info.w * vs.info.ratioImageWH).attr('xlink:href', function () {
-            if (!allTopIds.includes(datum.id)) {
+        d3.select(this).append('image').attr('width', vs.info.w)
+        // .attr('width', vs.info.w-2*vs.info.margin-2*vs.info.strokeWidth)
+        .attr('height', vs.info.w * vs.info.ratioImageWH).attr('xlink:href', function () {
+            if (!topIds.includes(datum.id)) {
                 return 'img/mu.png';
             } else {
                 return 'img/' + datum.id + '.jpg';
             }
         });
     }).style('opacity', 0).merge(infoImageGs);
-    infoImageGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-        if (nodeSelected && d.id === nodeSelected.id) {
-            return 1;
-        } else {
-            return 0;
-        }
+    infoImageGs.style('pointer-events', function (d) {
+        return nodeSelected && d.id === nodeSelected.id ? 'all' : 'none';
+    }).transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
+        return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
     });
     //
-    var infoTextGs = infoG.selectAll('g.info-text-g').data(infoData);
+    infoTextGs = infoG.selectAll('g.info-text-g').data(infoData);
     infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', function () {
         return 'translate(' + vs.info.w / 2 + ',' + vs.info.w * vs.info.ratioImageWH + ')';
     }).each(function (datum) {
@@ -496,11 +511,7 @@ function UpdateInfo() {
         d3.select(this).append('text').attr('x', 0).attr('y', 4 * 15).text('Received: ' + d3.format('$,')(datum.$Received));
     }).style('opacity', 0).merge(infoTextGs);
     infoTextGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-        if (nodeSelected && d.id === nodeSelected.id) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
     });
     //
     TestApp('UpdateInfo');
@@ -524,7 +535,9 @@ function UpdatePageDimensions() {
     //
     mainSVG.attr('width', vs.svg.w).attr('height', vs.svg.h);
     //
-    mainBGRect.attr('width', vs.map.w).attr('height', vs.map.h);
+    mainBGRect.attr('width', vs.map.w).attr('height', vs.svg.h);
+    //
+    mainClipPathRect.attr('width', vs.map.w).attr('height', vs.svg.h);
     //
     mapObj.width(vs.map.w).height(vs.map.h).UpdateMap('UpdatePageDimensions');
     //
@@ -700,32 +713,62 @@ function GraphClass() {
     //
     that.UpdateNodesEdges = function () {
         // TestApp('UpdateNodesEdges', 1);
-        //
         verticesG.attr('transform', function () {
             return 'translate(' + 0 + ',' + (vs.svg.h - vs.filters.h - vs.map.h) / 2 + ')';
         });
         //
+        var iCount = 0;
         verticeCircles = verticesG.selectAll('circle.vertice-circle').data(mapObj.vertices());
-        verticeCircles = verticeCircles.enter().append('circle').classed('vertice-circle', true).on('mouseover', function (d) {
-            nodeSelected = d;
-            that.UpdateNodesEdges();
-            // .UpdateSimulation();
-            UpdateInfo();
-        }).on('mouseout', function () {
-            nodeSelected = null;
-            that.UpdateNodesEdges();
-            // .UpdateSimulation();
-            UpdateInfo();
-        }).each(function (d) {
+        verticeCircles = verticeCircles.enter().append('circle').each(function (d, i) {
             d.x = mapObj.centroidByState()[d.state][0];
             d.y = mapObj.centroidByState()[d.state][1];
-        }).attr('cx', function (d) {
+            if (topIds.includes(d.id)) {
+                d.i = iCount;
+                iCount += 1;
+            }
+        }).classed('vertice-circle', true)
+        // .on('click', function(d) {
+        //     if (!d.selected) {
+        //         d.selected = true;
+        //         d.fx = d.x;
+        //         d.fy = d.y;
+        //     } else {
+        //         delete(d.selected);
+        //         d.fx = null;
+        //         d.fy = null;
+        //     }
+        //     that
+        //         .UpdateNodesEdges();
+        // })
+        .on('mouseover', function (d) {
+            // d.fx = d.x;
+            // d.fy = d.y;
+            nodeSelected = d;
+            that.UpdateNodesEdges();
+            UpdateInfo();
+        }).on('mouseout', function (d) {
+            // d.fx = null;
+            // d.fy = null;
+            nodeSelected = null;
+            that.UpdateNodesEdges();
+            UpdateInfo();
+        })
+        // .call(d3.drag()
+        //     .on('start', _DragStarted)
+        //     .on('drag', _Dragged)
+        //     .on('end', _DragEnded))
+        .attr('cx', function (d) {
             return d.x;
         }).attr('cy', function (d) {
             return d.y;
-        }).call(d3.drag().on('start', _DragStarted).on('drag', _Dragged).on('end', _DragEnded)).merge(verticeCircles);
+        }).merge(verticeCircles);
         verticeCircles.each(function (d) {
-            d.r = defaultRadius;
+            if (topIds.includes(d.id)) {
+                d.r = defaultRadius;
+            } else {
+                d.r = minimumRaidus;
+            }
+            // d.r = defaultRadius;
             // if (nodeSelected && nodeSelected.id === d.id) {
             //     //
             // } else if (nodeSelected) {
@@ -734,12 +777,24 @@ function GraphClass() {
             //     d.r = 2+15*Math.sqrt(mapObj.$GivenByVerticeScale()(d.$Given));
             // }
         }).style('fill', function (d) {
-            return 'white';
-            // if (allTopIds.includes(d.id)) {
+            if (!topIds.includes(d.id)) {
+                return 'white';
+            } else {
+                return d3.schemeCategory20[d.i];
+            }
+            // return 'white';
+            // if (topIds.includes(d.id)) {
             //     return 'white';
             // }
             // var fillValue = mapObj.$GivenByStateScale()(mapObj.$GivenByState()[d.state]);
             // return vs.colorScale(fillValue);
+        }).style('stroke', function (d) {
+            return 'black';
+            // if (d.i > 12) {
+            //     return 'gainsboro';
+            // } else {
+            //     return d3.schemeCategory10[d.i];
+            // }
         }).transition().duration(transitionDuration).ease(transitionEase).attr('r', function (d) {
             return d.r;
         });
@@ -767,19 +822,32 @@ function GraphClass() {
         }).attr('y2', function (d) {
             return d.target.y;
         }).merge(edgeLines);
-        edgeLines
-        // .transition().duration(transitionDuration).ease(transitionEase)
-        .style('opacity', function (d) {
-            // var opacityValue = 1 - (1/5)*mapObj.$GivenByStateScale()(d.source.$Given);
-            var opacityValue = 0.1;
-            if (!nodeSelected) {
-                return opacityValue;
-            } else if (nodeSelected.id === d.source.id || nodeSelected.id === d.target.id) {
-                return opacityValue;
+        edgeLines.style('stroke', function (d) {
+            if (nodeSelected) {
+                if (nodeSelected.id === d.source.id) {
+                    return 'red';
+                } else if (nodeSelected.id === d.target.id) {
+                    return 'green';
+                }
             } else {
-                return 0;
+                return 'black';
             }
         });
+        // .transition().duration(transitionDuration).ease(transitionEase)
+        // .style('opacity', function(d) {
+        //     // var opacityValue = 1 - (1/5)*mapObj.$GivenByStateScale()(d.source.$Given);
+        //     // if (nodeSelected) {
+        //     //     if (d.source.i > 12) {
+        //     //         return 1;
+        //     //     } else if (d.target.i > 12) {
+        //     //         return 1;
+        //     //     } else {
+        //     //         return 0;
+        //     //     }
+        //     // } else {
+        //         return 1;
+        //     // }
+        // });
         //
         TestApp('UpdateNodesEdges');
         return that;
@@ -896,24 +964,26 @@ function GraphClass() {
     }
     //
     function _DragStarted(d) {
-        if (!d3.event.active) {
-            that.simulation.alphaTarget(0.3).restart();
-        }
+        // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
         d.fy = d.y;
+        // _Tick();
     }
     //
     function _Dragged(d) {
+        console.log('_Dragged');
         d.fx = d3.event.x;
         d.fy = d3.event.y;
+        d.x = d3.event.x;
+        d.y = d3.event.y;
+        // _Tick();
     }
     //
     function _DragEnded(d) {
-        if (!d3.event.active) {
-            that.simulation.alphaTarget(0);
-        }
+        // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
         d.fy = null;
+        // _Tick();
     }
     //
     function _Tick() {

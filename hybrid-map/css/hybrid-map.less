@@ -7,50 +7,39 @@
 6   768     1024    P iPad
 7   1024    768
 */
-@font1Size:         14px;
-@statesStrokeColor: white;
-@statesStrokeWidth: 2px;
-@gradesStrokeColor: black;
-@gradesStrokeWidth: 0px;
-@hoverStrokeColor:  black;
-@hoverStrokeWidth:  0px;
-@hoverFillColor:    white;
-
-@optionDivWidth:    600px;
-@labelSmallWidth:   80px;
-@labelMediumWidth:  150px;
-@sliderWidth:       200px;
+@font1Size: 14px;
+@optionDivWidth: 600px;
+@labelSmallWidth: 80px;
+@labelMediumWidth: 150px;
+@sliderWidth: 200px;
+@bgColor: lightblue;
+@inactiveColor: white;
 
 body {
     margin: 0px;
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     font-size: 0px;
-    // > * {
-    //     outline: 1px solid blue;
-    // }
 }
 #main-svg {
     font-size: @font1Size;
-    // > * {
-    //     outline: 1px solid orange;
-    // }
     #main-bg-rect {
-        opacity: 0;
+        fill: @bgColor;
     }
     path.state-path {
-        stroke: @statesStrokeColor;
-        stroke-width: @statesStrokeWidth;
+        stroke: @bgColor;
+        stroke-width: 2px;
+        &.inactive {
+            pointer-events: none !important;
+            fill: @inactiveColor !important;
+            // transform: translate(2px,2px) !important;
+        }
     }
     circle.vertice-circle {
-        // fill: purple;
-        stroke: black;
         stroke-width: 1.5px;
     }
     line.edge-line {
-        // visibility: hidden;
-        stroke: black;
-        stroke-width: 2px;
+        stroke-width: 1.5px;
         pointer-events: none;
     }
     #hover-g {
@@ -61,17 +50,17 @@ body {
         text-anchor: middle;
     }
     #hover-rect {
-        stroke: @hoverStrokeColor;
-        stroke-width: @hoverStrokeWidth;
-        fill: @hoverFillColor;
+        stroke: black;
+        stroke-width: 0px;
+        fill: white;
     }
     #filters-g {
         rect.grade-bg {
             opacity: 0;
         }
         rect.grade-rect {
-            stroke: @gradesStrokeColor;
-            stroke-width: @gradesStrokeWidth;
+            stroke: black;
+            stroke-width: 0px;
             pointer-events: none;
         }
         text.grade-label, text.filters-text {
@@ -95,8 +84,8 @@ body {
     outline: 1px solid gainsboro;
     > * {
         font-size: @font1Size;
-        height: 30px;
-        line-height: 30px;
+        height: 28px;
+        line-height: 28px;
     }
     label {
         display: inline-block;
@@ -122,15 +111,20 @@ body {
     }
 }
 #info-g {
+    rect.info-bg-rect {
+        stroke: gainsboro;
+        fill: @inactiveColor;
+    }
     g.info-image-g {
         image {
             pointer-events: none;
         }
     }
     g.info-text-g {
-        text{
+        text {
             dominant-baseline: middle;
             text-anchor: middle;
+            pointer-events: none;
         }
     }
 }
@@ -162,16 +156,6 @@ body {
 .loading {
     opacity: 0;
 }
-.inactive {
-    rect&, path& {
-        pointer-events: none !important;
-        fill: gainsboro !important;
-        opacity: 0.5 !important;
-    }
-    rect&, text& {
-        transform: translate(2px,2px) !important;
-    }
-}
 .collapsed {
     visibility: hidden;
     width: 0px;
@@ -187,20 +171,20 @@ body {
     height: auto;
     font-family: monospace;
     font-size: @font1Size;
-}
-#memory-container div {
-    display: inline-block;
-    width: 100%;
-    height: 16px;
-}
-#memory-container div.cell {
-    display: inline-block;
-    width: 50%;
-    height: auto;
-}
-#memory-container div.min {
-    color: green;
-}
-#memory-container div.max {
-    color: firebrick;
+    div {
+        display: inline-block;
+        width: 400px;
+        height: 16px;
+        &.cell {
+            display: inline-block;
+            width: 200px;
+            height: auto;
+        }
+        &.min {
+            color: green;
+        }
+        &.max {
+            color: firebrick;
+        }
+    }
 }

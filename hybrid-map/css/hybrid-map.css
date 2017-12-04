@@ -17,19 +17,21 @@ body {
   font-size: 14px;
 }
 #main-svg #main-bg-rect {
-  opacity: 0;
+  fill: lightblue;
 }
 #main-svg path.state-path {
-  stroke: white;
+  stroke: lightblue;
   stroke-width: 2px;
 }
+#main-svg path.state-path.inactive {
+  pointer-events: none !important;
+  fill: white !important;
+}
 #main-svg circle.vertice-circle {
-  stroke: black;
   stroke-width: 1.5px;
 }
 #main-svg line.edge-line {
-  stroke: black;
-  stroke-width: 2px;
+  stroke-width: 1.5px;
   pointer-events: none;
 }
 #main-svg #hover-g {
@@ -73,8 +75,8 @@ body {
 }
 .option-div > * {
   font-size: 14px;
-  height: 30px;
-  line-height: 30px;
+  height: 28px;
+  line-height: 28px;
 }
 .option-div label {
   display: inline-block;
@@ -96,12 +98,17 @@ body {
 #simulation-div label.slider-value {
   text-align: left;
 }
+#info-g rect.info-bg-rect {
+  stroke: gainsboro;
+  fill: white;
+}
 #info-g g.info-image-g image {
   pointer-events: none;
 }
 #info-g g.info-text-g text {
   dominant-baseline: middle;
   text-anchor: middle;
+  pointer-events: none;
 }
 .vspacer-10 {
   height: 10px;
@@ -131,16 +138,6 @@ body {
 .loading {
   opacity: 0;
 }
-rect.inactive,
-path.inactive {
-  pointer-events: none !important;
-  fill: gainsboro !important;
-  opacity: 0.5 !important;
-}
-rect.inactive,
-text.inactive {
-  transform: translate(2px, 2px) !important;
-}
 .collapsed {
   visibility: hidden;
   width: 0px;
@@ -160,12 +157,12 @@ text.inactive {
 }
 #memory-container div {
   display: inline-block;
-  width: 100%;
+  width: 400px;
   height: 16px;
 }
 #memory-container div.cell {
   display: inline-block;
-  width: 50%;
+  width: 200px;
   height: auto;
 }
 #memory-container div.min {

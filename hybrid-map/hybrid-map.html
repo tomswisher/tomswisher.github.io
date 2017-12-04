@@ -13,14 +13,19 @@
 <body class="loading">
     <svg id="main-svg" class="unselectable" attr="unselectable">
         <rect id="main-bg-rect"></rect>
-        <g id="states-g"></g>
-        <g id="vertices-g"></g>
-        <g id="edges-g"></g>
-        <g id="hover-g" class="unselectable" attr="unselectable">
+        <clipPath id="main-clip-path">
+            <rect id="main-clip-path-rect"></rect>
+        </clipPath>
+        <g id="states-g" clip-path="url(#main-clip-path)"></g>
+        <g id="vertices-g" clip-path="url(#main-clip-path)"></g>
+        <g id="edges-g" clip-path="url(#main-clip-path)"></g>
+        <g id="hover-g" clip-path="url(#main-clip-path)" class="unselectable" attr="unselectable">
             <rect id="hover-rect"></rect>
             <text id="hover-text"></text>
         </g>
-        <g id="info-g"></g>
+        <g id="info-g">
+            <rect class="info-bg-rect"></rect>
+        </g>
         <g id="filters-g"></g>
     </svg>
     <div class="vspacer-10"></div>
