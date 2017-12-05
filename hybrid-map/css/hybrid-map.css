@@ -102,13 +102,9 @@ body {
   stroke: gainsboro;
   fill: white;
 }
-#info-g g.info-image-g image {
-  pointer-events: none;
-}
 #info-g g.info-text-g text {
   dominant-baseline: middle;
   text-anchor: middle;
-  pointer-events: none;
 }
 .vspacer-10 {
   height: 10px;

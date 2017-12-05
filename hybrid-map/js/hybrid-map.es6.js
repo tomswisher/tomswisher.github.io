@@ -122,10 +122,12 @@ var vs = {
     },
     info: {
         w: 396/2,
-        h: 250, // h: 432/2,
+        h: null,
+        wImage: null,
+        hImage: null,
         ratioImageWH: 396/432,
-        // margin: 5,
-        // strokeWidth: 10,
+        margin: 5,
+        textRowH: 15,
     },
     filters: {
         w: null,
@@ -145,6 +147,9 @@ var vs = {
     // gradeColorArray: ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'], /*BH2*/ 
     gradeColorArray: ['#de2d26','#fb6a4a','#fc9272','#fcbba1','#fee5d9'], /*red*/
 };
+vs.info.wImage = vs.info.w-2*vs.info.margin;
+vs.info.hImage = vs.info.wImage/vs.info.ratioImageWH;
+vs.info.h = vs.info.hImage+4*vs.info.textRowH+3*vs.info.margin;
 vs.colorScale = d3.scaleQuantize()
     .domain([0, 5])
     .range(vs.gradeColorArray);
@@ -575,14 +580,7 @@ function UpdateInfo() {
     }
     //
     infoG
-        .attr('transform', 'translate('+(vs.map.w)+','+(0)+')');
-    // infoBGRect
-    //     .attr('transform', 'translate('+(vs.map.w+vs.info.margin+0.5*vs.info.strokeWidth)+','+(vs.info.margin+0.5*vs.info.strokeWidth)+')');
-    //     .style('stroke-width', vs.info.strokeWidth)
-    //     .attr('x', -0.5*vs.info.strokeWidth)
-    //     .attr('y', -0.5*vs.info.strokeWidth)
-    //     .attr('width', vs.info.w-2*vs.info.margin)
-    //     .attr('height', vs.info.h-2*vs.info.margin);
+        .attr('transform', 'translate('+(vs.map.w+vs.info.margin)+','+(vs.info.margin)+')');
     //
     infoImageGs = infoG.selectAll('g.info-image-g')
         .data(infoData);
@@ -590,9 +588,8 @@ function UpdateInfo() {
         .classed('info-image-g', true)
         .each(function(datum) {
             d3.select(this).append('image')
-                .attr('width', vs.info.w)
-                // .attr('width', vs.info.w-2*vs.info.margin-2*vs.info.strokeWidth)
-                .attr('height', vs.info.w*vs.info.ratioImageWH)
+                .attr('width', vs.info.wImage)
+                .attr('height', vs.info.hImage)
                 .attr('xlink:href', function() {
                     if (!topIds.includes(datum.id)) {
                         return 'img/mu.png';
@@ -617,24 +614,24 @@ function UpdateInfo() {
     infoTextGs = infoTextGs.enter().append('g')
         .classed('info-text-g', true)
         .attr('transform', function() {
-            return 'translate('+(vs.info.w/2)+','+(vs.info.w*vs.info.ratioImageWH)+')';
+            return 'translate('+(vs.info.wImage/2)+','+(vs.info.hImage+vs.info.margin)+')';
         })
         .each(function(datum) {
             d3.select(this).append('text')
                 .attr('x', 0)
-                .attr('y', 1*15)
+                .attr('y', 0.5*vs.info.textRowH)
                 .text(datum.id);
             d3.select(this).append('text')
                 .attr('x', 0)
-                .attr('y', 2*15)
+                .attr('y', 1.5*vs.info.textRowH)
                 .text('State: '+datum.state);
             d3.select(this).append('text')
                 .attr('x', 0)
-                .attr('y', 3*15)
+                .attr('y', 2.5*vs.info.textRowH)
                 .text('Given: '+d3.format('$,')(datum.$Given));
             d3.select(this).append('text')
                 .attr('x', 0)
-                .attr('y', 4*15)
+                .attr('y', 3.5*vs.info.textRowH)
                 .text('Received: '+d3.format('$,')(datum.$Received));
         })
         .style('opacity', 0)
