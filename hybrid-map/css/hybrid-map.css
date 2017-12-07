@@ -12,6 +12,8 @@ body {
   font-family: 'Lato', sans-serif;
   font-weight: 400;
   font-size: 0px;
+  overflow-x: scroll;
+  overflow-y: scroll;
 }
 #main-svg {
   font-size: 14px;
@@ -46,16 +48,16 @@ body {
   stroke-width: 0px;
   fill: white;
 }
-#main-svg #filters-g rect.grade-bg {
+#main-svg #grades-g rect.grade-bg {
   opacity: 0;
 }
-#main-svg #filters-g rect.grade-rect {
+#main-svg #grades-g rect.grade-rect {
   stroke: black;
   stroke-width: 0px;
   pointer-events: none;
 }
-#main-svg #filters-g text.grade-label,
-#main-svg #filters-g text.filters-text {
+#main-svg #grades-g text.grade-label,
+#main-svg #grades-g text.grades-text {
   dominant-baseline: middle;
   text-anchor: middle;
   pointer-events: none;
@@ -63,7 +65,18 @@ body {
 #states-select {
   height: 25px;
 }
+#filters-container {
+  position: absolute;
+  background: white;
+}
+#filters-container .filters-year,
+#filters-container .filters-report {
+  display: inline-block;
+  font-size: 14px;
+  text-align: center;
+}
 #options-container {
+  position: absolute;
   display: inline-block;
   width: 100%;
   height: auto;

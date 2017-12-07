@@ -20,6 +20,8 @@ body {
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     font-size: 0px;
+    overflow-x: scroll;
+    overflow-y: scroll;
 }
 #main-svg {
     font-size: @font1Size;
@@ -54,7 +56,7 @@ body {
         stroke-width: 0px;
         fill: white;
     }
-    #filters-g {
+    #grades-g {
         rect.grade-bg {
             opacity: 0;
         }
@@ -63,7 +65,7 @@ body {
             stroke-width: 0px;
             pointer-events: none;
         }
-        text.grade-label, text.filters-text {
+        text.grade-label, text.grades-text {
             dominant-baseline: middle;
             text-anchor: middle;
             pointer-events: none;
@@ -73,7 +75,18 @@ body {
 #states-select {
     height: 25px;
 }
+#filters-container {
+    position: absolute;
+    background: @inactiveColor;
+    .filters-year, .filters-report {
+        display: inline-block;
+        font-size: @font1Size;
+        text-align: center;
+        // outline: 1px solid green;
+    }
+}
 #options-container {
+    position: absolute;
     display: inline-block;
     width: 100%;
     height: auto;
