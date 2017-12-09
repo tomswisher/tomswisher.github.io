@@ -7,7 +7,7 @@
 'use strict';
 
 // -------------------------------------------------------------------------------------------------
-// Globl Settings
+// Global Settings
 
 var maximumRadius = 15;
 var minimumRadius = 5;
@@ -45,6 +45,7 @@ var mainSVG = body.select('#main-svg');
 var mainBGRect = body.select('#main-bg-rect');
 var mainClipPathRect = body.select('#main-clip-path-rect');
 var statesG = body.select('#states-g');
+var statePaths = statesG.selectAll('path.state-path');
 var verticesG = body.select('#vertices-g');
 var verticeCircles = verticesG.selectAll('circle.vertice-circle');
 var edgesG = body.select('#edges-g');
@@ -64,7 +65,7 @@ var infoG = body.select('#info-g');
 var infoImageGs = infoG.selectAll('g.info-image-g');
 var infoTextGs = infoG.selectAll('g.info-text-g');
 window.onload = function () {
-    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-edges-04-06-2017.json').awaitAll(InitializePage);
+    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-links-04-06-2017.json').awaitAll(InitializePage);
 };
 window.onresize = function () {
     // if (resizingCounter === 0) {
@@ -83,8 +84,10 @@ window.onresize = function () {
     }, resizeWait);
 };
 var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Jim Walton', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jonathan Sackler', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman', 'John Arnold', 'Laura Arnold'];
-var mapObj = null;
+var hybridMapObj = null;
 var graphObj = null;
+var nodesAll = [];
+var linksAll = [];
 var infoData = [];
 var filtersDatum = {};
 var stateSelected = '';
@@ -164,46 +167,38 @@ defs.append('filter').attr('id', 'drop-shadow').attr('height', '130%') // so the
 // Functions
 
 function InitializePage(error, results) {
-    TestApp('InitializePage', 1);
-    //
-    var usStatesFeaturesJSON = results[0];
-    var nodesEdgesJSON = results[1];
-    //
-    mapObj = new MapClass().mapFeatures(usStatesFeaturesJSON.features).vertices(nodesEdgesJSON.nodes).edges(nodesEdgesJSON.links);
-    //
+    results[1].nodes.forEach(function (node) {
+        return nodesAll.push(node);
+    });
+    results[1].links.forEach(function (link) {
+        return linksAll.push(link);
+    });
+    hybridMapObj = new HybridMapClass().mapFeatures(results[0].features).vertices(results[1].nodes).edges(results[1].links);
     graphObj = new GraphClass();
-    //
     vs.hover.h = parseFloat(mainSVG.style('font-size')) + 2 * vs.hover.margin;
     hoverRect.attr('height', vs.hover.h).attr('y', -1 * vs.hover.h - vs.hover.margin).style('filter', 'url(#drop-shadow)');
     hoverText.attr('x', 0).attr('y', -0.5 * vs.hover.h - vs.hover.margin);
-    //
     mainBGRect.on('mouseover', function () {
         stateSelected = '';
         // UpdateStatesSelect();
-        // mapObj
+        // hybridMapObj
         //     .UpdateMap();
         // hoverText
         //     .text('');
-        // UpdateHover('mouse');
+        // that.UpdateHover('mouse');
         // graphObj
-        //     .UpdateNodesEdges();
-    }).attr('x', 0).attr('y', 0);
-    //
+        //     .UpdateVerticesEdges();
+    });
     statesSelect.style('width', vs.statesSelect.w + 'px').style('height', vs.statesSelect.h + 'px').style('display', vs.statesSelect.h ? 'inline-block' : 'none');
-    //
     UpdatePageDimensions();
-    //
     requestAnimationFrame(function () {
         graphObj.UpdateOptions();
         body.classed('loading', false);
     });
-    //
     TestApp('InitializePage', -1);
 }
 
-function MapClass() {
-    // TestApp('MapClass', 1);
-    //
+function HybridMapClass() {
     var that = this;
     var _verticeById = null;
     var _projection = d3.geoAlbersUsa();
@@ -263,7 +258,6 @@ function MapClass() {
         _verticeById = d3.map(_vertices, function (d) {
             return d.id;
         });
-        //
         return that;
     };
     var _edges = null;
@@ -275,13 +269,10 @@ function MapClass() {
         _edges.forEach(function (edge) {
             edge.source = _verticeById.get(edge.source);
             edge.target = _verticeById.get(edge.target);
-            //
             edge.source.$Given += edge.dollars;
             edge.target.$Received += edge.dollars;
-            //
             _$GivenByState[edge.source.state] += edge.dollars;
             _$ReceivedByState[edge.target.state] += edge.dollars;
-            //
             // edge.topId = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
             // if (edge.topId) {
             //     edge.source.topId = true;
@@ -296,11 +287,10 @@ function MapClass() {
         // });
         return that;
     };
-    //
-    that.UpdateMap = function (source) {
+
+    that.UpdateMap = function () {
         // TestApp('UpdateMap', 1);
         if (logsLvl2) console.log('UpdateMap');
-        //
         var $GivenByStatesArray = Object.keys(_$GivenByState).map(function (d) {
             return _$GivenByState[d];
         });
@@ -319,11 +309,9 @@ function MapClass() {
         }), d3.max(_vertices, function (vertice) {
             return vertice.$Received;
         })]);
-        //
         _projection.scale(_width * vs.map.projectionScale).translate([_width / 2, _height / 2]);
         _path.projection(_projection);
-        //
-        var statePaths = statesG.selectAll('path.state-path').data(_mapFeatures, function (d) {
+        statePaths = statesG.selectAll('path.state-path').data(_mapFeatures, function (d) {
             return d.properties.ansi;
         });
         statePaths = statePaths.enter().append('path').classed('state-path', true).each(function (d) {
@@ -333,12 +321,12 @@ function MapClass() {
             // if (isMobile === true) { return; }
             stateSelected = d.properties.ansi;
             // UpdateStatesSelect();
-            // mapObj
+            // that
             //     .UpdateMap();
             // hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
-            // UpdateHover('mouse');
+            // that.UpdateHover('mouse');
         }).on('mousemove', function (d) {
-            // UpdateHover('mouse');
+            // that.UpdateHover('mouse');
         }).attr('d', _path).merge(statePaths);
         statePaths.each(function (d) {
             _centroidByState[d.properties.ansi] = _path.centroid(d);
@@ -351,244 +339,188 @@ function MapClass() {
         }).style('fill', function (d) {
             return vs.colorScale(5 * _$GivenByStateScale(d.$Given));
         });
-        //
+        // statePaths.each(function(d) {
+        //     var centroid = that.centroidByState()[d.properties.ansi];
+        //     console.log(d.properties.ansi, centroid);
+        //     var rect = d3.select(this.parentNode).append('rect')
+        //         .attr('x', centroid[0]-20)
+        //         .attr('y', centroid[1]-20)
+        //         .attr('width', 40)
+        //         .attr('height', 40)
+        //         .attr('fill', 'white')
+        //         .style('stroke', 'red');
+        //     d3.select(this).remove();
+        // });
         TestApp('UpdateMap');
         return that;
     };
-    //
-    TestApp('MapClass');
-}
 
-function UpdateHover(source) {
-    // TestApp('UpdateHover', 1);
-    //
-    vs.hover.w = 0;
-    if (hoverText.text() !== '') {
-        vs.hover.w = hoverText.node().getBBox().width + 2 * vs.hover.margin;
-    }
-    hoverRect.attr('width', vs.hover.w).attr('x', -0.5 * vs.hover.w);
-    hoverG.attr('transform', function () {
-        var tx, ty;
-        if (source === 'mouse') {
-            tx = d3.mouse(mainSVG.node())[0];
-            ty = d3.mouse(mainSVG.node())[1];
-        } else if (mapObj && mapObj.centroidByState()[stateSelected]) {
-            tx = mapObj.centroidByState()[stateSelected][0];
-            ty = mapObj.centroidByState()[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
-        } else {
-            tx = mapObj.width() / 2;
-            ty = mapObj.height() / 2;
+    that.UpdateGrades = function () {
+        if (vs.grades.h === 0) {
+            return that;
         }
-        if (tx < vs.hover.w / 2 + 1) {
-            tx = vs.hover.w / 2 + 1;
-        } else if (tx > parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1) {
-            tx = parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1;
-        }
-        if (ty < vs.hover.h + 5 + 1) {
-            ty = vs.hover.h + 5 + 1;
-        }
-        return 'translate(' + tx + ',' + ty + ')';
-    });
-    //
-    TestApp('UpdateHover');
-}
-
-function UpdateGrades(source) {
-    // TestApp('UpdateGrades', 1);
-    if (logsLvl2) console.log('UpdateGrades   ' + source);
-    //
-    gradesG.attr('transform', function () {
-        return 'translate(' + 0 + ',' + vs.map.h + ')';
-    });
-    //
-    // var gradesText = gradesG.selectAll('text.grades-text')
-    //     .data([null]);
-    // gradesText = gradesText.enter().append('text')
-    //     .classed('grades-text', true)
-    //     .merge(gradesText)
-    //     .attr('x', 0.5*vs.grades.w-130)
-    //     .attr('y', 0.5*vs.grades.h)
-    //     .text('$ Given');
-    //
-    gradeGs = gradesG.selectAll('g.grade-g').data(gradesData);
-    gradeGs = gradeGs.enter().append('g').classed('grade-g', true).merge(gradeGs);
-    gradeGs.attr('transform', function (d, i) {
-        var tx = 0.5 * vs.grades.w + (0.5 - 0.5 * gradesData.length + i) * vs.grades.h;
-        var ty = 0.5 * vs.grades.h - 2;
-        return 'translate(' + tx + ',' + ty + ')';
-    }).on('mouseover', function (d) {
-        // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = false;
-        // gradesObj[d] = true;
-        // UpdateGrades();
-        // mapObj
-        //     .UpdateMap();
-    }).on('mouseout', function (d) {
-        // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = true;
-        // UpdateGrades();
-        // mapObj
-        //     .UpdateMap();
-    }).each(function (grade) {
-        var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
-        gradeBG = gradeBG.enter().append('rect').classed('grade-bg', true).merge(gradeBG).attr('x', -0.5 * vs.grades.h).attr('y', -0.5 * vs.grades.h).attr('width', vs.grades.h).attr('height', vs.grades.h);
-        //
-        var gradeRect = d3.select(this).selectAll('rect.grade-rect').data([grade]);
-        gradeRect = gradeRect.enter().append('rect').classed('grade-rect', true).merge(gradeRect).classed('inactive', function (d) {
-            return !gradesObj[d];
-        }).attr('x', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('y', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('width', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('height', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).style('filter', function (d) {
-            return gradesObj[d] ? 'url(#drop-shadow)' : null;
-        }).style('fill', function (d) {
-            return vs.colorScale(['F', 'D', 'C', 'B', 'A'].indexOf(d));
+        gradesG.attr('transform', function () {
+            return 'translate(' + 0 + ',' + vs.map.h + ')';
         });
-        //
-        var gradeLabel = d3.select(this).selectAll('text.grade-label').data([grade]);
-        gradeLabel = gradeLabel.enter().append('text').classed('grade-label', true).classed('button-text', true).text(function (d) {
-            return d;
-        }).merge(gradeLabel).classed('inactive', function (d) {
-            return !gradesObj[d];
+        // var gradesText = gradesG.selectAll('text.grades-text')
+        //     .data([null]);
+        // gradesText = gradesText.enter().append('text')
+        //     .classed('grades-text', true)
+        //     .merge(gradesText)
+        //     .attr('x', 0.5*vs.grades.w-130)
+        //     .attr('y', 0.5*vs.grades.h)
+        //     .text('$ Given');
+        gradeGs = gradesG.selectAll('g.grade-g').data(gradesData);
+        gradeGs = gradeGs.enter().append('g').classed('grade-g', true).merge(gradeGs);
+        gradeGs.attr('transform', function (d, i) {
+            var tx = 0.5 * vs.grades.w + (0.5 - 0.5 * gradesData.length + i) * vs.grades.h;
+            var ty = 0.5 * vs.grades.h - 2;
+            return 'translate(' + tx + ',' + ty + ')';
+        }).on('mouseover', function (d) {
+            // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = false;
+            // gradesObj[d] = true;
+            // UpdateGrades();
+            // that
+            //     .UpdateMap();
+        }).on('mouseout', function (d) {
+            // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = true;
+            // UpdateGrades();
+            // that
+            //     .UpdateMap();
+        }).each(function (grade) {
+            var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
+            gradeBG = gradeBG.enter().append('rect').classed('grade-bg', true).merge(gradeBG).attr('x', -0.5 * vs.grades.h).attr('y', -0.5 * vs.grades.h).attr('width', vs.grades.h).attr('height', vs.grades.h);
+            var gradeRect = d3.select(this).selectAll('rect.grade-rect').data([grade]);
+            gradeRect = gradeRect.enter().append('rect').classed('grade-rect', true).merge(gradeRect).classed('inactive', function (d) {
+                return !gradesObj[d];
+            }).attr('x', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('y', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('width', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('height', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).style('filter', function (d) {
+                return gradesObj[d] ? 'url(#drop-shadow)' : null;
+            }).style('fill', function (d) {
+                return vs.colorScale(['F', 'D', 'C', 'B', 'A'].indexOf(d));
+            });
+            var gradeLabel = d3.select(this).selectAll('text.grade-label').data([grade]);
+            gradeLabel = gradeLabel.enter().append('text').classed('grade-label', true).classed('button-text', true).text(function (d) {
+                return d;
+            }).merge(gradeLabel).classed('inactive', function (d) {
+                return !gradesObj[d];
+            });
         });
-    });
-    //
+        TestApp('UpdateGrades');
+        return that;
+    };
 
-    //
-    TestApp('UpdateGrades');
-}
-
-function UpdateStatesSelect(source) {
-    // TestApp('UpdateStatesSelect', 1);
-    if (logsLvl2) console.log('UpdateStatesSelect ' + source);
-    //
-    var statesSelectData = Object.keys(mapObj.$GivenByState());
-    statesSelectData.unshift('');
-    statesSelect.classed('button-object', true).on('change', function () {
-        var source = 'statesSelect change ' + this.value;
-        stateSelected = this.value;
-        if (stateSelected === '') {
-            hoverText.text('');
-        } else {
-            var d = mainSVG.selectAll('path.state-path').filter(function (d) {
-                return d.properties.ansi === stateSelected;
-            }).datum();
-            hoverText.text(stateSelected + ': ' + d.$Given + ' ' + d.$Received);
+    that.UpdateInfo = function () {
+        if (nodeSelected && !infoData.filter(function (d) {
+            return d.id === nodeSelected.id;
+        })[0]) {
+            infoData.push(nodeSelected);
         }
-        mapObj.UpdateMap(source);
-        UpdateStatesSelect(source);
-        // UpdateHover(source);
-    }).selectAll('option.states-select-option').data(statesSelectData).enter().append('option').classed('states-select-option', true).text(function (d) {
-        return d;
-    });
-    statesSelect.property('value', stateSelected);
-    //
-    TestApp('UpdateStatesSelect');
-}
+        infoG.attr('transform', 'translate(' + (vs.map.w + vs.info.margin) + ',' + vs.info.margin + ')');
+        infoImageGs = infoG.selectAll('g.info-image-g').data(infoData);
+        infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
+            d3.select(this).append('image').attr('width', vs.info.wImage).attr('height', vs.info.hImage).attr('xlink:href', function () {
+                if (!topIds.includes(datum.id)) {
+                    return 'img/mu.png';
+                } else {
+                    return 'img/' + datum.id + '.jpg';
+                }
+            });
+        }).merge(infoImageGs);
+        infoImageGs
+        // .style('pointer-events', function(d) {
+        //     return (nodeSelected && d.id === nodeSelected.id) ? 'all' : 'none';
+        // })
+        .transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
+            return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
+        });
+        infoTextGs = infoG.selectAll('g.info-text-g').data(infoData);
+        infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', function () {
+            return 'translate(' + vs.info.wImage / 2 + ',' + (vs.info.hImage + vs.info.margin) + ')';
+        }).each(function (datum) {
+            d3.select(this).append('text').attr('x', 0).attr('y', 0.5 * vs.info.textRowH).text(datum.id);
+            d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * vs.info.textRowH).text('State: ' + datum.state);
+            d3.select(this).append('text').attr('x', 0).attr('y', 2.5 * vs.info.textRowH).text('Given: ' + d3.format('$,')(datum.$Given));
+            d3.select(this).append('text').attr('x', 0).attr('y', 3.5 * vs.info.textRowH).text('Received: ' + d3.format('$,')(datum.$Received));
+        }).style('opacity', 0).merge(infoTextGs);
+        infoTextGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
+            return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
+        });
+        TestApp('UpdateInfo');
+    };
 
-function UpdateInfo() {
-    // TestApp('UpdateInfo', 1);
-    if (logsLvl2) console.log('UpdateInfo', nodeSelected);
-    //
-    if (nodeSelected && !infoData.filter(function (d) {
-        return d.id === nodeSelected.id;
-    })[0]) {
-        infoData.push(nodeSelected);
-    }
-    //
-    infoG.attr('transform', 'translate(' + (vs.map.w + vs.info.margin) + ',' + vs.info.margin + ')');
-    //
-    infoImageGs = infoG.selectAll('g.info-image-g').data(infoData);
-    infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
-        d3.select(this).append('image').attr('width', vs.info.wImage).attr('height', vs.info.hImage).attr('xlink:href', function () {
-            if (!topIds.includes(datum.id)) {
-                return 'img/mu.png';
+    that.UpdateHover = function (source) {
+        vs.hover.w = 0;
+        if (hoverText.text() !== '') {
+            vs.hover.w = hoverText.node().getBBox().width + 2 * vs.hover.margin;
+        }
+        hoverRect.attr('width', vs.hover.w).attr('x', -0.5 * vs.hover.w);
+        hoverG.attr('transform', function () {
+            var tx, ty;
+            if (source === 'mouse') {
+                tx = d3.mouse(mainSVG.node())[0];
+                ty = d3.mouse(mainSVG.node())[1];
+            } else if (that.centroidByState()[stateSelected]) {
+                tx = that.centroidByState()[stateSelected][0];
+                ty = that.centroidByState()[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
             } else {
-                return 'img/' + datum.id + '.jpg';
+                tx = that.width() / 2;
+                ty = that.height() / 2;
             }
+            if (tx < vs.hover.w / 2 + 1) {
+                tx = vs.hover.w / 2 + 1;
+            } else if (tx > parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1) {
+                tx = parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1;
+            }
+            if (ty < vs.hover.h + 5 + 1) {
+                ty = vs.hover.h + 5 + 1;
+            }
+            return 'translate(' + tx + ',' + ty + ')';
         });
-    }).merge(infoImageGs);
-    infoImageGs
-    // .style('pointer-events', function(d) {
-    //     return (nodeSelected && d.id === nodeSelected.id) ? 'all' : 'none';
-    // })
-    .transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-        return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
-    });
-    //
-    infoTextGs = infoG.selectAll('g.info-text-g').data(infoData);
-    infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', function () {
-        return 'translate(' + vs.info.wImage / 2 + ',' + (vs.info.hImage + vs.info.margin) + ')';
-    }).each(function (datum) {
-        d3.select(this).append('text').attr('x', 0).attr('y', 0.5 * vs.info.textRowH).text(datum.id);
-        d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * vs.info.textRowH).text('State: ' + datum.state);
-        d3.select(this).append('text').attr('x', 0).attr('y', 2.5 * vs.info.textRowH).text('Given: ' + d3.format('$,')(datum.$Given));
-        d3.select(this).append('text').attr('x', 0).attr('y', 3.5 * vs.info.textRowH).text('Received: ' + d3.format('$,')(datum.$Received));
-    }).style('opacity', 0).merge(infoTextGs);
-    infoTextGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-        return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
-    });
-    //
-    TestApp('UpdateInfo');
-}
+        TestApp('UpdateHover');
+    };
 
-function UpdatePageDimensions() {
-    TestApp('UpdatePageDimensions', 1);
-    //
-    var source = 'UpdatePageDimensions';
-    var clientWidth = body.node().clientWidth;
-    if (clientWidth >= vs.map.wMin + vs.info.w) {
-        vs.map.w = clientWidth - vs.info.w;
-        vs.svg.w = clientWidth;
-    } else {
-        vs.map.w = vs.map.wMin;
-        vs.svg.w = vs.map.wMin + vs.info.w;
-    }
-    vs.filters.w = vs.map.w;
-    vs.map.h = vs.map.w / vs.map.ratioMapWH;
-    vs.svg.h = Math.max(vs.map.h, vs.info.h) + vs.grades.h;
-    vs.grades.w = vs.map.w;
-    //
-    mainSVG.attr('width', vs.svg.w).attr('height', vs.svg.h);
-    //
-    mainBGRect.attr('width', vs.map.w).attr('height', vs.map.h);
-    //
-    mainClipPathRect.attr('width', vs.map.w).attr('height', vs.svg.h);
-    //
-    mapObj.width(vs.map.w).height(vs.map.h).UpdateMap('UpdatePageDimensions');
-    //
-    graphObj.UpdateFilters().UpdateNodesEdges().UpdateSimulation().UpdateOptions();
-    //
-    UpdateInfo();
-    //
-    statesSelect.style('margin-left', (vs.map.w - vs.statesSelect.w) / 2 + 'px').style('margin-right', (vs.map.w - vs.statesSelect.w) / 2 + 'px');
-    //
-    if (vs.grades.h) {
-        UpdateGrades();
-    }
-    //
-    // UpdateHover('event');
-    //
-    // UpdateStatesSelect();
-    //
-    TestApp('UpdatePageDimensions', -1);
+    that.UpdateStatesSelect = function () {
+        var statesSelectData = Object.keys(hybridMapObj.$GivenByState());
+        statesSelectData.unshift('');
+        statesSelect.classed('button-object', true).on('change', function () {
+            var source = 'statesSelect change ' + this.value;
+            stateSelected = this.value;
+            if (stateSelected === '') {
+                hoverText.text('');
+            } else {
+                var d = mainSVG.selectAll('path.state-path').filter(function (d) {
+                    return d.properties.ansi === stateSelected;
+                }).datum();
+                hoverText.text(stateSelected + ': ' + d.$Given + ' ' + d.$Received);
+            }
+            hybridMapObj.UpdateMap(source);
+            that.UpdateStatesSelect(source);
+            // that.UpdateHover(source);
+        }).selectAll('option.states-select-option').data(statesSelectData).enter().append('option').classed('states-select-option', true).text(function (d) {
+            return d;
+        });
+        statesSelect.property('value', stateSelected);
+        TestApp('UpdateStatesSelect');
+    };
+
+    TestApp('HybridMapClass');
+    return that;
 }
 
 function GraphClass() {
-    // TestApp('GraphClass', 1);
-    //
     var that = this;
-    //
     var _alphaLabel;
     var _alphaSlider;
-    //
     that.bundle = {
         // 'target': true,
     };
-    //
-    that.simulation = d3.forceSimulation(mapObj.vertices())
+    that.simulation = d3.forceSimulation(hybridMapObj.vertices())
     // .alpha(0.1)
     .alphaMin(0.2)
     // .alphaDecay(1-Math.pow(0.001,1/300))
     // .alphaTarget(0.3)
     // .velocityDecay(0.6)
     .on('tick', _Tick);
-    //
     that.simulationObj = {
         alpha: {
             value: 1,
@@ -599,7 +531,6 @@ function GraphClass() {
             name: 'alpha'
         }
     };
-    //
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
@@ -725,15 +656,13 @@ function GraphClass() {
             _IsolateForce: true
         }
     };
-    //
-    that.UpdateNodesEdges = function () {
-        // TestApp('UpdateNodesEdges', 1);
-        //
+
+    that.UpdateVerticesEdges = function () {
         var iCount = 0;
-        verticeCircles = verticesG.selectAll('circle.vertice-circle').data(mapObj.vertices());
+        verticeCircles = verticesG.selectAll('circle.vertice-circle').data(hybridMapObj.vertices());
         verticeCircles = verticeCircles.enter().append('circle').each(function (d, i) {
-            d.x = mapObj.centroidByState()[d.state][0];
-            d.y = mapObj.centroidByState()[d.state][1];
+            d.x = hybridMapObj.centroidByState()[d.state][0];
+            d.y = hybridMapObj.centroidByState()[d.state][1];
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
@@ -750,26 +679,26 @@ function GraphClass() {
         //         d.fy = null;
         //     }
         //     that
-        //         .UpdateNodesEdges();
+        //         .UpdateVerticesEdges();
         // })
         .on('mouseover', function (d) {
             if (isDragging) {
                 return;
             }
             nodeSelected = d;
-            linksSelected = mapObj.edges().filter(function (d) {
+            linksSelected = hybridMapObj.edges().filter(function (d) {
                 return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
             });
-            that.UpdateNodesEdges();
-            UpdateInfo();
+            that.UpdateVerticesEdges();
+            hybridMapObj.UpdateInfo();
         }).on('mouseout', function (d) {
             if (isDragging) {
                 return;
             }
             nodeSelected = null;
             linksSelected = [];
-            that.UpdateNodesEdges();
-            UpdateInfo();
+            that.UpdateVerticesEdges();
+            hybridMapObj.UpdateInfo();
         }).call(d3.drag().on('start', _DragStarted).on('drag', _Dragged).on('end', _DragEnded)).attr('cx', function (d) {
             return d.x;
         }).attr('cy', function (d) {
@@ -782,11 +711,10 @@ function GraphClass() {
                 d.r = minimumRadius;
             }
             // d.r = maximumRadius;
-            //     //
             // } else if (nodeSelected) {
-            //     d.r = 2+15*Math.sqrt(mapObj.$ReceivedByVerticeScale()(d.$Received));
+            //     d.r = 2+15*Math.sqrt(hybridMapObj.$ReceivedByVerticeScale()(d.$Received));
             // } else {
-            //     d.r = 2+15*Math.sqrt(mapObj.$GivenByVerticeScale()(d.$Given));
+            //     d.r = 2+15*Math.sqrt(hybridMapObj.$GivenByVerticeScale()(d.$Given));
             // }
         }).style('fill', function (d) {
             if (topIds.includes(d.id)) {
@@ -800,7 +728,7 @@ function GraphClass() {
             // if (topIds.includes(d.id)) {
             //     return 'white';
             // }
-            // var fillValue = mapObj.$GivenByStateScale()(mapObj.$GivenByState()[d.state]);
+            // var fillValue = hybridMapObj.$GivenByStateScale()(hybridMapObj.$GivenByState()[d.state]);
             // return vs.colorScale(fillValue);
         }).style('stroke', function (d) {
             if (topIds.includes(d.id)) {
@@ -836,8 +764,7 @@ function GraphClass() {
                 return 0;
             }
         });
-        //
-        edgeLines = edgesG.selectAll('line.edge-line').data(mapObj.edges());
+        edgeLines = edgesG.selectAll('line.edge-line').data(hybridMapObj.edges());
         edgeLines = edgeLines.enter().append('line').classed('edge-line', true).attr('x1', function (d) {
             return d.source.x;
         }).attr('y1', function (d) {
@@ -889,20 +816,17 @@ function GraphClass() {
                 return 'none';
             }
         });
-        //
-        TestApp('UpdateNodesEdges');
+        TestApp('UpdateVerticesEdges');
         return that;
     };
-    //
+
     that.UpdateSimulation = function () {
-        // TestApp('UpdateSimulation', 1);
-        //
         Object.keys(that.forcesObj).forEach(function (forceType) {
             var optionsObj = that.forcesObj[forceType];
             if (optionsObj['_IsolateForce'] === true) {
-                Object.keys(mapObj.$GivenByState()).forEach(function (state) {
-                    var cx = mapObj.centroidByState()[state][0];
-                    var cy = mapObj.centroidByState()[state][1];
+                Object.keys(hybridMapObj.$GivenByState()).forEach(function (state) {
+                    var cx = hybridMapObj.centroidByState()[state][0];
+                    var cy = hybridMapObj.centroidByState()[state][1];
                     var forceNew = _IsolateForce(d3[forceType](), function (d) {
                         return d.state === state;
                     });
@@ -936,14 +860,12 @@ function GraphClass() {
             }
         });
         that.simulation.alpha(1).restart();
-        //
         TestApp('UpdateSimulation');
         return that;
     };
-    //
+
     that.UpdateFilters = function () {
         filtersContainer.style('width', vs.filters.w + 'px').style('height', vs.filters.h + 'px').style('top', vs.map.h + vs.grades.h + 'px').style('left', 0 + 'px');
-        //
         filtersYears = filtersContainer.selectAll('div.filters-year').data(yearsData);
         filtersYears = filtersYears.enter().append('div').classed('filters-year', true).each(function (datum) {
             d3.select(this).append('div').text(datum);
@@ -952,10 +874,9 @@ function GraphClass() {
                 filtersDatum[d] = this.checked;
             }).on('change', function (d) {
                 filtersDatum[d] = this.checked;
-                that.UpdateNodesEdges();
+                that.UpdateVerticesEdges().UpdateSimulation();
             });
         }).merge(filtersYears).style('width', vs.filters.w / yearsData.length + 'px');
-        //
         filtersReports = filtersContainer.selectAll('div.filters-report').data(reportsData);
         filtersReports = filtersReports.enter().append('div').classed('filters-report', true).each(function (datum) {
             d3.select(this).append('div').text(datum);
@@ -964,16 +885,13 @@ function GraphClass() {
                 filtersDatum[d] = this.checked;
             }).on('change', function (d) {
                 filtersDatum[d] = this.checked;
-                that.UpdateNodesEdges();
+                that.UpdateVerticesEdges().UpdateSimulation();
             });
         }).merge(filtersReports).style('width', vs.filters.w / reportsData.length + 'px');
-        //
         return that;
     };
-    //
+
     that.UpdateOptions = function () {
-        // TestApp('UpdateOptions', 1);
-        //
         that.optionsData = [that.simulationObj['alpha']];
         Object.keys(that.forcesObj).forEach(function (forceType) {
             var optionsObj = that.forcesObj[forceType];
@@ -986,9 +904,7 @@ function GraphClass() {
                 that.optionsData.push(optionsObj[optionName]);
             });
         });
-        //
         optionsContainer.style('left', '0px').style('top', Math.max(vs.svg.h, vs.map.h + vs.grades.h + vs.filters.h) + 'px');
-        //
         var optionDivs = optionsContainer.selectAll('div.option-div').data(that.optionsData);
         optionDivs = optionDivs.enter().append('div').classed('option-div', true).each(function (optionDatum) {
             d3.select(this).append('label').classed('label-small', true).text(optionDatum.category);
@@ -1020,22 +936,20 @@ function GraphClass() {
                 }
             });
         });
-        //
         _alphaLabel = optionsContainer.select('label.slider-value');
         _alphaSlider = optionsContainer.select('input[type="range"]');
-        //
         TestApp('UpdateOptions');
         return that;
     };
-    //
+
     function _IsolateForce(force, filter) {
         var initialize = force.initialize;
         force.initialize = function () {
-            initialize.call(force, mapObj.vertices().filter(filter));
+            initialize.call(force, hybridMapObj.vertices().filter(filter));
         };
         return force;
     }
-    //
+
     function _DragStarted(d) {
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
@@ -1043,7 +957,7 @@ function GraphClass() {
         d.fy = d.y;
         // _Tick();
     }
-    //
+
     function _Dragged(d) {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
@@ -1053,7 +967,7 @@ function GraphClass() {
         d.cy = d3.event.y;
         _Tick();
     }
-    //
+
     function _DragEnded(d) {
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
@@ -1063,10 +977,8 @@ function GraphClass() {
             that.simulation.alpha(1).restart();
         }
     }
-    //
+
     function _Tick() {
-        // TestApp('_Tick', 1);
-        //
         verticeCircles
         // .interrupt('vertices-transition')
         // .transition('vertices-transition')
@@ -1080,41 +992,61 @@ function GraphClass() {
         // .transition('edges-transition')
         .attr('x1', function (d) {
             if (that.bundle.source) {
-                return mapObj.centroidByState()[d.source.state][0];
+                return hybridMapObj.centroidByState()[d.source.state][0];
             } else {
                 return d.source.x;
             }
         }).attr('y1', function (d) {
             if (that.bundle.source) {
-                return mapObj.centroidByState()[d.source.state][1];
+                return hybridMapObj.centroidByState()[d.source.state][1];
             } else {
                 return d.source.y;
             }
         }).attr('x2', function (d) {
             if (that.bundle.target) {
-                return mapObj.centroidByState()[d.target.state][0];
+                return hybridMapObj.centroidByState()[d.target.state][0];
             } else {
                 return d.target.x;
             }
         }).attr('y2', function (d) {
             if (that.bundle.target) {
-                return mapObj.centroidByState()[d.target.state][1];
+                return hybridMapObj.centroidByState()[d.target.state][1];
             } else {
                 return d.target.y;
             }
         });
-        //
         if (!_alphaLabel || !_alphaSlider) {
             return;
         }
         that.simulationObj['alpha'].value = parseFloat(that.simulation.alpha()).toFixed(8);
         _alphaLabel.text(that.simulationObj['alpha'].value);
         _alphaSlider.property('value', that.simulationObj['alpha'].value);
-        //
         // TestApp('_Tick', -1);
     }
-    //
     TestApp('GraphClass');
+}
+
+function UpdatePageDimensions() {
+    var clientWidth = body.node().clientWidth;
+    if (clientWidth >= vs.map.wMin + vs.info.w) {
+        vs.map.w = clientWidth - vs.info.w;
+        vs.svg.w = clientWidth;
+    } else {
+        vs.map.w = vs.map.wMin;
+        vs.svg.w = vs.map.wMin + vs.info.w;
+    }
+    vs.filters.w = vs.map.w;
+    vs.map.h = vs.map.w / vs.map.ratioMapWH;
+    vs.svg.h = Math.max(vs.map.h, vs.info.h) + vs.grades.h;
+    vs.grades.w = vs.map.w;
+    mainSVG.attr('width', vs.svg.w).attr('height', vs.svg.h);
+    mainBGRect.attr('width', vs.map.w).attr('height', vs.map.h);
+    mainClipPathRect.attr('width', vs.map.w).attr('height', vs.svg.h);
+    hybridMapObj.width(vs.map.w).height(vs.map.h).UpdateMap('UpdatePageDimensions').UpdateGrades().UpdateInfo();
+    graphObj.UpdateFilters().UpdateVerticesEdges().UpdateSimulation().UpdateOptions();
+    statesSelect.style('margin-left', (vs.map.w - vs.statesSelect.w) / 2 + 'px').style('margin-right', (vs.map.w - vs.statesSelect.w) / 2 + 'px');
+    // UpdateStatesSelect();
+    TestApp('UpdatePageDimensions', -1);
 }
 
 function MemoryTester() {
@@ -1191,12 +1123,10 @@ function MemoryTester() {
         // totalMeanRateNode.innerHTML     = MakeDiv(minMeanRates[1],'min','/s')+MakeDiv(newMeanRates[1],'new','/s')+MakeDiv(maxMeanRates[1],'max','/s');
         // itersForMeanNode.innerHTML      = itersForMean+'/'+iters+' ('+(100*(itersForMean/iters)).toFixed(3)+'%)';
     }, intervalSetting * 1000);
-    //
     function MakeDiv(input, classType, suffix) {
         suffix = suffix !== undefined ? String(suffix) : '';
         return '<div class="' + classType + '">' + String((input * scale).toFixed(decimals)).padStart(padding, pad) + units + suffix + '</div>';
     }
-    //
     return myInterval;
 }
 
