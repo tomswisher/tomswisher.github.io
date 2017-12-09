@@ -4,23 +4,25 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-var logsLvl0 = 0;
-var logsLvl1 = 0;
-var logsLvl2 = 0;
-var logsTest = 1 && performance && performance.memory;
+var logsLvl0 = 0,
+    logsLvl1 = 0,
+    logsLvl2 = 0,
+    logsTest = 1 && performance && performance.memory;
 var memWatch = 0 && performance && performance.memory ? MemoryTester() : 0;
-var resizeWait = 150;
-var resizingCounter = 0;
+var resizeWait = 150,
+    resizeCounter = 0;
 var stackLvl = 0;
 var nodesCount = 0;
-var usedJSHeapSize = 0;
-var totalJSHeapSize = 0;
-var nStr = '';
-var uStr = '';
-var tStr = '';
-var testStr = '';
-var mobileOptions = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-var isMobile = navigator && mobileOptions.test(navigator.userAgent);
+var usedJSHeapSize = 0,
+    totalJSHeapSize = 0;
+var strN = '',
+    strU = '',
+    strT = '',
+    strSource = '',
+    strStats = '';
+var mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
+    mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
+console.log('mobileBrowser', mobileBrowser);
 
 // D3 Selections -----------------------------------------------------------------------------------
 
@@ -28,35 +30,34 @@ var body = d3.select('body');
 var mainSVG = body.select('#main-svg');
 var mainBGRect = body.select('#main-bg-rect');
 var mainClipPathRect = body.select('#main-clip-path-rect');
-var statesG = body.select('#states-g');
-var statePaths = statesG.selectAll('path.state-path');
-var verticesG = body.select('#vertices-g');
-var verticeCircles = verticesG.selectAll('circle.vertice-circle');
-var edgesG = body.select('#edges-g');
-var edgeLines = edgesG.selectAll('line.edge-line');
-var hoverG = body.select('#hover-g');
-var hoverRect = body.select('#hover-rect');
-var hoverText = body.select('#hover-text');
-var gradesG = body.select('#grades-g');
-var gradeGs = gradesG.selectAll('g.grade-g');
+var statesG = body.select('#states-g'),
+    statePaths = statesG.selectAll('path.state-path');
+var verticesG = body.select('#vertices-g'),
+    verticeCircles = verticesG.selectAll('circle.vertice-circle');
+var edgesG = body.select('#edges-g'),
+    edgeLines = edgesG.selectAll('line.edge-line');
+var hoverG = body.select('#hover-g'),
+    hoverRect = body.select('#hover-rect'),
+    hoverText = body.select('#hover-text');
+var gradesG = body.select('#grades-g'),
+    gradeGs = gradesG.selectAll('g.grade-g');
 var defs = gradesG.append('defs');
-var statesSelect = body.select('#states-select');
-var filtersContainer = body.select('#filters-container');
-var filtersYears = filtersContainer.selectAll('div.filters-year');
-var filtersReports = filtersContainer.selectAll('div.filters-report');
+var filtersContainer = body.select('#filters-container'),
+    filtersYears = filtersContainer.selectAll('div.filters-year'),
+    filtersReports = filtersContainer.selectAll('div.filters-report');
 var optionsContainer = body.select('#options-container');
-var infoG = body.select('#info-g');
-var infoImageGs = infoG.selectAll('g.info-image-g');
-var infoTextGs = infoG.selectAll('g.info-text-g');
+var infoG = body.select('#info-g'),
+    infoImageGs = infoG.selectAll('g.info-image-g'),
+    infoTextGs = infoG.selectAll('g.info-text-g');
 
-// Visual Styles -----------------------------------------------------------------------------------
+// Visual Styling ----------------------------------------------------------------------------------
 
 var vs = {
     svg: {
         w: null,
         h: null
     },
-    map: {
+    states: {
         w: null,
         wMin: 300,
         h: null,
@@ -88,22 +89,19 @@ var vs = {
         margin: 3,
         // colorArray: ['rgb(50,50,50)','rgb(28,44,160)','rgb(240,6,55)','rgb(251,204,12)','rgb(239,230,221)'], /*BH1*/
         // colorArray: ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'], /*BH2*/
-        colorArray: ['#de2d26', '#fb6a4a', '#fc9272', '#fcbba1', '#fee5d9'] /*red*/
+        colorArray: ['#de2d26', '#fb6a4a', '#fc9272', '#fcbba1', '#fee5d9']
+        /*red*/
     },
     hover: {
         w: null,
         h: null,
         margin: 5
     },
-    statesSelect: {
-        w: 100,
-        h: 0
-    },
     filters: {
         w: null,
         h: 70
-    },
-    options: {}
+    }
+    // options: {},
 };
 vs.info.wImage = vs.info.w - 2 * vs.info.margin;
 vs.info.hImage = vs.info.wImage / vs.info.ratioImageWH;
@@ -147,39 +145,39 @@ window.onload = function () {
     d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-links-04-06-2017.json').awaitAll(InitializePage);
 };
 window.onresize = function () {
-    // if (resizingCounter === 0) {
+    // if (resizeCounter === 0) {
     //     if (logsLvl1) console.log('Waiting to resize...');
     // }
-    resizingCounter += 1;
-    if (logsLvl1) console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
+    resizeCounter += 1;
+    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
     setTimeout(function () {
-        if (resizingCounter > 1) {
-            resizingCounter -= 1;
-        } else if (resizingCounter === 1) {
-            resizingCounter = 0;
+        if (resizeCounter > 1) {
+            resizeCounter -= 1;
+        } else if (resizeCounter === 1) {
+            resizeCounter = 0;
             UpdatePageDimensions();
         }
-        if (logsLvl1) console.log(''.padStart(resizingCounter * 2, ' ') + resizingCounter);
+        if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
     }, resizeWait);
 };
 
 // Functions ---------------------------------------------------------------------------------------
 
 function InitializePage(error, results) {
+    TestApp('InitializePage', 1);
     results[1].nodes.forEach(function (node) {
         return nodesAll.push(node);
     });
     results[1].links.forEach(function (link) {
         return linksAll.push(link);
     });
-    hybridMapObj = new HybridMapClass().mapFeatures(results[0].features).vertices(results[1].nodes).edges(results[1].links);
+    hybridMapObj = new HybridMapClass().statesFeatures(results[0].features).vertices(results[1].nodes).edges(results[1].links);
     graphObj = new GraphClass();
     vs.hover.h = parseFloat(mainSVG.style('font-size')) + 2 * vs.hover.margin;
     hoverRect.attr('height', vs.hover.h).attr('y', -1 * vs.hover.h - vs.hover.margin).style('filter', 'url(#drop-shadow)');
     hoverText.attr('x', 0).attr('y', -0.5 * vs.hover.h - vs.hover.margin);
     mainBGRect.on('mouseover', function () {
         stateSelected = '';
-        // UpdateStatesSelect();
         // hybridMapObj
         //     .UpdateMap();
         // hoverText
@@ -188,7 +186,6 @@ function InitializePage(error, results) {
         // graphObj
         //     .UpdateVerticesEdges();
     });
-    statesSelect.style('width', vs.statesSelect.w + 'px').style('height', vs.statesSelect.h + 'px').style('display', vs.statesSelect.h ? 'inline-block' : 'none');
     UpdatePageDimensions();
     requestAnimationFrame(function () {
         graphObj.UpdateOptions();
@@ -198,6 +195,7 @@ function InitializePage(error, results) {
 }
 
 function HybridMapClass() {
+    // TestApp('HybridMapClass', 1);
     var that = this;
     var _verticeById = null;
     var _projection = d3.geoAlbersUsa();
@@ -210,9 +208,9 @@ function HybridMapClass() {
     that.height = function (_) {
         return arguments.length ? (_height = _, that) : _height;
     };
-    var _mapFeatures = null;
-    that.mapFeatures = function (_) {
-        return arguments.length ? (_mapFeatures = _, that) : _mapFeatures;
+    var _statesFeatures = null;
+    that.statesFeatures = function (_) {
+        return arguments.length ? (_statesFeatures = _, that) : _statesFeatures;
     };
     var _centroidByState = {};
     that.centroidByState = function (_) {
@@ -307,19 +305,17 @@ function HybridMapClass() {
         }), d3.max(_vertices, function (vertice) {
             return vertice.$Received;
         })]);
-        _projection.scale(_width * vs.map.projectionScale).translate([_width / 2, _height / 2]);
+        _projection.scale(_width * vs.states.projectionScale).translate([_width / 2, _height / 2]);
         _path.projection(_projection);
         //
-        statePaths = statesG.selectAll('path.state-path').data(_mapFeatures, function (d) {
+        statePaths = statesG.selectAll('path.state-path').data(_statesFeatures, function (d) {
             return d.properties.ansi;
         });
         statePaths = statePaths.enter().append('path').classed('state-path', true).each(function (d) {
             d.$Given = parseInt(_$GivenByState[d.properties.ansi]);
             d.$Received = parseInt(_$ReceivedByState[d.properties.ansi]);
         }).on('mouseover', function (d) {
-            // if (isMobile === true) { return; }
             stateSelected = d.properties.ansi;
-            // UpdateStatesSelect();
             // that
             //     .UpdateMap();
             // hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
@@ -332,8 +328,8 @@ function HybridMapClass() {
         }).classed('inactive', function (d) {
             return true;
             // return isNaN(d.$Given) && isNaN(d.$Received);
-        }).attr('d', _path).style('stroke-width', vs.map.strokeWidthStates + 'px').style('opacity', function (d) {
-            // if (stateSelected === d.properties.ansi) { return vs.map.selectedOpacity; }
+        }).attr('d', _path).style('stroke-width', vs.states.strokeWidthStates + 'px').style('opacity', function (d) {
+            // if (stateSelected === d.properties.ansi) { return vs.states.selectedOpacity; }
             return 1;
         }).style('fill', function (d) {
             return vs.colorScale(5 * _$GivenByStateScale(d.$Given));
@@ -359,7 +355,7 @@ function HybridMapClass() {
             return that;
         }
         gradesG.attr('transform', function () {
-            return 'translate(' + 0 + ',' + vs.map.h + ')';
+            return 'translate(' + 0 + ',' + vs.states.h + ')';
         });
         // var gradesText = gradesG.selectAll('text.grades-text')
         //     .data([null]);
@@ -414,7 +410,7 @@ function HybridMapClass() {
         })[0]) {
             infoData.push(nodeSelected);
         }
-        infoG.attr('transform', 'translate(' + (vs.map.w + vs.info.margin) + ',' + vs.info.margin + ')');
+        infoG.attr('transform', 'translate(' + (vs.states.w + vs.info.margin) + ',' + vs.info.margin + ')');
         infoImageGs = infoG.selectAll('g.info-image-g').data(infoData);
         infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
             d3.select(this).append('image').attr('width', vs.info.wImage).attr('height', vs.info.hImage).attr('xlink:href', function () {
@@ -477,31 +473,6 @@ function HybridMapClass() {
         });
         TestApp('UpdateHover');
     };
-
-    that.UpdateStatesSelect = function () {
-        var statesSelectData = Object.keys(hybridMapObj.$GivenByState());
-        statesSelectData.unshift('');
-        statesSelect.classed('button-object', true).on('change', function () {
-            var source = 'statesSelect change ' + this.value;
-            stateSelected = this.value;
-            if (stateSelected === '') {
-                hoverText.text('');
-            } else {
-                var d = mainSVG.selectAll('path.state-path').filter(function (d) {
-                    return d.properties.ansi === stateSelected;
-                }).datum();
-                hoverText.text(stateSelected + ': ' + d.$Given + ' ' + d.$Received);
-            }
-            hybridMapObj.UpdateMap(source);
-            that.UpdateStatesSelect(source);
-            // that.UpdateHover(source);
-        }).selectAll('option.states-select-option').data(statesSelectData).enter().append('option').classed('states-select-option', true).text(function (d) {
-            return d;
-        });
-        statesSelect.property('value', stateSelected);
-        TestApp('UpdateStatesSelect');
-    };
-
     TestApp('HybridMapClass');
     return that;
 }
@@ -855,10 +826,10 @@ function GraphClass() {
                     var optionValue = optionsObj[optionName].value; // do not mutate original value
                     switch (optionValue) {
                         case 'cx':
-                            optionValue = 0.5 * vs.map.w;
+                            optionValue = 0.5 * vs.states.w;
                             break;
                         case 'cy':
-                            optionValue = 0.5 * vs.map.h;
+                            optionValue = 0.5 * vs.states.h;
                             break;
                     }
                     forceNew[optionName](optionValue);
@@ -872,7 +843,7 @@ function GraphClass() {
     };
 
     that.UpdateFilters = function () {
-        filtersContainer.style('width', vs.filters.w + 'px').style('height', vs.filters.h + 'px').style('top', vs.map.h + vs.grades.h + 'px').style('left', 0 + 'px');
+        filtersContainer.style('width', vs.filters.w + 'px').style('height', vs.filters.h + 'px').style('top', vs.states.h + vs.grades.h + 'px').style('left', 0 + 'px');
         filtersYears = filtersContainer.selectAll('div.filters-year').data(yearsData);
         filtersYears = filtersYears.enter().append('div').classed('filters-year', true).each(function (datum) {
             d3.select(this).append('div').text(datum);
@@ -911,7 +882,7 @@ function GraphClass() {
                 that.optionsData.push(optionsObj[optionName]);
             });
         });
-        optionsContainer.style('left', '0px').style('top', Math.max(vs.svg.h, vs.map.h + vs.grades.h + vs.filters.h) + 'px');
+        optionsContainer.style('left', '0px').style('top', Math.max(vs.svg.h, vs.states.h + vs.grades.h + vs.filters.h) + 'px');
         var optionDivs = optionsContainer.selectAll('div.option-div').data(that.optionsData);
         optionDivs = optionDivs.enter().append('div').classed('option-div', true).each(function (optionDatum) {
             d3.select(this).append('label').classed('label-small', true).text(optionDatum.category);
@@ -1034,25 +1005,24 @@ function GraphClass() {
 }
 
 function UpdatePageDimensions() {
+    TestApp('UpdatePageDimensions', 1);
     var clientWidth = body.node().clientWidth;
-    if (clientWidth >= vs.map.wMin + vs.info.w) {
-        vs.map.w = clientWidth - vs.info.w;
+    if (clientWidth >= vs.states.wMin + vs.info.w) {
+        vs.states.w = clientWidth - vs.info.w;
         vs.svg.w = clientWidth;
     } else {
-        vs.map.w = vs.map.wMin;
-        vs.svg.w = vs.map.wMin + vs.info.w;
+        vs.states.w = vs.states.wMin;
+        vs.svg.w = vs.states.wMin + vs.info.w;
     }
-    vs.filters.w = vs.map.w;
-    vs.map.h = vs.map.w / vs.map.ratioMapWH;
-    vs.svg.h = Math.max(vs.map.h, vs.info.h) + vs.grades.h;
-    vs.grades.w = vs.map.w;
+    vs.filters.w = vs.states.w;
+    vs.states.h = vs.states.w / vs.states.ratioMapWH;
+    vs.svg.h = Math.max(vs.states.h, vs.info.h) + vs.grades.h;
+    vs.grades.w = vs.states.w;
     mainSVG.attr('width', vs.svg.w).attr('height', vs.svg.h);
-    mainBGRect.attr('width', vs.map.w).attr('height', vs.map.h);
-    mainClipPathRect.attr('width', vs.map.w).attr('height', vs.svg.h);
-    hybridMapObj.width(vs.map.w).height(vs.map.h).UpdateMap('UpdatePageDimensions').UpdateGrades().UpdateInfo();
+    mainBGRect.attr('width', vs.states.w).attr('height', vs.states.h);
+    mainClipPathRect.attr('width', vs.states.w).attr('height', vs.svg.h);
+    hybridMapObj.width(vs.states.w).height(vs.states.h).UpdateMap('UpdatePageDimensions').UpdateGrades().UpdateInfo();
     graphObj.UpdateFilters().UpdateVerticesEdges().UpdateSimulation().UpdateOptions();
-    statesSelect.style('margin-left', (vs.map.w - vs.statesSelect.w) / 2 + 'px').style('margin-right', (vs.map.w - vs.statesSelect.w) / 2 + 'px');
-    // UpdateStatesSelect();
     TestApp('UpdatePageDimensions', -1);
 }
 
@@ -1063,37 +1033,35 @@ function TestApp(source, position) {
     usedJSHeapSize = performance.memory.usedJSHeapSize;
     totalJSHeapSize = performance.memory.totalJSHeapSize;
     if (position === 1) {
-        testStr = ''.padStart(2 * stackLvl, ' ') + '> ' + String(source);
+        strSource = ''.padStart(2 * stackLvl, ' ') + '> ' + String(source);
         stackLvl += 1;
     } else if (position === -1) {
         stackLvl -= 1;
-        testStr = ''.padStart(2 * stackLvl, ' ') + '< ' + String(source);
+        strSource = ''.padStart(2 * stackLvl, ' ') + '< ' + String(source);
     } else if (position === undefined) {
-        testStr = ''.padStart(2 * stackLvl, ' ') + '• ' + String(source);
+        strSource = ''.padStart(2 * stackLvl, ' ') + '• ' + String(source);
     }
-    testStr = testStr.padEnd(25);
+    strSource = strSource.padEnd(27);
     if (nodesCount !== d3.selectAll('*').size()) {
         nodesCount = d3.selectAll('*').size();
-        nStr = 'nodes: ' + String(nodesCount).padStart(3, ' ');
+        strN = 'nodes: ' + String(nodesCount).padStart(3, ' ');
     } else {
-        nStr = '';
+        strN = '';
     }
     if (performance.memory.usedJSHeapSize !== usedJSHeapSize) {
-        uStr = 'used: ' + ((usedJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
+        strU = 'used: ' + ((usedJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
     } else {
-        uStr = '';
+        strU = '';
     }
     if (performance.memory.totalJSHeapSize !== totalJSHeapSize) {
-        tStr = 'total: ' + ((totalJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
+        strT = 'total: ' + ((totalJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
     } else {
-        tStr = '';
+        strT = '';
     }
-    if (nStr || uStr || tStr) {
-        testStr = testStr + uStr.padEnd(20, ' ') + tStr.padEnd(20, ' ') + nStr.padEnd(14, ' ');
+    if (strN || strU || strT) {
+        strStats = strU.padEnd(20, ' ') + strT.padEnd(20, ' ') + strN.padEnd(14, ' ');
     }
-    // if (position === 0) {
-    console.log(testStr);
-    // }
+    console.log('%c' + strSource, 'color:green', strStats);
 }
 
 // Debug -------------------------------------------------------------------------------------------
@@ -1172,6 +1140,7 @@ function MemoryTester() {
         // totalMeanRateNode.innerHTML     = MakeDiv(minMeanRates[1],'min','/s')+MakeDiv(newMeanRates[1],'new','/s')+MakeDiv(maxMeanRates[1],'max','/s');
         // itersForMeanNode.innerHTML      = itersForMean+'/'+iters+' ('+(100*(itersForMean/iters)).toFixed(3)+'%)';
     }, intervalSetting * 1000);
+
     function MakeDiv(input, classType, suffix) {
         suffix = suffix !== undefined ? String(suffix) : '';
         return '<div class="' + classType + '">' + String((input * scale).toFixed(decimals)).padStart(padding, pad) + units + suffix + '</div>';

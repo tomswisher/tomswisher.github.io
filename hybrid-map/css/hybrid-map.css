@@ -57,9 +57,6 @@ body {
   text-anchor: middle;
   pointer-events: none;
 }
-#states-select {
-  height: 25px;
-}
 #filters-container {
   position: absolute;
   background: white;
