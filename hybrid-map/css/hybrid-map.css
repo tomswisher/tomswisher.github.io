@@ -23,17 +23,12 @@ body {
 }
 #main-svg path.state-path {
   stroke: lightblue;
-  stroke-width: 2px;
 }
 #main-svg path.state-path.inactive {
   pointer-events: none !important;
   fill: white !important;
 }
-#main-svg circle.vertice-circle {
-  stroke-width: 1.5px;
-}
 #main-svg line.edge-line {
-  stroke-width: 1.5px;
   pointer-events: none;
 }
 #main-svg #hover-g {
