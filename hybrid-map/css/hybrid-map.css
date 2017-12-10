@@ -15,93 +15,90 @@ body {
   overflow-x: scroll;
   overflow-y: scroll;
 }
-#main-svg {
+#svg {
   font-size: 14px;
 }
-#main-svg #main-bg-rect {
+#svg #bg-rect {
   fill: lightblue;
 }
-#main-svg path.state-path {
+#svg path.state-path {
   stroke: lightblue;
 }
-#main-svg path.state-path.inactive {
+#svg path.state-path.inactive {
   pointer-events: none !important;
   fill: white !important;
 }
-#main-svg line.edge-line {
+#svg line.edge-line {
   pointer-events: none;
 }
-#main-svg #hover-g {
+#svg #hover-g {
   pointer-events: none;
 }
-#main-svg #hover-text {
+#svg #hover-text {
   dominant-baseline: middle;
   text-anchor: middle;
 }
-#main-svg #hover-rect {
+#svg #hover-rect {
   stroke: black;
   stroke-width: 0px;
   fill: white;
 }
-#main-svg #grades-g rect.grade-bg {
+#svg #grades-g rect.grade-bg {
   opacity: 0;
 }
-#main-svg #grades-g rect.grade-rect {
+#svg #grades-g rect.grade-rect {
   stroke: black;
   stroke-width: 0px;
   pointer-events: none;
 }
-#main-svg #grades-g text.grade-label,
-#main-svg #grades-g text.grades-text {
+#svg #grades-g text.grade-label,
+#svg #grades-g text.grades-text {
   dominant-baseline: middle;
   text-anchor: middle;
   pointer-events: none;
 }
-#filters-container {
+#filters-div {
   position: absolute;
   background: white;
 }
-#filters-container .filters-year,
-#filters-container .filters-report {
+#filters-div .filters-year,
+#filters-div .filters-report {
   display: inline-block;
   font-size: 14px;
   text-align: center;
 }
-#options-container {
+#options-div {
   position: absolute;
   display: inline-block;
   width: 100%;
   height: auto;
 }
-.option-div {
+.option-row {
   display: inline-block;
-  width: 600px;
+  width: 500px;
   outline: 1px solid gainsboro;
 }
-.option-div > * {
+.option-row > * {
   font-size: 14px;
   height: 28px;
   line-height: 28px;
 }
-.option-div label {
+.option-row label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
   dominant-baseline: central;
 }
-.option-div label.label-small {
-  width: 80px;
+.option-row label.label-small {
+  width: 50px;
 }
-.option-div label.label-medium {
-  width: 150px;
+.option-row label.label-medium {
+  width: 90px;
 }
-.option-div input[type='Range'] {
-  width: 200px;
+.option-row input[type='Range'] {
+  width: 130px;
   margin: 0px;
-}
-#simulation-div label.slider-value {
-  text-align: left;
 }
 #info-g rect.info-bg-rect {
   stroke: gainsboro;
@@ -149,26 +146,26 @@ body {
   /* Safari 6.0 - 9.0 */
   filter: grayscale(100%);
 }
-#memory-container {
+#memory-div {
   display: inline-block;
   width: 100%;
   height: auto;
   font-family: monospace;
   font-size: 14px;
 }
-#memory-container div {
+#memory-div div {
   display: inline-block;
   width: 400px;
   height: 16px;
 }
-#memory-container div.cell {
+#memory-div div.cell {
   display: inline-block;
   width: 200px;
   height: auto;
 }
-#memory-container div.min {
+#memory-div div.min {
   color: green;
 }
-#memory-container div.max {
+#memory-div div.max {
   color: firebrick;
 }

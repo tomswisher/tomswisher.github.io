@@ -11,24 +11,24 @@
 </head>
 
 <body class="loading">
-    <svg id="main-svg" class="unselectable" attr="unselectable">
-        <rect id="main-bg-rect"></rect>
-        <clipPath id="main-clip-path">
-            <rect id="main-clip-path-rect"></rect>
+    <svg id="svg" class="unselectable" attr="unselectable">
+        <rect id="bg-rect"></rect>
+        <clipPath id="clip-path">
+            <rect id="clip-path-rect"></rect>
         </clipPath>
-        <g id="states-g" clip-path="url(#main-clip-path)"></g>
-        <g id="vertices-g" clip-path="url(#main-clip-path)"></g>
-        <g id="edges-g" clip-path="url(#main-clip-path)"></g>
+        <g id="states-g" clip-path="url(#clip-path)"></g>
+        <g id="vertices-g" clip-path="url(#clip-path)"></g>
+        <g id="edges-g" clip-path="url(#clip-path)"></g>
         <g id="info-g"></g>
         <g id="grades-g"></g>
-        <g id="hover-g" clip-path="url(#main-clip-path)" class="unselectable" attr="unselectable">
+        <g id="hover-g" clip-path="url(#clip-path)" class="unselectable" attr="unselectable">
             <rect id="hover-rect"></rect>
             <text id="hover-text"></text>
         </g>
     </svg>
-    <div id="filters-container"></div>
-    <div id="options-container"></div>
-    <div id="memory-container"></div>
+    <div id="filters-div"></div>
+    <div id="options-div"></div>
+    <div id="memory-div"></div>
     <!-- -->
     <script src=js/hybrid-map.js></script>
 </body>

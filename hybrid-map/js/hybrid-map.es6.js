@@ -4,22 +4,32 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-var logsLvl0 = 0,
-    logsLvl1 = 0,
-    logsLvl2 = 0,
-    logsTest = 1 && performance && performance.memory;
-var memWatch = 0 && performance && performance.memory ? MemoryTester() : 0;
+console.log('Loading app...');
+var isLoaded = false;
+var logsLvl0 = true,
+    logsLvl1 = false,
+    logsLvl2 = false,
+    logsTest = true && performance && performance.memory;
 var resizeWait = 150,
     resizeCounter = 0;
-var stackLvl = 0;
-var nodesCount = 0;
-var usedJSHeapSize = 0,
-    totalJSHeapSize = 0;
-var strN = '',
-    strU = '',
-    strT = '',
-    strSource = '',
-    strStats = '';
+var stackLevel = 0,
+    stackLevelTemp = 0;
+var sizeNodesOld = -1,
+    sizeUsedOld = -1,
+    sizeTotalOld = -1;
+var sizeNodesNew = 0,
+    sizeUsedNew = 0,
+    sizeTotalNew = 0;
+var colorSource = 'color:black',
+    colorNodes = 'color:black',
+    colorUsed = 'color:black',
+    colorTotal = 'color:black';
+var stringSource = '',
+    stringNodes = '',
+    stringUsed = '',
+    stringTotal = '',
+    stringCombined = '',
+    stringSymbol = '';
 var mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
     mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
 console.log('mobileBrowser', mobileBrowser);
@@ -27,28 +37,31 @@ console.log('mobileBrowser', mobileBrowser);
 // D3 Selections -----------------------------------------------------------------------------------
 
 var body = d3.select('body');
-var mainSVG = body.select('#main-svg');
-var mainBGRect = body.select('#main-bg-rect');
-var mainClipPathRect = body.select('#main-clip-path-rect');
+var svg = body.select('#svg');
+var bgRect = body.select('#bg-rect');
+var clipPathRect = body.select('#clip-path-rect');
 var statesG = body.select('#states-g'),
-    statePaths = statesG.selectAll('path.state-path');
+    statePaths = d3.select(null);
 var verticesG = body.select('#vertices-g'),
-    verticeCircles = verticesG.selectAll('circle.vertice-circle');
+    verticeCircles = d3.select(null);
 var edgesG = body.select('#edges-g'),
-    edgeLines = edgesG.selectAll('line.edge-line');
+    edgeLines = d3.select(null);
 var hoverG = body.select('#hover-g'),
-    hoverRect = body.select('#hover-rect'),
-    hoverText = body.select('#hover-text');
+    hoverRect = d3.select(null),
+    hoverText = d3.select(null);
 var gradesG = body.select('#grades-g'),
-    gradeGs = gradesG.selectAll('g.grade-g');
+    gradeGs = d3.select(null);
 var defs = gradesG.append('defs');
-var filtersContainer = body.select('#filters-container'),
-    filtersYears = filtersContainer.selectAll('div.filters-year'),
-    filtersReports = filtersContainer.selectAll('div.filters-report');
-var optionsContainer = body.select('#options-container');
+var filtersDiv = body.select('#filters-div'),
+    filtersYears = d3.select(null),
+    filtersReports = d3.select(null);
+var optionsDiv = body.select('#options-div'),
+    optionRows = d3.select(null),
+    optionsAlphaLabel = d3.select(null),
+    optionsAlphaSlider = d3.select(null);
 var infoG = body.select('#info-g'),
-    infoImageGs = infoG.selectAll('g.info-image-g'),
-    infoTextGs = infoG.selectAll('g.info-text-g');
+    infoImageGs = d3.select(null),
+    infoTextGs = d3.select(null);
 
 // Visual Styling ----------------------------------------------------------------------------------
 
@@ -101,7 +114,12 @@ var vs = {
         w: null,
         h: 70,
     },
-    // options: {},
+    options: {},
+    test: {
+        colorNeutral: 'black',
+        colorBad: 'firebrick',
+        colorGood: 'green',
+    }
 };
 vs.info.wImage = vs.info.w - 2 * vs.info.margin;
 vs.info.hImage = vs.info.wImage / vs.info.ratioImageWH;
@@ -175,19 +193,18 @@ window.onload = function() {
         .awaitAll(InitializePage);
 };
 window.onresize = function() {
-    // if (resizeCounter === 0) {
-    //     if (logsLvl1) console.log('Waiting to resize...');
-    // }
-    resizeCounter += 1;
+    if (!isLoaded) { return; }
     if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+    resizeCounter += 1;
     setTimeout(function() {
         if (resizeCounter > 1) {
             resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
         } else if (resizeCounter === 1) {
-            resizeCounter = 0;
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
             UpdatePageDimensions();
         }
-        if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
     }, resizeWait);
 };
 
@@ -202,7 +219,7 @@ function InitializePage(error, results) {
         .vertices(results[1].nodes)
         .edges(results[1].links);
     graphObj = (new GraphClass());
-    vs.hover.h = parseFloat(mainSVG.style('font-size')) + 2 * vs.hover.margin;
+    vs.hover.h = parseFloat(svg.style('font-size')) + 2 * vs.hover.margin;
     hoverRect
         .attr('height', vs.hover.h)
         .attr('y', -1 * vs.hover.h - vs.hover.margin)
@@ -210,7 +227,7 @@ function InitializePage(error, results) {
     hoverText
         .attr('x', 0)
         .attr('y', -0.5 * vs.hover.h - vs.hover.margin);
-    mainBGRect
+    bgRect
         .on('mouseover', function() {
             stateSelected = '';
             // hybridMapObj
@@ -227,6 +244,8 @@ function InitializePage(error, results) {
             .UpdateOptions();
         body
             .classed('loading', false);
+        isLoaded = true;
+        console.log('Loading complete.');
     });
     TestApp('InitializePage', -1);
 }
@@ -557,8 +576,8 @@ function HybridMapClass() {
             .attr('transform', function() {
                 var tx, ty;
                 if (source === 'mouse') {
-                    tx = d3.mouse(mainSVG.node())[0];
-                    ty = d3.mouse(mainSVG.node())[1];
+                    tx = d3.mouse(svg.node())[0];
+                    ty = d3.mouse(svg.node())[1];
                 } else if (that.centroidByState()[stateSelected]) {
                     tx = that.centroidByState()[stateSelected][0];
                     ty = that.centroidByState()[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
@@ -568,8 +587,8 @@ function HybridMapClass() {
                 }
                 if (tx < vs.hover.w / 2 + 1) {
                     tx = vs.hover.w / 2 + 1;
-                } else if (tx > parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1) {
-                    tx = parseInt(mainSVG.style('width')) - vs.hover.w / 2 - 1;
+                } else if (tx > parseInt(svg.style('width')) - vs.hover.w / 2 - 1) {
+                    tx = parseInt(svg.style('width')) - vs.hover.w / 2 - 1;
                 }
                 if (ty < vs.hover.h + 5 + 1) {
                     ty = vs.hover.h + 5 + 1;
@@ -584,28 +603,8 @@ function HybridMapClass() {
 
 function GraphClass() {
     var that = this;
-    var _alphaLabel;
-    var _alphaSlider;
-    that.bundle = {
-        // 'target': true,
-    };
     that.simulation = d3.forceSimulation(hybridMapObj.vertices())
-        // .alpha(0.1)
-        .alphaMin(0.2)
-        // .alphaDecay(1-Math.pow(0.001,1/300))
-        // .alphaTarget(0.3)
-        // .velocityDecay(0.6)
         .on('tick', _Tick);
-    that.simulationObj = {
-        alpha: {
-            value: 1,
-            min: 0.05,
-            max: 1,
-            step: 0.01,
-            category: 'simulation',
-            name: 'alpha',
-        },
-    };
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
@@ -627,7 +626,7 @@ function GraphClass() {
                 value: 1, // 1
                 min: 0,
                 max: 1,
-                step: 0.05,
+                step: 0.01,
             },
             radius: {
                 value: function(node, i, nodes) {
@@ -729,6 +728,44 @@ function GraphClass() {
                 value: 'cy', // value: function(node, i, nodes) { return node.y; },
             },
             _IsolateForce: true,
+        },
+        simulation: {
+            alpha: {
+                value: 1,
+                min: 0.05,
+                max: 1,
+                step: 0.01,
+            },
+            // alphaMin: {
+            //     value: ,
+            //     min: ,
+            //     max: ,
+            //     step: ,
+            //     category: 'simulation',
+            //     name: 'alphaMin',
+            // },
+            // alphaDecay: {
+            //     value: ,
+            //     min: ,
+            //     max: ,
+            //     step: ,
+            //     category: 'simulation',
+            //     name: 'alphaDecay',
+            // },
+            // alphaTarget: {
+            //     value: ,
+            //     min: ,
+            //     max: ,
+            //     step: ,
+            //     category: 'simulation',
+            //     name: 'alphaTarget',
+            // },
+            velocityDecay: {
+                value: 0.4,
+                min: 0,
+                max: 1,
+                step: 0.1,
+            },
         },
     };
 
@@ -911,6 +948,7 @@ function GraphClass() {
 
     that.UpdateSimulation = function() {
         Object.keys(that.forcesObj).forEach(function(forceType) {
+            if (forceType === 'simulation') { return; }
             var optionsObj = that.forcesObj[forceType];
             if (optionsObj['_IsolateForce'] === true) {
                 Object.keys(hybridMapObj.$GivenByState()).forEach(function(state) {
@@ -954,19 +992,30 @@ function GraphClass() {
                     .force(forceType, forceNew);
             }
         });
+        that.optionsData = [];
+        Object.keys(that.forcesObj).forEach(function(forceType) {
+            var optionsObj = that.forcesObj[forceType];
+            Object.keys(optionsObj).forEach(function(optionName) {
+                if (optionName[0] === '_') { return; }
+                optionsObj[optionName]._category = forceType;
+                optionsObj[optionName]._name = optionName;
+                that.optionsData.push(optionsObj[optionName]);
+            });
+        });
         that.simulation
-            .alpha(1).restart();
+            .alpha(1)
+            .restart();
         TestApp('UpdateSimulation');
         return that;
     };
 
     that.UpdateFilters = function() {
-        filtersContainer
+        filtersDiv
             .style('width', vs.filters.w + 'px')
             .style('height', vs.filters.h + 'px')
             .style('top', (vs.states.h + vs.grades.h) + 'px')
             .style('left', 0 + 'px');
-        filtersYears = filtersContainer.selectAll('div.filters-year')
+        filtersYears = filtersDiv.selectAll('div.filters-year')
             .data(yearsData);
         filtersYears = filtersYears.enter().append('div')
             .classed('filters-year', true)
@@ -988,7 +1037,7 @@ function GraphClass() {
             })
             .merge(filtersYears)
             .style('width', (vs.filters.w / yearsData.length) + 'px');
-        filtersReports = filtersContainer.selectAll('div.filters-report')
+        filtersReports = filtersDiv.selectAll('div.filters-report')
             .data(reportsData);
         filtersReports = filtersReports.enter().append('div')
             .classed('filters-report', true)
@@ -1014,49 +1063,39 @@ function GraphClass() {
     };
 
     that.UpdateOptions = function() {
-        that.optionsData = [that.simulationObj['alpha']];
-        Object.keys(that.forcesObj).forEach(function(forceType) {
-            var optionsObj = that.forcesObj[forceType];
-            Object.keys(optionsObj).forEach(function(optionName) {
-                if (optionName[0] === '_') { return; }
-                optionsObj[optionName].category = forceType;
-                optionsObj[optionName].name = optionName;
-                that.optionsData.push(optionsObj[optionName]);
-            });
-        });
-        optionsContainer
+        optionsDiv
             .style('left', '0px')
             .style('top', Math.max(vs.svg.h, vs.states.h + vs.grades.h + vs.filters.h) + 'px');
-        var optionDivs = optionsContainer.selectAll('div.option-div')
+        optionRows = optionsDiv.selectAll('div.option-row')
             .data(that.optionsData);
-        optionDivs = optionDivs.enter().append('div')
-            .classed('option-div', true)
-            .each(function(optionDatum) {
+        optionRows = optionRows.enter().append('div')
+            .classed('option-row', true)
+            .each(function(datum) {
                 d3.select(this).append('label')
-                    .classed('label-small', true)
-                    .text(optionDatum.category);
+                    .classed('label-medium', true)
+                    .text(datum._category);
                 d3.select(this).append('label')
-                    .classed('label-small', true)
-                    .text(optionDatum.name);
+                    .classed('label-medium', true)
+                    .text(datum._name);
                 d3.select(this).append('label')
-                    .classed('label-small', true).classed('slider-value', true);
-                if (optionDatum.min !== undefined) {
+                    .classed('label-medium', true).classed('option-value', true);
+                if (datum.min !== undefined) {
                     d3.select(this).append('label')
                         .classed('label-small', true)
-                        .text(optionDatum.min);
+                        .text(datum.min);
                 }
-                if (optionDatum.step !== undefined) {
+                if (datum.step !== undefined) {
                     d3.select(this).append('input')
                         .attr('type', 'range')
-                        .attr('min', optionDatum.min)
-                        .attr('max', optionDatum.max)
-                        .attr('step', optionDatum.step)
-                        .attr('value', optionDatum.value)
+                        .attr('min', datum.min)
+                        .attr('max', datum.max)
+                        .attr('step', datum.step)
+                        .attr('value', datum.value)
                         .on('change', function() {
-                            if (optionDatum.step === parseInt(optionDatum.step)) {
-                                optionDatum.value = parseInt(this.value);
+                            if (datum.step === parseInt(datum.step)) {
+                                datum.value = parseInt(this.value);
                             } else {
-                                optionDatum.value = parseFloat(this.value);
+                                datum.value = parseFloat(this.value);
                             }
                             that.simulation
                                 .alpha(0);
@@ -1065,25 +1104,27 @@ function GraphClass() {
                                 .UpdateOptions();
                         });
                 }
-                if (optionDatum.max !== undefined) {
+                if (datum.max !== undefined) {
                     d3.select(this).append('label')
                         .classed('label-small', true)
-                        .text(optionDatum.max);
+                        .text(datum.max);
                 }
             })
-            .merge(optionDivs)
-            .each(function(optionDatum) {
-                d3.select(this).selectAll('label.slider-value')
+            .merge(optionRows)
+            .each(function(datum) {
+                d3.select(this).selectAll('label.option-value')
                     .text(function() {
-                        if (typeof(optionDatum.value) === 'function') {
+                        if (typeof(datum.value) === 'function') {
                             return 'function';
                         } else {
-                            return optionDatum.value;
+                            return datum.value;
                         }
                     });
             });
-        _alphaLabel = optionsContainer.select('label.slider-value');
-        _alphaSlider = optionsContainer.select('input[type="range"]');
+        optionsAlphaLabel = optionRows.selectAll('label.option-value')
+            .filter(function(d) { return d._category === 'simulation' && d._name === 'alpha'; });
+        optionsAlphaSlider = optionRows.selectAll('input[type="range"]')
+            .filter(function(d) { return d._category === 'simulation' && d._name === 'alpha'; });
         TestApp('UpdateOptions');
         return that;
     };
@@ -1139,40 +1180,24 @@ function GraphClass() {
             // .interrupt('edges-transition')
             // .transition('edges-transition')
             .attr('x1', function(d) {
-                if (that.bundle.source) {
-                    return hybridMapObj.centroidByState()[d.source.state][0];
-                } else {
-                    return d.source.x;
-                }
+                return d.source.x;
             })
             .attr('y1', function(d) {
-                if (that.bundle.source) {
-                    return hybridMapObj.centroidByState()[d.source.state][1];
-                } else {
-                    return d.source.y;
-                }
+                return d.source.y;
             })
             .attr('x2', function(d) {
-                if (that.bundle.target) {
-                    return hybridMapObj.centroidByState()[d.target.state][0];
-                } else {
-                    return d.target.x;
-                }
+                return d.target.x;
             })
             .attr('y2', function(d) {
-                if (that.bundle.target) {
-                    return hybridMapObj.centroidByState()[d.target.state][1];
-                } else {
-                    return d.target.y;
-                }
+                return d.target.y;
             });
-        if (!_alphaLabel || !_alphaSlider) { return; }
-        that.simulationObj['alpha'].value = parseFloat(that.simulation.alpha()).toFixed(8);
-        _alphaLabel
-            .text(that.simulationObj['alpha'].value);
-        _alphaSlider
-            .property('value', that.simulationObj['alpha'].value);
-        // TestApp('_Tick', -1);
+        if (optionsAlphaLabel.empty() || optionsAlphaSlider.empty()) { return; }
+        that.forcesObj.simulation.alpha.value = parseFloat(that.simulation.alpha()).toFixed(8);
+        optionsAlphaLabel
+            .text(that.forcesObj.simulation.alpha.value);
+        optionsAlphaSlider
+            .property('value', that.forcesObj.simulation.alpha.value);
+        // TestApp('_Tick');
     }
     TestApp('GraphClass');
 }
@@ -1191,13 +1216,13 @@ function UpdatePageDimensions() {
     vs.states.h = vs.states.w / vs.states.ratioMapWH;
     vs.svg.h = Math.max(vs.states.h, vs.info.h) + vs.grades.h;
     vs.grades.w = vs.states.w;
-    mainSVG
+    svg
         .attr('width', vs.svg.w)
         .attr('height', vs.svg.h);
-    mainBGRect
+    bgRect
         .attr('width', vs.states.w)
         .attr('height', vs.states.h);
-    mainClipPathRect
+    clipPathRect
         .attr('width', vs.states.w)
         .attr('height', vs.svg.h);
     hybridMapObj
@@ -1216,138 +1241,48 @@ function UpdatePageDimensions() {
 
 function TestApp(source, position) {
     if (!logsTest) { return; }
-    usedJSHeapSize = performance.memory.usedJSHeapSize;
-    totalJSHeapSize = performance.memory.totalJSHeapSize;
+    stackLevelTemp = stackLevel;
+    sizeNodesOld = sizeNodesNew;
+    sizeUsedOld = sizeUsedNew;
+    sizeTotalOld = sizeTotalNew;
+    sizeNodesNew = d3.selectAll('*').size();
+    sizeUsedNew = performance.memory.usedJSHeapSize;
+    sizeTotalNew = performance.memory.totalJSHeapSize;
     if (position === 1) {
-        strSource = (''.padStart(2 * stackLvl, ' ') + '> ' + String(source));
-        stackLvl += 1;
+        stringSymbol = '> ';
+        stackLevel += 1;
     } else if (position === -1) {
-        stackLvl -= 1;
-        strSource = (''.padStart(2 * stackLvl, ' ') + '< ' + String(source));
-    } else if (position === undefined) {
-        strSource = (''.padStart(2 * stackLvl, ' ') + '• ' + String(source));
-    }
-    strSource = strSource.padEnd(27);
-    if (nodesCount !== d3.selectAll('*').size()) {
-        nodesCount = d3.selectAll('*').size();
-        strN = 'nodes: ' + String(nodesCount).padStart(3, ' ');
+        stackLevel -= 1;
+        stringSymbol = '< ';
+        stackLevelTemp = stackLevel;
     } else {
-        strN = '';
+        stringSymbol = '• ';
     }
-    if (performance.memory.usedJSHeapSize !== usedJSHeapSize) {
-        strU = 'used: ' + ((usedJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
+    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(27);
+    if (sizeNodesNew !== sizeNodesOld) {
+        stringNodes = (sizeNodesNew + ' n').padStart(6);
+        colorNodes = 'color:' + (sizeNodesNew < sizeNodesOld ? vs.test.colorGood : vs.test.colorBad);
     } else {
-        strU = '';
+        stringNodes = '';
+        colorNodes = 'color:' + vs.test.colorNeutral;
     }
-    if (performance.memory.totalJSHeapSize !== totalJSHeapSize) {
-        strT = 'total: ' + ((totalJSHeapSize / (1024 * 1024)).toFixed(3) + ' Mb').padStart(9, ' ');
+    stringNodes = '%c' + stringNodes.padEnd(8);
+    if (sizeUsedNew !== sizeUsedOld) {
+        stringUsed = ((sizeUsedNew / (1024 * 1024)).toFixed(2) + ' Mb').padStart(8);
+        colorUsed = 'color:' + (sizeUsedNew < sizeUsedOld ? vs.test.colorGood : vs.test.colorBad);
     } else {
-        strT = '';
+        stringUsed = '';
+        colorUsed = 'color:' + vs.test.colorNeutral;
     }
-    if (strN || strU || strT) {
-        strStats = strU.padEnd(20, ' ') + strT.padEnd(20, ' ') + strN.padEnd(14, ' ');
+    stringUsed = '%c' + stringUsed.padEnd(12);
+    if (sizeTotalNew !== sizeTotalOld) {
+        stringTotal = ((sizeTotalNew / (1024 * 1024)).toFixed(2) + ' Mb').padStart(8);
+        colorTotal = 'color:' + (sizeTotalNew < sizeTotalOld ? vs.test.colorGood : vs.test.colorBad);
+    } else {
+        stringTotal = '';
+        colorTotal = 'color:' + vs.test.colorNeutral;
     }
-    console.log('%c'+strSource, 'color:green', strStats);
-}
-
-// Debug -------------------------------------------------------------------------------------------
-
-function MemoryTester() {
-    var htmlString = `
-        <div id="memory-container"><!--
-            --><div class="cell"><div>elapsed</div><div id="elapsed"></div></div><!--
-            --><div class="cell"><div>interval</div><div id="interval"></div></div><!--
-            --><br><br><!--
-            --><div class="cell"><div>usedVal</div><div id="usedVal"></div></div><!--
-            --><div class="cell"><div>totalVal</div><div id="totalVal"></div></div><!--
-            --><br><br><!--
-            --><div class="cell"><div>usedRate</div><div id="usedRate"></div></div><!--
-            --><div class="cell"><div>totalRate</div><div id="totalRate"></div></div><!--
-            --><br><br><!--` +
-        // --><div class="cell"><div>usedMeanRate</div><div id="usedMeanRate"></div></div><!--
-        // --><div class="cell"><div>totalMeanRate</div><div id="totalMeanRate"></div></div><!--
-        // --><br><br><!--
-        // --><div class="cell"><div>itersForMean</div><div id="itersForMean"></div></div><!--
-        // --><div class="cell"><div>iters</div><div id="iters"></div></div><!--
-        `-->
-        </div>`;
-    var memoryContainer = d3.select('body')
-        .select('#memory-container')
-        .data([null]);
-    memoryContainer.enter().append('div')
-        .attr('id', 'memory-container')
-        .merge(memoryContainer)
-        .property('outerHTML', htmlString);
-    var elapsedNode = document.querySelector('#elapsed');
-    var intervalNode = document.querySelector('#interval');
-    var usedValNode = document.querySelector('#usedVal');
-    var totalValNode = document.querySelector('#totalVal');
-    var usedRateNode = document.querySelector('#usedRate');
-    var totalRateNode = document.querySelector('#totalRate');
-    var usedMeanRateNode = document.querySelector('#usedMeanRate');
-    var totalMeanRateNode = document.querySelector('#totalMeanRate');
-    var itersForMeanNode = document.querySelector('#itersForMean');
-    // var itersNode = document.querySelector('#iters');
-    var start = Date.now();
-    var intervalSetting = 0.5;
-    var interval = 0;
-    var iters = 0;
-    var itersForMean = 0;
-    var decimals = 7;
-    var padding = 15;
-    var pad = ' ';
-    var scale = 1 / Math.pow(1024, 2);
-    var units = ' MB';
-    var elapsedOld = 0;
-    var elapsed = 0;
-    var oldVals = [0, 0];
-    var newVals = [performance.memory.usedJSHeapSize, performance.memory.totalJSHeapSize];
-    var minVals = [Infinity, Infinity];
-    var maxVals = [0, 0];
-    var newRates = [0, 0];
-    var minRates = [Infinity, Infinity];
-    var maxRates = [0, 0];
-    var sumRates = [0, 0];
-    var newMeanRates = [0, 0];
-    var minMeanRates = [Infinity, Infinity];
-    var maxMeanRates = [0, 0];
-    var myInterval = setInterval(function() {
-        iters = iters + 1;
-        elapsedOld = elapsed;
-        elapsed = (Date.now() - start) / 1000;
-        interval = elapsed - elapsedOld;
-        // itersNode.innerHTML             = iters;
-        elapsedNode.innerHTML = elapsed + ' s';
-        intervalNode.innerHTML = interval + ' s';
-        oldVals = [newVals[0], newVals[1]];
-        newVals = [performance.memory.usedJSHeapSize, performance.memory.totalJSHeapSize];
-        minVals = [Math.min(newVals[0], minVals[0]), Math.min(newVals[1], minVals[1])];
-        maxVals = [Math.max(newVals[0], maxVals[0]), Math.max(newVals[1], maxVals[1])];
-        newRates = [(newVals[0] - oldVals[0]) / interval, (newVals[1] - oldVals[1]) / interval];
-        minRates = [Math.min(newRates[0], minRates[0]), Math.min(newRates[1], minRates[1])];
-        maxRates = [Math.max(newRates[0], maxRates[0]), Math.max(newRates[1], maxRates[1])];
-        usedValNode.innerHTML = MakeDiv(minVals[0], 'min') + MakeDiv(newVals[0], 'new') + MakeDiv(maxVals[0], 'max');
-        totalValNode.innerHTML = MakeDiv(minVals[1], 'min') + MakeDiv(newVals[1], 'new') + MakeDiv(maxVals[1], 'max');
-        usedRateNode.innerHTML = MakeDiv(minRates[0], 'min', '/s') + MakeDiv(newRates[0], 'new', '/s') + MakeDiv(maxRates[0], 'max', '/s');
-        totalRateNode.innerHTML = MakeDiv(minRates[1], 'min', '/s') + MakeDiv(newRates[1], 'new', '/s') + MakeDiv(maxRates[1], 'max', '/s');
-        // // if (newRates[0] > 0 && newRates[1] > 0) {
-        //     itersForMean                = itersForMean+1;
-        // // }
-        // if (itersForMean < 2) { return; }
-        // sumRates                        = [sumRates[0]+newRates[0],sumRates[1]+newRates[1]];
-        // newMeanRates                    = [sumRates[0]/(itersForMean-1), sumRates[1]/(itersForMean-1)];
-        // minMeanRates                    = [Math.min(newMeanRates[0],minMeanRates[0]),Math.min(newMeanRates[1],minMeanRates[1])];
-        // maxMeanRates                    = [Math.max(newMeanRates[0],maxMeanRates[0]),Math.max(newMeanRates[1],maxMeanRates[1])];
-        // usedMeanRateNode.innerHTML      = MakeDiv(minMeanRates[0],'min','/s')+MakeDiv(newMeanRates[0],'new','/s')+MakeDiv(maxMeanRates[0],'max','/s');
-        // totalMeanRateNode.innerHTML     = MakeDiv(minMeanRates[1],'min','/s')+MakeDiv(newMeanRates[1],'new','/s')+MakeDiv(maxMeanRates[1],'max','/s');
-        // itersForMeanNode.innerHTML      = itersForMean+'/'+iters+' ('+(100*(itersForMean/iters)).toFixed(3)+'%)';
-    }, intervalSetting * 1000);
-
-    function MakeDiv(input, classType, suffix) {
-        suffix = (suffix !== undefined) ? String(suffix) : '';
-        return '<div class="' + classType + '">' +
-            String((input * scale).toFixed(decimals)).padStart(padding, pad) + units + suffix +
-            '</div>';
-    }
-    return myInterval;
+    stringTotal = '%c' + stringTotal.padEnd(12);
+    stringCombined = stringSource + stringNodes + stringUsed + stringTotal;
+    console.log(stringCombined, colorSource, colorNodes, colorUsed, colorTotal);
 }
