@@ -79,8 +79,8 @@ var vs = {
         strokeWidthStates: 1,
     },
     vertices: {
-        minRadius: 4,
-        maxRadius: 15,
+        rMin: 2,
+        rFactor: 50,
         strokeWidth: 1,
     },
     edges: {
@@ -260,9 +260,14 @@ function InitializePage(error, results) {
 function HybridMapClass() {
     // TestApp('HybridMapClass', 1);
     var that = this;
-    var _verticeById = null;
-    var _projection = d3.geoAlbersUsa();
-    var _path = d3.geoPath();
+    that.centroidByState = {};
+    that.$inState = {};
+    that.$outState = {};
+    that.$stateScale = d3.scaleLinear().range([0, 1]);
+    that.$verticeScale = d3.scaleLinear().range([0, 1]);
+    that.verticeById = null;
+    that.projection = d3.geoAlbersUsa();
+    that.path = d3.geoPath();
     var _width = 0;
     that.width = function(_) {
         console.log(''.padStart(2 * stackLevel) + "%cthat.width = function(_) {", "color:blue");
@@ -278,48 +283,18 @@ function HybridMapClass() {
         console.log(''.padStart(2 * stackLevel) + "%cthat.statesFeatures = function(_) {", "color:blue");
         return arguments.length ? (_statesFeatures = _, that) : _statesFeatures;
     };
-    var _$GivenByState = {};
-    that.$GivenByState = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByState = function(_) {", "color:blue");
-        return arguments.length ? (_$GivenByState = _, that) : _$GivenByState;
-    };
-    var _$ReceivedByState = {};
-    that.$ReceivedByState = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByState = function(_) {", "color:blue");
-        return arguments.length ? (_$ReceivedByState = _, that) : _$ReceivedByState;
-    };
-    var _$GivenByStateScale = d3.scaleLinear().range([0, 1]);
-    that.$GivenByStateScale = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByStateScale = function(_) {", "color:blue");
-        return arguments.length ? (_$GivenByStateScale = _, that) : _$GivenByStateScale;
-    };
-    var _$ReceivedByStateScale = d3.scaleLinear().range([0, 1]);
-    that.$ReceivedByStateScale = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByStateScale = function(_) {", "color:blue");
-        return arguments.length ? (_$ReceivedByStateScale = _, that) : _$ReceivedByStateScale;
-    };
-    var _$GivenByVerticeScale = d3.scaleLinear().range([0, 1]);
-    that.$GivenByVerticeScale = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByVerticeScale = function(_) {", "color:blue");
-        return arguments.length ? (_$GivenByVerticeScale = _, that) : _$GivenByVerticeScale;
-    };
-    var _$ReceivedByVerticeScale = d3.scaleLinear().range([0, 1]);
-    that.$ReceivedByVerticeScale = function(_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByVerticeScale = function(_) {", "color:blue");
-        return arguments.length ? (_$ReceivedByVerticeScale = _, that) : _$ReceivedByVerticeScale;
-    };
     var _vertices = null;
     that.vertices = function(vertices) {
         console.log(''.padStart(2 * stackLevel) + "%cthat.vertices = function(vertices) {", "color:blue");
         if (!arguments.length) { return _vertices; }
         _vertices = vertices;
         _vertices.forEach(function(vertice) {
-            vertice.$Given = 0;
-            vertice.$Received = 0;
-            _$GivenByState[vertice.state] = 0;
-            _$ReceivedByState[vertice.state] = 0;
+            vertice.$in = 0;
+            vertice.$out = 0;
+            that.$inState[vertice.state] = 0;
+            that.$outState[vertice.state] = 0;
         });
-        _verticeById = d3.map(_vertices, function(d) { return d.id; });
+        that.verticeById = d3.map(_vertices, function(d) { return d.id; });
         return that;
     };
     var _edges = null;
@@ -328,12 +303,12 @@ function HybridMapClass() {
         if (!arguments.length) { return _edges; }
         _edges = edges;
         _edges.forEach(function(edge) {
-            edge.source = _verticeById.get(edge.source);
-            edge.target = _verticeById.get(edge.target);
-            edge.source.$Given += edge.dollars;
-            edge.target.$Received += edge.dollars;
-            _$GivenByState[edge.source.state] += edge.dollars;
-            _$ReceivedByState[edge.target.state] += edge.dollars;
+            edge.source = that.verticeById.get(edge.source);
+            edge.target = that.verticeById.get(edge.target);
+            edge.target.$in += edge.dollars;
+            edge.source.$out += edge.dollars;
+            that.$inState[edge.target.state] += edge.dollars;
+            that.$outState[edge.source.state] += edge.dollars;
             // edge.topId = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
             // if (edge.topId) {
             //     edge.source.topId = true;
@@ -348,74 +323,63 @@ function HybridMapClass() {
         // });
         return that;
     };
-    that.centroidByState = {};
 
     that.UpdateMap = function() {
         console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateMap = function() {", "color:blue");
         if (logsLvl2) console.log('UpdateMap');
-        var $GivenByStatesArray = Object.keys(_$GivenByState)
-            .map(function(d) { return _$GivenByState[d]; });
-        _$GivenByStateScale.domain([
-            d3.max($GivenByStatesArray),
-            d3.min($GivenByStatesArray)
+        var $inStatesArray = Object.keys(that.$inState).map(d => that.$inState[d]);
+        var $outStatesArray = Object.keys(that.$outState).map(d => that.$outState[d]);
+        that.$stateScale.domain([
+            Math.min(d3.min($inStatesArray), d3.min($outStatesArray)),
+            Math.max(d3.max($inStatesArray), d3.max($outStatesArray))
         ]);
-        var $ReceivedByStatesArray = Object.keys(_$ReceivedByState)
-            .map(function(d) { return _$ReceivedByState[d]; });
-        _$ReceivedByStateScale.domain([
-            d3.min($ReceivedByStatesArray),
-            d3.max($ReceivedByStatesArray)
+        that.$verticeScale.domain([
+            Math.min(d3.min(_vertices, d => d.$in), d3.min(_vertices, d => d.$out)),
+            Math.max(d3.max(_vertices, d => d.$in), d3.max(_vertices, d => d.$out))
         ]);
-        _$GivenByVerticeScale.domain([
-            d3.min(_vertices, function(vertice) { return vertice.$Given; }),
-            d3.max(_vertices, function(vertice) { return vertice.$Given; })
-        ]);
-        _$ReceivedByVerticeScale.domain([
-            d3.min(_vertices, function(vertice) { return vertice.$Received; }),
-            d3.max(_vertices, function(vertice) { return vertice.$Received; })
-        ]);
-        _projection
+        that.projection
             .scale(_width * vs.states.projectionScale)
             .translate([_width / 2, _height / 2]);
-        _path
-            .projection(_projection);
-        //
+        that.path
+            .projection(that.projection);
         statePaths = statesG.selectAll('path.state-path')
             .data(_statesFeatures, function(d) { return d.properties.ansi; });
         statePaths = statePaths.enter().append('path')
             .classed('state-path', true)
             .each(function(d) {
-                d.$Given = parseInt(_$GivenByState[d.properties.ansi]);
-                d.$Received = parseInt(_$ReceivedByState[d.properties.ansi]);
+                d.$in = parseInt(that.$inState[d.properties.ansi]);
+                d.$out = parseInt(that.$outState[d.properties.ansi]);
             })
             .on('mouseover', function(d) {
                 stateSelected = d.properties.ansi;
                 // that
                 //     .UpdateMap();
-                // hoverText.text(d.properties.ansi+': '+d.$Given+' '+d.$Received);
+                // hoverText.text(d.properties.ansi+': '+d.$out+' '+d.$in);
                 // that.UpdateHover('mouse');
             })
             .on('mousemove', function(d) {
                 // that.UpdateHover('mouse');
             })
-            .attr('d', _path)
+            .attr('d', that.path)
             .merge(statePaths);
         statePaths
             .each(function(d) {
-                that.centroidByState[d.properties.ansi] = _path.centroid(d);
+                that.centroidByState[d.properties.ansi] = that.path.centroid(d);
             })
             .classed('inactive', function(d) {
                 return true;
-                // return isNaN(d.$Given) && isNaN(d.$Received);
+                // return isNaN(d.$out) && isNaN(d.$in);
             })
-            .attr('d', _path)
+            .attr('d', that.path)
             .style('stroke-width', vs.states.strokeWidthStates + 'px')
             .style('opacity', function(d) {
                 // if (stateSelected === d.properties.ansi) { return vs.states.selectedOpacity; }
                 return 1;
             })
-            .style('fill', function(d) {
-                return vs.colorScale(5 * _$GivenByStateScale(d.$Given));
-            });
+        // .style('fill', function(d) {
+        //     return vs.colorScale(5 * that.$stateScale(d.$out));
+        // })
+        ;
         // statePaths.each(function(d) {
         //     var centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
@@ -448,7 +412,7 @@ function HybridMapClass() {
         //     .merge(gradesText)
         //     .attr('x', 0.5*vs.grades.w-130)
         //     .attr('y', 0.5*vs.grades.h)
-        //     .text('$ Given');
+        //     .text('$out');
         gradeGs = gradesG.selectAll('g.grade-g')
             .data(gradesData);
         gradeGs = gradeGs.enter().append('g')
@@ -563,14 +527,18 @@ function HybridMapClass() {
                     .attr('x', 0)
                     .attr('y', 1.5 * vs.info.textRowH)
                     .text('State: ' + datum.state);
-                d3.select(this).append('text')
-                    .attr('x', 0)
-                    .attr('y', 2.5 * vs.info.textRowH)
-                    .text('Given: ' + d3.format('$,')(datum.$Given));
-                d3.select(this).append('text')
-                    .attr('x', 0)
-                    .attr('y', 3.5 * vs.info.textRowH)
-                    .text('Received: ' + d3.format('$,')(datum.$Received));
+                if (datum.$in > 0) {
+                    d3.select(this).append('text')
+                        .attr('x', 0)
+                        .attr('y', 2.5 * vs.info.textRowH)
+                        .text('Received: ' + d3.format('$,')(datum.$in));
+                }
+                if (datum.$out > 0) {
+                    d3.select(this).append('text')
+                        .attr('x', 0)
+                        .attr('y', 3.5 * vs.info.textRowH)
+                        .text('Donated: ' + d3.format('$,')(datum.$out));
+                }
             })
             .style('opacity', 0)
             .merge(infoTextGs);
@@ -630,7 +598,7 @@ function HybridMapClass() {
         // },
         forceCollide: {
             iterations: {
-                value: 1, // 1
+                value: 10, // 1
                 min: 0,
                 max: 10,
                 step: 1,
@@ -639,11 +607,11 @@ function HybridMapClass() {
                 value: 1, // 1
                 min: 0,
                 max: 1,
-                step: 0.01,
+                step: 0.1,
             },
             radius: {
                 value: function(node, i, nodes) {
-                    return Math.max(vs.vertices.minRadius, node.r) + 0.5 * vs.vertices.strokeWidth;
+                    return 1.5 + node.r;
                 },
                 // value: 5,
                 // min: 0,
@@ -750,7 +718,7 @@ function HybridMapClass() {
                 step: 0.01,
             },
             alphaMin: {
-                value: 0.2, //0.001,
+                value: 0.4, //0.001,
                 min: 0,
                 max: 1,
                 step: 0.05,
@@ -768,7 +736,7 @@ function HybridMapClass() {
                 step: 0.01,
             },
             velocityDecay: {
-                value: 0.4,
+                value: 0.3,
                 min: 0,
                 max: 1,
                 step: 0.1,
@@ -832,24 +800,20 @@ function HybridMapClass() {
             .merge(verticeCircles);
         verticeCircles
             .each(function(d) {
-                if (topIds.includes(d.id)) {
-                    d.r = vs.vertices.maxRadius;
+                var $in = that.$verticeScale(d.$in);
+                var $out = that.$verticeScale(d.$out);
+                if ($in > $out) {
+                    d.r = Math.max(vs.vertices.rMin, vs.vertices.rFactor * Math.sqrt($in));
                 } else {
-                    d.r = vs.vertices.minRadius;
+                    d.r = Math.max(vs.vertices.rMin, vs.vertices.rFactor * Math.sqrt($out));
                 }
-                // d.r = vs.vertices.maxRadius;
-                // } else if (nodeSelected) {
-                //     d.r = 2+15*Math.sqrt(that.$ReceivedByVerticeScale()(d.$Received));
-                // } else {
-                //     d.r = 2+15*Math.sqrt(that.$GivenByVerticeScale()(d.$Given));
-                // }
             })
             .style('stroke-width', vs.vertices.strokeWidth + 'px')
             .style('fill', function(d) {
                 if (topIds.includes(d.id)) {
                     return d3.schemeCategory20[d.i];
-                } else if (d.$Given > 0) {
-                    return 'black';
+                } else if (d.$out > 0) {
+                    return 'gainsboro';
                 } else {
                     return 'white';
                 }
@@ -857,21 +821,26 @@ function HybridMapClass() {
                 // if (topIds.includes(d.id)) {
                 //     return 'white';
                 // }
-                // var fillValue = that.$GivenByStateScale()(that.$GivenByState()[d.state]);
+                // var fillValue = that.$stateScale(that.$outState[d.state]);
                 // return vs.colorScale(fillValue);
             })
             .style('stroke', function(d) {
-                if (topIds.includes(d.id)) {
-                    return 'black';
-                } else if (d.$Given > 0) {
-                    return null;
-                } else {
-                    return 'black';
-                }
-                // if (d.i > 12) {
-                //     return 'gainsboro';
+                return 'gray';
+                // if (topIds.includes(d.id)) {
+                //     return d3.schemeCategory20[d.i];
                 // } else {
-                //     return d3.schemeCategory10[d.i];
+                //     return 'gray';
+                // }
+                // } else if (d.$out > 0) {
+                //     return 'gray';
+                // }
+                // } else {
+                //     return 'black';
+                // }
+                // } else if (d.$out > 0) {
+                //     return null;
+                // } else {
+                //     return 'black';
                 // }
             })
             .attr('r', function(d) { return d.r; })
@@ -886,7 +855,7 @@ function HybridMapClass() {
                 } else if (linksSelected.map(d => d.target.id).includes(d.id)) {
                     return 1;
                 } else {
-                    return 0;
+                    return 0.05;
                 }
             });
         edgeLines = edgesG.selectAll('line.edge-line')
@@ -913,8 +882,12 @@ function HybridMapClass() {
                     return d3.schemeCategory20[d.source.i];
                 } else if (topIds.includes(d.target.id)) {
                     return d3.schemeCategory20[d.target.i];
+                } else if (d.source.$out > 0) {
+                    return 'gray';
+                } else if (d.target.$out > 0) {
+                    return 'gray';
                 } else {
-                    return 'black';
+                    return 'gainsboro';
                 }
                 // if (nodeSelected) {
                 //     if (nodeSelected.id === d.source.id) {
@@ -960,7 +933,7 @@ function HybridMapClass() {
             if (forceType === 'simulation') { return; }
             var optionsObj = that.forcesObj[forceType];
             if (optionsObj['_IsolateForce'] === true) {
-                Object.keys(that.$GivenByState()).forEach(function(state) {
+                Object.keys(that.$outState).forEach(function(state) {
                     var cx = that.centroidByState[state][0];
                     var cy = that.centroidByState[state][1];
                     var forceNew = _IsolateForce(d3[forceType](), function(d) {
