@@ -20,10 +20,10 @@ body {
   font-size: 14px;
 }
 #svg #bg-rect {
-  fill: lightblue;
+  fill: PowderBlue;
 }
 #svg path.state-path {
-  stroke: lightblue;
+  stroke: PowderBlue;
 }
 #svg path.state-path.inactive {
   pointer-events: none !important;

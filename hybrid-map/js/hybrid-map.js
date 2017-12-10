@@ -76,7 +76,7 @@ var vs = {
         wMin: 300,
         h: null,
         ratioMapWH: 1.6,
-        projectionScale: 1.25,
+        projectionScale: 1.2,
         selectedOpacity: 0.3,
         strokeWidthStates: 1
     },
@@ -212,6 +212,8 @@ function InitializePage(error, results) {
         // that.UpdateHover('mouse');
         // hybridMapObj
         //     .UpdateVerticesEdges();
+    }).style('opacity', function (d) {
+        return 1;
     });
     UpdatePageDimensions();
     requestAnimationFrame(function () {
@@ -227,9 +229,9 @@ function HybridMapClass() {
     // TestApp('HybridMapClass', 1);
     var that = this;
     that.centroidByState = {};
+    that.$total = 0;
     that.$inState = {};
     that.$outState = {};
-    that.$stateScale = d3.scaleLinear().range([0, 1]);
     that.$verticeScale = d3.scaleLinear().range([0, 1]);
     that.verticeById = null;
     that.projection = d3.geoAlbersUsa();
@@ -275,12 +277,13 @@ function HybridMapClass() {
         }
         _edges = edges;
         _edges.forEach(function (edge) {
-            edge.source = that.verticeById.get(edge.source);
             edge.target = that.verticeById.get(edge.target);
+            edge.source = that.verticeById.get(edge.source);
             edge.target.$in += edge.dollars;
             edge.source.$out += edge.dollars;
             that.$inState[edge.target.state] += edge.dollars;
             that.$outState[edge.source.state] += edge.dollars;
+            that.$total += edge.dollars;
             // edge.topId = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
             // if (edge.topId) {
             //     edge.source.topId = true;
@@ -305,16 +308,7 @@ function HybridMapClass() {
         var $outStatesArray = Object.keys(that.$outState).map(function (d) {
             return that.$outState[d];
         });
-        that.$stateScale.domain([Math.min(d3.min($inStatesArray), d3.min($outStatesArray)), Math.max(d3.max($inStatesArray), d3.max($outStatesArray))]);
-        that.$verticeScale.domain([Math.min(d3.min(_vertices, function (d) {
-            return d.$in;
-        }), d3.min(_vertices, function (d) {
-            return d.$out;
-        })), Math.max(d3.max(_vertices, function (d) {
-            return d.$in;
-        }), d3.max(_vertices, function (d) {
-            return d.$out;
-        }))]);
+        that.$verticeScale.domain([0, that.$total]);
         that.projection.scale(_width * vs.states.projectionScale).translate([_width / 2, _height / 2]);
         that.path.projection(that.projection);
         statePaths = statesG.selectAll('path.state-path').data(_statesFeatures, function (d) {
@@ -340,11 +334,7 @@ function HybridMapClass() {
         }).attr('d', that.path).style('stroke-width', vs.states.strokeWidthStates + 'px').style('opacity', function (d) {
             // if (stateSelected === d.properties.ansi) { return vs.states.selectedOpacity; }
             return 1;
-        })
-        // .style('fill', function(d) {
-        //     return vs.colorScale(5 * that.$stateScale(d.$out));
-        // })
-        ;
+        });
         // statePaths.each(function(d) {
         //     var centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
@@ -662,21 +652,7 @@ function HybridMapClass() {
                 d.i = iCount;
                 iCount += 1;
             }
-        }).classed('vertice-circle', true)
-        // .on('click', function(d) {
-        //     if (!d.selected) {
-        //         d.selected = true;
-        //         d.fx = d.x;
-        //         d.fy = d.y;
-        //     } else {
-        //         delete(d.selected);
-        //         d.fx = null;
-        //         d.fy = null;
-        //     }
-        //     that
-        //         .UpdateVerticesEdges();
-        // })
-        .on('mouseover', function (d) {
+        }).classed('vertice-circle', true).on('mouseover', function (d) {
             if (isDragging) {
                 return;
             }
@@ -719,7 +695,6 @@ function HybridMapClass() {
             // if (topIds.includes(d.id)) {
             //     return 'white';
             // }
-            // var fillValue = that.$stateScale(that.$outState[d.state]);
             // return vs.colorScale(fillValue);
         }).style('stroke', function (d) {
             return 'gray';
@@ -782,23 +757,6 @@ function HybridMapClass() {
             } else {
                 return 'gainsboro';
             }
-            // if (nodeSelected) {
-            //     if (nodeSelected.id === d.source.id) {
-            //         if (topIds.includes(d.source.id)) {
-            //             return d3.schemeCategory20[d.source.i];
-            //         } else if (topIds.includes(d.target.id)) {
-            //             return d3.schemeCategory20[d.target.i];
-            //         }
-            //     } else if (nodeSelected.id === d.target.id) {
-            //         if (topIds.includes(d.target.id)) {
-            //             return d3.schemeCategory20[d.target.i];
-            //         } else if (topIds.includes(d.source.id)) {
-            //             return d3.schemeCategory20[d.source.i];
-            //         }
-            //     }
-            // } else {
-            //     return 'black';
-            // }
         })
         // .transition().duration(transitionDuration).ease(transitionEase)
         .style('display', function (d) {
