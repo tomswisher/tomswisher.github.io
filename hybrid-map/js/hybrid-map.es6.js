@@ -79,7 +79,7 @@ var vs = {
         strokeWidthStates: 1,
     },
     vertices: {
-        rMin: 2,
+        rMin: 3,
         rFactor: 50,
         strokeWidth: 1,
     },
@@ -238,7 +238,7 @@ function InitializePage(error, results) {
         .on('mouseover', function() {
             stateSelected = '';
             // hybridMapObj
-            //     .UpdateMap();
+            //     .UpdateStates();
             // hoverText
             //     .text('');
             // that.UpdateHover('mouse');
@@ -325,18 +325,20 @@ function HybridMapClass() {
         // _vertices = _vertices.filter(function(vertice) {
         //     return vertice.topId;
         // });
+        that.$verticeScale
+            .domain([0, that.$total]);
         return that;
     };
 
-    that.UpdateMap = function() {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateMap = function() {", "color:blue");
-        if (logsLvl2) console.log('UpdateMap');
-        var $inStatesArray = Object.keys(that.$inState).map(d => that.$inState[d]);
-        var $outStatesArray = Object.keys(that.$outState).map(d => that.$outState[d]);
-        that.$verticeScale.domain([
-            0,
-            that.$total
-        ]);
+    that.UpdateStates = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateStates = function() {", "color:blue");
+        if (logsLvl2) console.log('UpdateStates');
+        bgRect
+            .attr('width', vs.states.w)
+            .attr('height', vs.states.h);
+        clipPathRect
+            .attr('width', vs.states.w)
+            .attr('height', vs.svg.h);
         that.projection
             .scale(_width * vs.states.projectionScale)
             .translate([_width / 2, _height / 2]);
@@ -353,7 +355,7 @@ function HybridMapClass() {
             .on('mouseover', function(d) {
                 stateSelected = d.properties.ansi;
                 // that
-                //     .UpdateMap();
+                //     .UpdateStates();
                 // hoverText.text(d.properties.ansi+': '+d.$out+' '+d.$in);
                 // that.UpdateHover('mouse');
             })
@@ -368,14 +370,9 @@ function HybridMapClass() {
             })
             .classed('inactive', function(d) {
                 return true;
-                // return isNaN(d.$out) && isNaN(d.$in);
             })
             .attr('d', that.path)
-            .style('stroke-width', vs.states.strokeWidthStates + 'px')
-            .style('opacity', function(d) {
-                // if (stateSelected === d.properties.ansi) { return vs.states.selectedOpacity; }
-                return 1;
-            });
+            .style('stroke-width', vs.states.strokeWidthStates + 'px');
         // statePaths.each(function(d) {
         //     var centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
@@ -388,7 +385,7 @@ function HybridMapClass() {
         //         .style('stroke', 'red');
         //     d3.select(this).remove();
         // });
-        TestApp('UpdateMap');
+        TestApp('UpdateStates');
         return that;
     };
 
@@ -425,13 +422,13 @@ function HybridMapClass() {
                 // gradesObj[d] = true;
                 // UpdateGrades();
                 // that
-                //     .UpdateMap();
+                //     .UpdateStates();
             })
             .on('mouseout', function(d) {
                 // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = true;
                 // UpdateGrades();
                 // that
-                //     .UpdateMap();
+                //     .UpdateStates();
             })
             .each(function(grade) {
                 var gradeBG = d3.select(this).selectAll('rect.grade-bg')
@@ -1185,16 +1182,10 @@ function UpdatePageDimensions() {
     svg
         .attr('width', vs.svg.w)
         .attr('height', vs.svg.h);
-    bgRect
-        .attr('width', vs.states.w)
-        .attr('height', vs.states.h);
-    clipPathRect
-        .attr('width', vs.states.w)
-        .attr('height', vs.svg.h);
     hybridMapObj
         .width(vs.states.w)
         .height(vs.states.h)
-        .UpdateMap('UpdatePageDimensions')
+        .UpdateStates()
         .UpdateGrades()
         .UpdateInfo()
         .UpdateFilters()
