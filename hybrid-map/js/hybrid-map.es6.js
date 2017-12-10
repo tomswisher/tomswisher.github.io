@@ -4,7 +4,6 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-console.log('Loading app...');
 var isLoaded = false;
 var logsLvl0 = true,
     logsLvl1 = false,
@@ -32,7 +31,7 @@ var stringSource = '',
     stringSymbol = '';
 var mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
     mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
-console.log('mobileBrowser', mobileBrowser);
+if (mobileBrowser) { console.log('mobileBrowser', mobileBrowser); }
 
 // D3 Selections -----------------------------------------------------------------------------------
 
@@ -88,11 +87,11 @@ var vs = {
         strokeWidth: 1,
     },
     info: {
-        w: 396 / 2,
+        w: 0.5 * 396,
         h: null,
         wImage: null,
         hImage: null,
-        ratioImageWH: 396 / 432,
+        ratioImageWH: 0.5 * 396 / (0.5 * 432),
         margin: 5,
         textRowH: 15,
     },
@@ -114,7 +113,13 @@ var vs = {
         w: null,
         h: 70,
     },
-    options: {},
+    options: {
+        wSmall: 50,
+        wMedium: 90,
+        wSlider: 130,
+        wRow: null,
+        hRow: 25,
+    },
     test: {
         colorNeutral: 'black',
         colorBad: 'firebrick',
@@ -124,6 +129,7 @@ var vs = {
 vs.info.wImage = vs.info.w - 2 * vs.info.margin;
 vs.info.hImage = vs.info.wImage / vs.info.ratioImageWH;
 vs.info.h = vs.info.hImage + 4 * vs.info.textRowH + 3 * vs.info.margin;
+vs.options.wRow = 2 * vs.options.wSmall + 3 * vs.options.wMedium + vs.options.wSlider;
 vs.colorScale = d3.scaleQuantize()
     .domain([0, 5])
     .range(vs.grades.colorArray);
@@ -170,7 +176,6 @@ var topIds = [
     'Laura Arnold'
 ];
 var hybridMapObj = null;
-var graphObj = null;
 var nodesAll = [];
 var linksAll = [];
 var infoData = [];
@@ -187,6 +192,7 @@ var reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // Window Events -----------------------------------------------------------------------------------
 
 window.onload = function() {
+    TestApp('hybrid-map', 1);
     d3.queue()
         .defer(d3.json, 'data/us-states-features.json')
         .defer(d3.json, 'data/nodes-links-04-06-2017.json')
@@ -218,7 +224,8 @@ function InitializePage(error, results) {
         .statesFeatures(results[0].features)
         .vertices(results[1].nodes)
         .edges(results[1].links);
-    graphObj = (new GraphClass());
+    hybridMapObj.simulation = d3.forceSimulation(hybridMapObj.vertices())
+        .on('tick', hybridMapObj.Tick);
     vs.hover.h = parseFloat(svg.style('font-size')) + 2 * vs.hover.margin;
     hoverRect
         .attr('height', vs.hover.h)
@@ -235,17 +242,17 @@ function InitializePage(error, results) {
             // hoverText
             //     .text('');
             // that.UpdateHover('mouse');
-            // graphObj
+            // hybridMapObj
             //     .UpdateVerticesEdges();
         });
     UpdatePageDimensions();
     requestAnimationFrame(function() {
-        graphObj
+        hybridMapObj
             .UpdateOptions();
         body
             .classed('loading', false);
         isLoaded = true;
-        console.log('Loading complete.');
+        TestApp('hybrid-map', -1);
     });
     TestApp('InitializePage', -1);
 }
@@ -258,46 +265,52 @@ function HybridMapClass() {
     var _path = d3.geoPath();
     var _width = 0;
     that.width = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.width = function(_) {", "color:blue");
         return arguments.length ? (_width = _, that) : _width;
     };
     var _height = 0;
     that.height = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.height = function(_) {", "color:blue");
         return arguments.length ? (_height = _, that) : _height;
     };
     var _statesFeatures = null;
     that.statesFeatures = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.statesFeatures = function(_) {", "color:blue");
         return arguments.length ? (_statesFeatures = _, that) : _statesFeatures;
-    };
-    var _centroidByState = {};
-    that.centroidByState = function(_) {
-        return arguments.length ? (_centroidByState = _, that) : _centroidByState;
     };
     var _$GivenByState = {};
     that.$GivenByState = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByState = function(_) {", "color:blue");
         return arguments.length ? (_$GivenByState = _, that) : _$GivenByState;
     };
     var _$ReceivedByState = {};
     that.$ReceivedByState = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByState = function(_) {", "color:blue");
         return arguments.length ? (_$ReceivedByState = _, that) : _$ReceivedByState;
     };
     var _$GivenByStateScale = d3.scaleLinear().range([0, 1]);
     that.$GivenByStateScale = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByStateScale = function(_) {", "color:blue");
         return arguments.length ? (_$GivenByStateScale = _, that) : _$GivenByStateScale;
     };
     var _$ReceivedByStateScale = d3.scaleLinear().range([0, 1]);
     that.$ReceivedByStateScale = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByStateScale = function(_) {", "color:blue");
         return arguments.length ? (_$ReceivedByStateScale = _, that) : _$ReceivedByStateScale;
     };
     var _$GivenByVerticeScale = d3.scaleLinear().range([0, 1]);
     that.$GivenByVerticeScale = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$GivenByVerticeScale = function(_) {", "color:blue");
         return arguments.length ? (_$GivenByVerticeScale = _, that) : _$GivenByVerticeScale;
     };
     var _$ReceivedByVerticeScale = d3.scaleLinear().range([0, 1]);
     that.$ReceivedByVerticeScale = function(_) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.$ReceivedByVerticeScale = function(_) {", "color:blue");
         return arguments.length ? (_$ReceivedByVerticeScale = _, that) : _$ReceivedByVerticeScale;
     };
     var _vertices = null;
     that.vertices = function(vertices) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.vertices = function(vertices) {", "color:blue");
         if (!arguments.length) { return _vertices; }
         _vertices = vertices;
         _vertices.forEach(function(vertice) {
@@ -311,6 +324,7 @@ function HybridMapClass() {
     };
     var _edges = null;
     that.edges = function(edges) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.edges = function(edges) {", "color:blue");
         if (!arguments.length) { return _edges; }
         _edges = edges;
         _edges.forEach(function(edge) {
@@ -334,8 +348,10 @@ function HybridMapClass() {
         // });
         return that;
     };
+    that.centroidByState = {};
 
     that.UpdateMap = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateMap = function() {", "color:blue");
         if (logsLvl2) console.log('UpdateMap');
         var $GivenByStatesArray = Object.keys(_$GivenByState)
             .map(function(d) { return _$GivenByState[d]; });
@@ -385,7 +401,7 @@ function HybridMapClass() {
             .merge(statePaths);
         statePaths
             .each(function(d) {
-                _centroidByState[d.properties.ansi] = _path.centroid(d);
+                that.centroidByState[d.properties.ansi] = _path.centroid(d);
             })
             .classed('inactive', function(d) {
                 return true;
@@ -401,7 +417,7 @@ function HybridMapClass() {
                 return vs.colorScale(5 * _$GivenByStateScale(d.$Given));
             });
         // statePaths.each(function(d) {
-        //     var centroid = that.centroidByState()[d.properties.ansi];
+        //     var centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
         //     var rect = d3.select(this.parentNode).append('rect')
         //         .attr('x', centroid[0]-20)
@@ -417,6 +433,7 @@ function HybridMapClass() {
     };
 
     that.UpdateGrades = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateGrades = function() {", "color:blue");
         if (vs.grades.h === 0) {
             return that;
         }
@@ -499,6 +516,7 @@ function HybridMapClass() {
     };
 
     that.UpdateInfo = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateInfo = function() {", "color:blue");
         if (nodeSelected && !(infoData.filter(d => d.id === nodeSelected.id)[0])) {
             infoData.push(nodeSelected);
         }
@@ -514,7 +532,7 @@ function HybridMapClass() {
                     .attr('height', vs.info.hImage)
                     .attr('xlink:href', function() {
                         if (!topIds.includes(datum.id)) {
-                            return 'img/mu.png';
+                            return null;
                         } else {
                             return 'img/' + datum.id + '.jpg';
                         }
@@ -562,9 +580,11 @@ function HybridMapClass() {
                 return (nodeSelected && d.id === nodeSelected.id) ? 1 : 0;
             });
         TestApp('UpdateInfo');
+        return that;
     };
 
     that.UpdateHover = function(source) {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateHover = function(source) {", "color:blue");
         vs.hover.w = 0;
         if (hoverText.text() !== '') {
             vs.hover.w = hoverText.node().getBBox().width + 2 * vs.hover.margin;
@@ -578,9 +598,9 @@ function HybridMapClass() {
                 if (source === 'mouse') {
                     tx = d3.mouse(svg.node())[0];
                     ty = d3.mouse(svg.node())[1];
-                } else if (that.centroidByState()[stateSelected]) {
-                    tx = that.centroidByState()[stateSelected][0];
-                    ty = that.centroidByState()[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
+                } else if (that.centroidByState[stateSelected]) {
+                    tx = that.centroidByState[stateSelected][0];
+                    ty = that.centroidByState[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
                 } else {
                     tx = that.width() / 2;
                     ty = that.height() / 2;
@@ -597,14 +617,7 @@ function HybridMapClass() {
             });
         TestApp('UpdateHover');
     };
-    TestApp('HybridMapClass');
-    return that;
-}
 
-function GraphClass() {
-    var that = this;
-    that.simulation = d3.forceSimulation(hybridMapObj.vertices())
-        .on('tick', _Tick);
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
@@ -732,34 +745,28 @@ function GraphClass() {
         simulation: {
             alpha: {
                 value: 1,
-                min: 0.05,
+                min: 0,
                 max: 1,
                 step: 0.01,
             },
-            // alphaMin: {
-            //     value: ,
-            //     min: ,
-            //     max: ,
-            //     step: ,
-            //     category: 'simulation',
-            //     name: 'alphaMin',
-            // },
-            // alphaDecay: {
-            //     value: ,
-            //     min: ,
-            //     max: ,
-            //     step: ,
-            //     category: 'simulation',
-            //     name: 'alphaDecay',
-            // },
-            // alphaTarget: {
-            //     value: ,
-            //     min: ,
-            //     max: ,
-            //     step: ,
-            //     category: 'simulation',
-            //     name: 'alphaTarget',
-            // },
+            alphaMin: {
+                value: 0.2, //0.001,
+                min: 0,
+                max: 1,
+                step: 0.05,
+            },
+            alphaDecay: {
+                value: 0.02276277904418933,
+                min: 0.01,
+                max: 0.2,
+                step: 0.01,
+            },
+            alphaTarget: {
+                value: 0,
+                min: 0,
+                max: 0.19,
+                step: 0.01,
+            },
             velocityDecay: {
                 value: 0.4,
                 min: 0,
@@ -770,13 +777,14 @@ function GraphClass() {
     };
 
     that.UpdateVerticesEdges = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateVerticesEdges = function() {", "color:blue");
         var iCount = 0;
         verticeCircles = verticesG.selectAll('circle.vertice-circle')
-            .data(hybridMapObj.vertices());
+            .data(that.vertices());
         verticeCircles = verticeCircles.enter().append('circle')
             .each(function(d, i) {
-                d.x = hybridMapObj.centroidByState()[d.state][0];
-                d.y = hybridMapObj.centroidByState()[d.state][1];
+                d.x = that.centroidByState[d.state][0];
+                d.y = that.centroidByState[d.state][1];
                 if (topIds.includes(d.id)) {
                     d.i = iCount;
                     iCount += 1;
@@ -799,12 +807,12 @@ function GraphClass() {
             .on('mouseover', function(d) {
                 if (isDragging) { return; }
                 nodeSelected = d;
-                linksSelected = hybridMapObj.edges().filter(d => {
+                linksSelected = that.edges().filter(d => {
                     return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
                 });
                 that
                     .UpdateVerticesEdges();
-                hybridMapObj
+                that
                     .UpdateInfo();
             })
             .on('mouseout', function(d) {
@@ -813,7 +821,7 @@ function GraphClass() {
                 linksSelected = [];
                 that
                     .UpdateVerticesEdges();
-                hybridMapObj
+                that
                     .UpdateInfo();
             }).call(d3.drag()
                 .on('start', _DragStarted)
@@ -831,9 +839,9 @@ function GraphClass() {
                 }
                 // d.r = vs.vertices.maxRadius;
                 // } else if (nodeSelected) {
-                //     d.r = 2+15*Math.sqrt(hybridMapObj.$ReceivedByVerticeScale()(d.$Received));
+                //     d.r = 2+15*Math.sqrt(that.$ReceivedByVerticeScale()(d.$Received));
                 // } else {
-                //     d.r = 2+15*Math.sqrt(hybridMapObj.$GivenByVerticeScale()(d.$Given));
+                //     d.r = 2+15*Math.sqrt(that.$GivenByVerticeScale()(d.$Given));
                 // }
             })
             .style('stroke-width', vs.vertices.strokeWidth + 'px')
@@ -849,7 +857,7 @@ function GraphClass() {
                 // if (topIds.includes(d.id)) {
                 //     return 'white';
                 // }
-                // var fillValue = hybridMapObj.$GivenByStateScale()(hybridMapObj.$GivenByState()[d.state]);
+                // var fillValue = that.$GivenByStateScale()(that.$GivenByState()[d.state]);
                 // return vs.colorScale(fillValue);
             })
             .style('stroke', function(d) {
@@ -882,7 +890,7 @@ function GraphClass() {
                 }
             });
         edgeLines = edgesG.selectAll('line.edge-line')
-            .data(hybridMapObj.edges());
+            .data(that.edges());
         edgeLines = edgeLines.enter().append('line')
             .classed('edge-line', true)
             .attr('x1', function(d) {
@@ -947,13 +955,14 @@ function GraphClass() {
     };
 
     that.UpdateSimulation = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateSimulation = function() {", "color:blue");
         Object.keys(that.forcesObj).forEach(function(forceType) {
             if (forceType === 'simulation') { return; }
             var optionsObj = that.forcesObj[forceType];
             if (optionsObj['_IsolateForce'] === true) {
-                Object.keys(hybridMapObj.$GivenByState()).forEach(function(state) {
-                    var cx = hybridMapObj.centroidByState()[state][0];
-                    var cy = hybridMapObj.centroidByState()[state][1];
+                Object.keys(that.$GivenByState()).forEach(function(state) {
+                    var cx = that.centroidByState[state][0];
+                    var cy = that.centroidByState[state][1];
                     var forceNew = _IsolateForce(d3[forceType](), function(d) {
                         return d.state === state;
                     });
@@ -992,6 +1001,12 @@ function GraphClass() {
                     .force(forceType, forceNew);
             }
         });
+        Object.keys(that.forcesObj.simulation).forEach(function(optionName) {
+            that.simulation[optionName](that.forcesObj.simulation[optionName].value);
+        });
+        that.simulation
+            .alpha(1)
+            .restart();
         that.optionsData = [];
         Object.keys(that.forcesObj).forEach(function(forceType) {
             var optionsObj = that.forcesObj[forceType];
@@ -1002,19 +1017,17 @@ function GraphClass() {
                 that.optionsData.push(optionsObj[optionName]);
             });
         });
-        that.simulation
-            .alpha(1)
-            .restart();
         TestApp('UpdateSimulation');
         return that;
     };
 
     that.UpdateFilters = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateFilters = function() {", "color:blue");
         filtersDiv
             .style('width', vs.filters.w + 'px')
             .style('height', vs.filters.h + 'px')
-            .style('top', (vs.states.h + vs.grades.h) + 'px')
-            .style('left', 0 + 'px');
+            .style('left', '0px')
+            .style('top', (vs.states.h + vs.grades.h) + 'px');
         filtersYears = filtersDiv.selectAll('div.filters-year')
             .data(yearsData);
         filtersYears = filtersYears.enter().append('div')
@@ -1036,7 +1049,8 @@ function GraphClass() {
                     });
             })
             .merge(filtersYears)
-            .style('width', (vs.filters.w / yearsData.length) + 'px');
+            .style('width', (vs.filters.w / yearsData.length) + 'px')
+            .style('height', (0.5 * vs.filters.h) + 'px');
         filtersReports = filtersDiv.selectAll('div.filters-report')
             .data(reportsData);
         filtersReports = filtersReports.enter().append('div')
@@ -1058,11 +1072,13 @@ function GraphClass() {
                     });
             })
             .merge(filtersReports)
-            .style('width', (vs.filters.w / reportsData.length) + 'px');
+            .style('width', (vs.filters.w / reportsData.length) + 'px')
+            .style('height', (0.5 * vs.filters.h) + 'px');
         return that;
     };
 
     that.UpdateOptions = function() {
+        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateOptions = function() {", "color:blue");
         optionsDiv
             .style('left', '0px')
             .style('top', Math.max(vs.svg.h, vs.states.h + vs.grades.h + vs.filters.h) + 'px');
@@ -1120,10 +1136,20 @@ function GraphClass() {
                             return datum.value;
                         }
                     });
-            });
-        optionsAlphaLabel = optionRows.selectAll('label.option-value')
+                d3.select(this).selectAll('label.label-small')
+                    .style('width', vs.options.wSmall + 'px');
+                d3.select(this).selectAll('label.label-medium')
+                    .style('width', vs.options.wMedium + 'px');
+                d3.select(this).selectAll('input[type=\'Range\']')
+                    .style('width', vs.options.wSlider + 'px');
+            })
+            .style('width', vs.options.wRow + 'px')
+            .selectAll('*')
+            .style('height', vs.options.hRow + 'px')
+            .style('line-height', vs.options.hRow + 'px');
+        optionsAlphaLabel = optionsDiv.selectAll('label.option-value')
             .filter(function(d) { return d._category === 'simulation' && d._name === 'alpha'; });
-        optionsAlphaSlider = optionRows.selectAll('input[type="range"]')
+        optionsAlphaSlider = optionsDiv.selectAll('input[type="range"]')
             .filter(function(d) { return d._category === 'simulation' && d._name === 'alpha'; });
         TestApp('UpdateOptions');
         return that;
@@ -1132,7 +1158,8 @@ function GraphClass() {
     function _IsolateForce(force, filter) {
         var initialize = force.initialize;
         force.initialize = function() {
-            initialize.call(force, hybridMapObj.vertices().filter(filter));
+            console.log(''.padStart(2 * stackLevel) + "%cforce.initialize = function() {", "color:blue");
+            initialize.call(force, that.vertices().filter(filter));
         };
         return force;
     }
@@ -1142,7 +1169,7 @@ function GraphClass() {
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
         d.fy = d.y;
-        // _Tick();
+        // that.Tick();
     }
 
     function _Dragged(d) {
@@ -1152,7 +1179,7 @@ function GraphClass() {
         d.y = d3.event.y;
         d.cx = d3.event.x;
         d.cy = d3.event.y;
-        _Tick();
+        that.Tick();
     }
 
     function _DragEnded(d) {
@@ -1166,7 +1193,7 @@ function GraphClass() {
         }
     }
 
-    function _Tick() {
+    that.Tick = function() {
         verticeCircles
             // .interrupt('vertices-transition')
             // .transition('vertices-transition')
@@ -1197,9 +1224,10 @@ function GraphClass() {
             .text(that.forcesObj.simulation.alpha.value);
         optionsAlphaSlider
             .property('value', that.forcesObj.simulation.alpha.value);
-        // TestApp('_Tick');
-    }
+        // TestApp('Tick');
+    };
     TestApp('GraphClass');
+    return that;
 }
 
 function UpdatePageDimensions() {
@@ -1230,8 +1258,7 @@ function UpdatePageDimensions() {
         .height(vs.states.h)
         .UpdateMap('UpdatePageDimensions')
         .UpdateGrades()
-        .UpdateInfo();
-    graphObj
+        .UpdateInfo()
         .UpdateFilters()
         .UpdateVerticesEdges()
         .UpdateSimulation()

@@ -57,6 +57,14 @@ body {
   text-anchor: middle;
   pointer-events: none;
 }
+#info-g rect.info-bg-rect {
+  stroke: gainsboro;
+  fill: white;
+}
+#info-g g.info-text-g text {
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
 #filters-div {
   position: absolute;
   background: white;
@@ -69,50 +77,26 @@ body {
 }
 #options-div {
   position: absolute;
-  display: inline-block;
+  background: white;
   width: 100%;
   height: auto;
 }
-.option-row {
+#options-div .option-row {
   display: inline-block;
-  width: 500px;
   outline: 1px solid gainsboro;
 }
-.option-row > * {
+#options-div .option-row > * {
   font-size: 14px;
-  height: 28px;
-  line-height: 28px;
 }
-.option-row label {
+#options-div .option-row label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
   dominant-baseline: central;
 }
-.option-row label.label-small {
-  width: 50px;
-}
-.option-row label.label-medium {
-  width: 90px;
-}
-.option-row input[type='Range'] {
-  width: 130px;
+#options-div .option-row input[type='Range'] {
   margin: 0px;
-}
-#info-g rect.info-bg-rect {
-  stroke: gainsboro;
-  fill: white;
-}
-#info-g g.info-text-g text {
-  dominant-baseline: middle;
-  text-anchor: middle;
-}
-.vspacer-10 {
-  height: 10px;
-}
-.vspacer-15 {
-  height: 15px;
 }
 /* General Styles */
 .hovered {
@@ -145,27 +129,4 @@ body {
   -webkit-filter: grayscale(100%);
   /* Safari 6.0 - 9.0 */
   filter: grayscale(100%);
-}
-#memory-div {
-  display: inline-block;
-  width: 100%;
-  height: auto;
-  font-family: monospace;
-  font-size: 14px;
-}
-#memory-div div {
-  display: inline-block;
-  width: 400px;
-  height: 16px;
-}
-#memory-div div.cell {
-  display: inline-block;
-  width: 200px;
-  height: auto;
-}
-#memory-div div.min {
-  color: green;
-}
-#memory-div div.max {
-  color: firebrick;
 }
