@@ -5,10 +5,9 @@
 // Performance -------------------------------------------------------------------------------------
 
 let isLoaded = false;
-let logsLvl0 = true,
-    logsLvl1 = false,
+let logsLvl1 = false,
     logsLvl2 = false,
-    logsTest = true && performance && performance.memory;
+    logsTest = 'both';
 let resizeWait = 150,
     resizeCounter = 0;
 let stackLevel = 0,
@@ -144,7 +143,6 @@ let reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // Window Events -----------------------------------------------------------------------------------
 
 window.onload = () => {
-    TestApp('hybrid-map', 1);
     d3.queue()
         .defer(d3.json, 'data/us-states-features.json')
         .defer(d3.json, 'data/nodes-links-04-06-2017.json')
@@ -180,18 +178,15 @@ const InitializePage = (error, results) => {
         .on('tick', hybridMapObj.Tick);
     UpdatePageDimensions();
     requestAnimationFrame(() => {
-        hybridMapObj
-            .UpdateOptions();
         body
             .classed('loading', false);
         isLoaded = true;
-        TestApp('hybrid-map', -1);
     });
     TestApp('InitializePage', -1);
 };
 
 function HybridMapClass() {
-    // TestApp('HybridMapClass', 1);
+    TestApp('HybridMapClass', 1);
     let that = this;
     that.centroidByState = {};
     that.$total = 0;
@@ -207,7 +202,6 @@ function HybridMapClass() {
     };
     let _vertices = null;
     that.vertices = d => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.vertices = function(vertices) {", "color:blue");
         if (d === undefined) { return _vertices; }
         _vertices = d;
         _vertices.forEach(vertice => {
@@ -221,7 +215,6 @@ function HybridMapClass() {
     };
     let _edges = null;
     that.edges = d => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.edges = function(edges) {", "color:blue");
         if (d === undefined) { return _edges; }
         _edges = d;
         _edges.forEach(edge => {
@@ -245,17 +238,11 @@ function HybridMapClass() {
         return that;
     };
 
-    that.UpdateSVG = () => {
+    that.UpdateStates = () => {
+        TestApp('UpdateStates', 1);
         svg
             .attr('width', vs.svg.w)
             .attr('height', vs.svg.h);
-        TestApp('UpdateSVG');
-        return that;
-    };
-
-    that.UpdateStates = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateStates = function() {", "color:blue");
-        if (logsLvl2) console.log('UpdateStates');
         bgRect
             .attr('width', vs.states.w)
             .attr('height', vs.states.h);
@@ -290,12 +277,12 @@ function HybridMapClass() {
         //         .style('stroke', 'red');
         //     d3.select(this).remove();
         // });
-        TestApp('UpdateStates');
+        TestApp('UpdateStates', -1);
         return that;
     };
 
     that.UpdateInfo = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateInfo = function() {", "color:blue");
+        TestApp('UpdateInfo', 1);
         if (nodeSelected && !(infoData.filter(d => d.id === nodeSelected.id)[0])) {
             infoData.push(nodeSelected);
         }
@@ -353,7 +340,7 @@ function HybridMapClass() {
         infoTextGs
             .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', d => +(nodeSelected && d.id === nodeSelected.id));
-        TestApp('UpdateInfo');
+        TestApp('UpdateInfo', -1);
         return that;
     };
 
@@ -514,14 +501,17 @@ function HybridMapClass() {
     };
 
     that.DragStarted = d => {
+        TestApp('DragStarted', 1);
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
         d.fy = d.y;
         // that.Tick();
+        TestApp('DragStarted', -1);
     };
 
     that.Dragged = d => {
+        TestApp('Dragged', 1);
         d.fx = d3.event.x;
         d.fy = d3.event.y;
         d.x = d3.event.x;
@@ -529,9 +519,11 @@ function HybridMapClass() {
         d.cx = d3.event.x;
         d.cy = d3.event.y;
         that.Tick();
+        TestApp('Dragged', -1);
     };
 
     that.DragEnded = d => {
+        TestApp('DragEnded', 1);
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
@@ -540,10 +532,11 @@ function HybridMapClass() {
             that.simulation
                 .alpha(1).restart();
         }
+        TestApp('DragEnded', -1);
     };
 
     that.UpdateVerticesEdges = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateVerticesEdges = function() {", "color:blue");
+        TestApp('UpdateVerticesEdges', 1);
         let iCount = 0;
         verticeCircles = verticesG.selectAll('circle.vertice-circle')
             .data(that.vertices());
@@ -659,21 +652,20 @@ function HybridMapClass() {
                     return 'none';
                 }
             });
-        TestApp('UpdateVerticesEdges');
+        TestApp('UpdateVerticesEdges', -1);
         return that;
     };
 
     that.IsolateForce = (force, filter) => {
         let initialize = force.initialize;
         force.initialize = () => {
-            console.log(''.padStart(2 * stackLevel) + "%cforce.initialize = function() {", "color:blue");
             initialize.call(force, that.vertices().filter(filter));
         };
         return force;
     };
 
     that.UpdateSimulation = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateSimulation = function() {", "color:blue");
+        TestApp('UpdateSimulation', 1);
         Object.keys(that.forcesObj).forEach(forceType => {
             if (forceType === 'simulation') { return; }
             let optionsObj = that.forcesObj[forceType];
@@ -733,12 +725,12 @@ function HybridMapClass() {
                 that.optionsData.push(optionsObj[optionName]);
             });
         });
-        TestApp('UpdateSimulation');
+        TestApp('UpdateSimulation', -1);
         return that;
     };
 
     that.UpdateFilters = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateFilters = function() {", "color:blue");
+        TestApp('UpdateFilters', 1);
         filtersDiv
             .style('width', vs.filters.w + 'px')
             .style('height', vs.filters.h + 'px')
@@ -790,11 +782,12 @@ function HybridMapClass() {
             .merge(filtersReports)
             .style('width', (vs.filters.w / reportsData.length) + 'px')
             .style('height', (0.5 * vs.filters.h) + 'px');
+        TestApp('UpdateFilters', -1);
         return that;
     };
 
     that.UpdateOptions = () => {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateOptions = function() {", "color:blue");
+        TestApp('UpdateOptions', 1);
         optionsDiv
             .style('left', '0px')
             .style('top', Math.max(vs.svg.h, vs.states.h + vs.filters.h) + 'px');
@@ -861,14 +854,13 @@ function HybridMapClass() {
                     .style('line-height', vs.options.hRow + 'px');
             })
             .style('width', vs.options.wRow + 'px');
-        TestApp('UpdateOptions');
+        TestApp('UpdateOptions', -1);
         return that;
     };
 
     that.Tick = () => {
+        // TestApp('Tick', 1);
         verticeCircles
-            // .interrupt('vertices-transition')
-            // .transition('vertices-transition')
             .attr('cx', d => d.x)
             .attr('cy', d => d.y);
         edgeLines
@@ -882,9 +874,10 @@ function HybridMapClass() {
             .text(that.forcesObj.simulation.alpha.value);
         optionsAlphaSlider
             .property('value', that.forcesObj.simulation.alpha.value);
-        // TestApp('Tick');
+        // TestApp('Tick', -1);
     };
-    TestApp('GraphClass');
+
+    TestApp('HybridMapClass', -1);
     return that;
 }
 
@@ -902,7 +895,6 @@ function UpdatePageDimensions() {
     vs.states.h = vs.states.w / vs.states.ratioMapWH;
     vs.svg.h = Math.max(vs.states.h, vs.info.h);
     hybridMapObj
-        .UpdateSVG()
         .UpdateStates()
         .UpdateInfo()
         .UpdateFilters()
@@ -913,7 +905,7 @@ function UpdatePageDimensions() {
 }
 
 function TestApp(source, position) {
-    if (!logsTest) { return; }
+    if (!logsTest || !performance || !performance.memory) { return; }
     stackLevelTemp = stackLevel;
     sizeNodesOld = sizeNodesNew;
     sizeUsedOld = sizeUsedNew;
@@ -928,10 +920,12 @@ function TestApp(source, position) {
         stackLevel -= 1;
         stringSymbol = '< ';
         stackLevelTemp = stackLevel;
-    } else {
+    } else if (position === 0) {
         stringSymbol = '• ';
+    } else {
+        stringSymbol = '  ';
     }
-    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(27);
+    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(28);
     colorSource = 'color:black';
     if (sizeNodesNew !== sizeNodesOld) {
         stringNodes = (sizeNodesNew + ' n').padStart(6);
@@ -958,5 +952,7 @@ function TestApp(source, position) {
     }
     stringTotal = '%c' + stringTotal.padEnd(12);
     stringCombined = stringSource + stringNodes + stringUsed + stringTotal;
+    if (position === 1 && logsTest === 'out') { return; }
+    if (position === -1 && logsTest === 'in') { return; }
     console.log(stringCombined, colorSource, colorNodes, colorUsed, colorTotal);
 }
