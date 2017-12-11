@@ -4,7 +4,7 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-var logsTest = 'in',
+var logsTest = 'both',
     logsLvl1 = false,
     logsLvl2 = false;
 var resizeWait = 150,
@@ -112,14 +112,8 @@ vs.options.wRow = 2 * vs.options.wSmall + 3 * vs.options.wMedium + vs.options.wS
 var transitionDuration = 200;
 var transitionEase = d3.easeLinear;
 var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Jim Walton', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jonathan Sackler', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman', 'John Arnold', 'Laura Arnold'];
-var hybridMapObj = null;
-var statesAll = [];
-var nodesAll = [];
-var linksAll = [];
-var filtersDatum = {};
+var mapObj = null;
 var isDragging = false;
-var nodeSelected = null;
-var linksSelected = [];
 var yearsData = ['2011', '2012', '2013', '2014', '2015', '2016', '2017'];
 var reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -142,7 +136,7 @@ window.onresize = function () {
             resizeCounter -= 1;
             if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
             UpdateVSValues();
-            hybridMapObj.DrawMap().DrawInfo().DrawFilters().DrawNetwork().UpdateSimulation().DrawOptions();
+            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
         }
     }, resizeWait);
 };
@@ -167,17 +161,8 @@ function UpdateVSValues() {
 
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
-    results[0].features.forEach(function (d) {
-        return statesAll.push(d);
-    });
-    results[1].nodes.forEach(function (d) {
-        return nodesAll.push(d);
-    });
-    results[1].links.forEach(function (d) {
-        return linksAll.push(d);
-    });
     UpdateVSValues();
-    hybridMapObj = new HybridMapClass().UpdateStates(statesAll).DrawMap().UpdateNodes(nodesAll).UpdateLinks(linksAll).DrawInfo().DrawFilters().DrawNetwork().UpdateSimulation().DrawOptions();
+    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadNodes(results[1].nodes).LoadLinks(results[1].links).CalculateData().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
     requestAnimationFrame(function () {
         body.classed('loading', false);
         isLoaded = true;
@@ -188,79 +173,109 @@ var InitializePage = function InitializePage(error, results) {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     var that = this;
+    that.filteredOutObj = { year: {}, report: {} };
+    that.states = [];
+    that.nodes = [];
+    that.links = [];
+    that.statesLoaded = [];
+    that.nodesLoaded = [];
+    that.linksLoaded = [];
+    that.nodeSelected = null;
+    that.linksSelected = [];
     that.infoData = [];
     that.centroidByState = {};
     that.$total = 0;
     that.$inState = {};
     that.$outState = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
-    that.nodeById = null;
+    that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
-    that.states = [];
-    that.nodes = [];
-    that.links = [];
 
-    that.UpdateStates = function (d) {
+    that.LoadStates = function (d) {
         TestApp('UpdateStates', 1);
-        that.states = d;
+        that.statesLoaded = d;
+        that.states = that.statesLoaded;
+        that.filteredOutObj = { year: {}, report: {} };
+        that.DrawFilters();
         TestApp('UpdateStates', -1);
         return that;
     };
 
-    that.UpdateNodes = function (d) {
-        TestApp('UpdateNodes', 1);
-        that.nodes = d;
+    that.LoadNodes = function (d) {
+        TestApp('LoadNodes', 1);
+        that.nodesLoaded = d;
+        that.filteredOutObj = { year: {}, report: {} };
+        that.DrawFilters();
+        TestApp('LoadNodes', -1);
+        return that;
+    };
+
+    that.LoadLinks = function (d) {
+        TestApp('LoadLinks', 1);
+        that.linksLoaded = d;
+        that.$total = 0;
+        that.linksLoaded.forEach(function (d) {
+            d.sourceId = d.source;
+            d.targetId = d.target;
+            that.$total += d.dollars;
+        });
+        that.$nodeScale.domain([0, that.$total]);
+        that.filteredOutObj = { year: {}, report: {} };
+        that.DrawFilters();
+        TestApp('LoadLinks', -1);
+        return that;
+    };
+
+    that.CalculateData = function () {
+        TestApp('CalculateData', 1);
+        that.states = that.statesLoaded;
         var iCount = 0;
+        that.nodes = that.nodesLoaded;
         that.nodes.forEach(function (d, i) {
-            d.$in = 0;
             d.$out = 0;
-            that.$inState[d.state] = 0;
+            d.$in = 0;
             that.$outState[d.state] = 0;
-            d.x = that.centroidByState[d.state][0];
-            d.y = that.centroidByState[d.state][1];
+            that.$inState[d.state] = 0;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
             }
+            d.x = d.x === undefined ? that.centroidByState[d.state][0] : d.x;
+            d.y = d.y === undefined ? that.centroidByState[d.state][1] : d.y;
         });
         that.nodeById = d3.map(that.nodes, function (d) {
             return d.id;
         });
-        TestApp('UpdateNodes', -1);
-        return that;
-    };
-
-    that.UpdateLinks = function (d) {
-        TestApp('UpdateLinks', 1);
-        that.links = d;
-        that.links.forEach(function (d) {
-            d.target = that.nodeById.get(d.target);
-            d.source = that.nodeById.get(d.source);
-            d.target.$in += d.dollars;
-            d.source.$out += d.dollars;
-            that.$inState[d.target.state] += d.dollars;
-            that.$outState[d.source.state] += d.dollars;
-            that.$total += d.dollars;
-            // d.topId = topIds.includes(d.source.id) || topIds.includes(d.target.id);
-            // if (d.topId) {
-            //     d.source.topId = true;
-            //     d.target.topId = true;
-            // }
+        that.links = that.linksLoaded.filter(function (d) {
+            if (that.filteredOutObj.year[d.year]) {
+                return false;
+            }
+            if (that.filteredOutObj.report[d.report]) {
+                return false;
+            }
+            return true;
         });
-        // that.links = that.links.filter(d => d.topId);
-        // that.nodes = that.nodes.filter(d => d.topId);
-        that.$nodeScale.domain([0, that.$total]);
+        that.links.forEach(function (d) {
+            d.source = that.nodeById.get(d.sourceId);
+            d.target = that.nodeById.get(d.targetId);
+            d.source.$out += d.dollars;
+            d.target.$in += d.dollars;
+            that.$outState[d.source.state] += d.dollars;
+            that.$inState[d.target.state] += d.dollars;
+        });
         that.nodes.forEach(function (d) {
             var $in = that.$nodeScale(d.$in);
             var $out = that.$nodeScale(d.$out);
-            if ($in > $out) {
+            if ($in === 0 && $out === 0) {
+                d.r = 0;
+            } else if ($in > $out) {
                 d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($in));
             } else {
                 d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($out));
             }
         });
-        TestApp('UpdateLinks', -1);
+        TestApp('CalculateData', -1);
         return that;
     };
 
@@ -308,7 +323,7 @@ function HybridMapClass() {
             });
         }).merge(infoImageGs);
         infoImageGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-            return +(nodeSelected && d.id === nodeSelected.id);
+            return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         infoTextGs = infoG.selectAll('g.info-text-g').data(that.infoData);
         infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', 'translate(' + vs.info.wImage / 2 + ',' + (vs.info.hImage + vs.info.margin) + ')').each(function (datum) {
@@ -322,7 +337,7 @@ function HybridMapClass() {
             }
         }).style('opacity', 0).merge(infoTextGs);
         infoTextGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-            return +(nodeSelected && d.id === nodeSelected.id);
+            return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         TestApp('DrawInfo', -1);
         return that;
@@ -353,7 +368,7 @@ function HybridMapClass() {
             },
             radius: {
                 value: function value(node, i, nodes) {
-                    return 1.5 + node.r;
+                    return node.r ? 1.5 + node.r : 0;
                 }
                 // value: 5,
                 // min: 0,
@@ -527,21 +542,21 @@ function HybridMapClass() {
             if (isDragging) {
                 return;
             }
-            nodeSelected = d;
-            linksSelected = that.links.filter(function (d) {
-                return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
+            that.nodeSelected = d;
+            that.linksSelected = that.links.filter(function (d) {
+                return that.nodeSelected.id === d.source.id || that.nodeSelected.id === d.target.id;
             });
-            if (!that.infoData.includes(nodeSelected)) {
-                that.infoData.push(nodeSelected);
+            if (!that.infoData.includes(that.nodeSelected)) {
+                that.infoData.push(that.nodeSelected);
             }
-            that.DrawInfo().DrawNetwork();
+            that.DrawNetwork().DrawInfo();
         }).on('mouseout', function () {
             if (isDragging) {
                 return;
             }
-            nodeSelected = null;
-            linksSelected = [];
-            that.DrawInfo().DrawNetwork();
+            that.nodeSelected = null;
+            that.linksSelected = [];
+            that.DrawNetwork().DrawInfo();
         }).call(d3.drag().on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).merge(nodeCircles);
         nodeCircles.attr('cx', function (d) {
             return d.x;
@@ -560,15 +575,15 @@ function HybridMapClass() {
         })
         // .transition().duration(transitionDuration).ease(transitionEase)
         .style('opacity', function (d) {
-            if (!nodeSelected) {
+            if (!that.nodeSelected) {
                 return 1;
-            } else if (nodeSelected.id === d.id) {
+            } else if (that.nodeSelected.id === d.id) {
                 return 1;
-            } else if (linksSelected.map(function (d) {
+            } else if (that.linksSelected.map(function (d) {
                 return d.source.id;
             }).includes(d.id)) {
                 return 1;
-            } else if (linksSelected.map(function (d) {
+            } else if (that.linksSelected.map(function (d) {
                 return d.target.id;
             }).includes(d.id)) {
                 return 1;
@@ -577,6 +592,7 @@ function HybridMapClass() {
             }
         });
         linkLines = linksG.selectAll('line.link-line').data(that.links);
+        linkLines.exit().remove();
         linkLines = linkLines.enter().append('line').classed('link-line', true).attr('x1', function (d) {
             return d.source.x;
         }).attr('y1', function (d) {
@@ -601,15 +617,15 @@ function HybridMapClass() {
         })
         // .transition().duration(transitionDuration).ease(transitionEase)
         .style('display', function (d) {
-            if (!filtersDatum[d.year]) {
+            if (that.filteredOutObj.year[d.year]) {
                 return 'none';
-            } else if (!filtersDatum[d.report]) {
+            } else if (that.filteredOutObj.report[d.report]) {
                 return 'none';
-            } else if (!nodeSelected) {
+            } else if (!that.nodeSelected) {
                 return 'block';
-            } else if (nodeSelected.id === d.source.id) {
+            } else if (that.nodeSelected.id === d.source.id) {
                 return 'block';
-            } else if (nodeSelected.id === d.target.id) {
+            } else if (that.nodeSelected.id === d.target.id) {
                 return 'block';
             } else {
                 return 'none';
@@ -710,10 +726,9 @@ function HybridMapClass() {
             d3.select(this).append('div').text(datum);
             d3.select(this).append('input').attr('type', 'checkbox').each(function (d) {
                 this.checked = true;
-                filtersDatum[d] = this.checked;
             }).on('change', function (d) {
-                filtersDatum[d] = this.checked;
-                that.DrawNetwork().UpdateSimulation();
+                that.filteredOutObj.year[d] = !this.checked;
+                that.CalculateData().DrawNetwork().UpdateSimulation();
             });
         }).merge(filtersYears).style('width', vs.filters.w / yearsData.length + 'px').style('height', 0.5 * vs.filters.h + 'px');
         filtersReports = filtersDiv.selectAll('div.filters-report').data(reportsData);
@@ -721,10 +736,9 @@ function HybridMapClass() {
             d3.select(this).append('div').text(datum);
             d3.select(this).append('input').attr('type', 'checkbox').each(function (d) {
                 this.checked = true;
-                filtersDatum[d] = this.checked;
             }).on('change', function (d) {
-                filtersDatum[d] = this.checked;
-                that.DrawNetwork().UpdateSimulation();
+                that.filteredOutObj.report[d] = !this.checked;
+                that.CalculateData().DrawNetwork().UpdateSimulation();
             });
         }).merge(filtersReports).style('width', vs.filters.w / reportsData.length + 'px').style('height', 0.5 * vs.filters.h + 'px');
         TestApp('DrawFilters', -1);
@@ -749,7 +763,6 @@ function HybridMapClass() {
                     } else {
                         datum.value = parseFloat(this.value);
                     }
-                    that.simulation.alpha(0);
                     that.UpdateSimulation().DrawOptions();
                 });
             }

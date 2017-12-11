@@ -4,7 +4,7 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-let logsTest = 'in',
+let logsTest = 'both',
     logsLvl1 = false,
     logsLvl2 = false;
 let resizeWait = 150,
@@ -126,14 +126,8 @@ let topIds = [
     'John Arnold',
     'Laura Arnold'
 ];
-let hybridMapObj = null;
-let statesAll = [];
-let nodesAll = [];
-let linksAll = [];
-let filtersDatum = {};
+let mapObj = null;
 let isDragging = false;
-let nodeSelected = null;
-let linksSelected = [];
 let yearsData = ['2011', '2012', '2013', '2014', '2015', '2016', '2017'];
 let reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -157,11 +151,11 @@ window.onresize = () => {
             resizeCounter -= 1;
             if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
             UpdateVSValues();
-            hybridMapObj
+            mapObj
                 .DrawMap()
+                .DrawNetwork()
                 .DrawInfo()
                 .DrawFilters()
-                .DrawNetwork()
                 .UpdateSimulation()
                 .DrawOptions();
         }
@@ -188,18 +182,15 @@ function UpdateVSValues() {
 
 const InitializePage = (error, results) => {
     TestApp('InitializePage', 1);
-    results[0].features.forEach(d => statesAll.push(d));
-    results[1].nodes.forEach(d => nodesAll.push(d));
-    results[1].links.forEach(d => linksAll.push(d));
     UpdateVSValues();
-    hybridMapObj = (new HybridMapClass())
-        .UpdateStates(statesAll)
+    mapObj = (new HybridMapClass())
+        .LoadStates(results[0].features)
         .DrawMap()
-        .UpdateNodes(nodesAll)
-        .UpdateLinks(linksAll)
-        .DrawInfo()
-        .DrawFilters()
+        .LoadNodes(results[1].nodes)
+        .LoadLinks(results[1].links)
+        .CalculateData()
         .DrawNetwork()
+        .DrawInfo()
         .UpdateSimulation()
         .DrawOptions();
     requestAnimationFrame(() => {
@@ -213,78 +204,107 @@ const InitializePage = (error, results) => {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
+    that.filteredOutObj = {year:{}, report:{}};
+    that.states = [];
+    that.nodes = [];
+    that.links = [];
+    that.statesLoaded = [];
+    that.nodesLoaded = [];
+    that.linksLoaded = [];
+    that.nodeSelected = null;
+    that.linksSelected = [];
     that.infoData = [];
     that.centroidByState = {};
     that.$total = 0;
     that.$inState = {};
     that.$outState = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
-    that.nodeById = null;
+    that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
-    that.states = [];
-    that.nodes = [];
-    that.links = [];
 
-    that.UpdateStates = d => {
+    that.LoadStates = d => {
         TestApp('UpdateStates', 1);
-        that.states = d;
+        that.statesLoaded = d;
+        that.states = that.statesLoaded;
+        that.filteredOutObj = {year:{}, report:{}};
+        that
+            .DrawFilters();
         TestApp('UpdateStates', -1);
         return that;
     };
 
-    that.UpdateNodes = d => {
-        TestApp('UpdateNodes', 1);
-        that.nodes = d;
+    that.LoadNodes = d => {
+        TestApp('LoadNodes', 1);
+        that.nodesLoaded = d;
+        that.filteredOutObj = {year:{}, report:{}};
+        that
+            .DrawFilters();
+        TestApp('LoadNodes', -1);
+        return that;
+    };
+
+    that.LoadLinks = d => {
+        TestApp('LoadLinks', 1);
+        that.linksLoaded = d;
+        that.$total = 0;
+        that.linksLoaded.forEach(d => {
+            d.sourceId = d.source;
+            d.targetId = d.target;
+            that.$total += d.dollars;
+        });
+        that.$nodeScale
+            .domain([0, that.$total]);
+        that.filteredOutObj = {year:{}, report:{}};
+        that
+            .DrawFilters();
+        TestApp('LoadLinks', -1);
+        return that;
+    };
+
+    that.CalculateData = () => {
+        TestApp('CalculateData', 1);
+        that.states = that.statesLoaded;
         let iCount = 0;
+        that.nodes = that.nodesLoaded;
         that.nodes.forEach((d, i) => {
-            d.$in = 0;
             d.$out = 0;
-            that.$inState[d.state] = 0;
+            d.$in = 0;
             that.$outState[d.state] = 0;
-            d.x = that.centroidByState[d.state][0];
-            d.y = that.centroidByState[d.state][1];
+            that.$inState[d.state] = 0;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
             }
+            d.x = d.x === undefined ? that.centroidByState[d.state][0] : d.x;
+            d.y = d.y === undefined ? that.centroidByState[d.state][1] : d.y;
         });
         that.nodeById = d3.map(that.nodes, d => d.id);
-        TestApp('UpdateNodes', -1);
-        return that;
-    };
-
-    that.UpdateLinks = d => {
-        TestApp('UpdateLinks', 1);
-        that.links = d;
-        that.links.forEach(d => {
-            d.target = that.nodeById.get(d.target);
-            d.source = that.nodeById.get(d.source);
-            d.target.$in += d.dollars;
-            d.source.$out += d.dollars;
-            that.$inState[d.target.state] += d.dollars;
-            that.$outState[d.source.state] += d.dollars;
-            that.$total += d.dollars;
-            // d.topId = topIds.includes(d.source.id) || topIds.includes(d.target.id);
-            // if (d.topId) {
-            //     d.source.topId = true;
-            //     d.target.topId = true;
-            // }
+        that.links = that.linksLoaded.filter(function(d) {
+            if (that.filteredOutObj.year[d.year]) { return false; }
+            if (that.filteredOutObj.report[d.report]) { return false; }
+            return true;
         });
-        // that.links = that.links.filter(d => d.topId);
-        // that.nodes = that.nodes.filter(d => d.topId);
-        that.$nodeScale
-            .domain([0, that.$total]);
+        that.links.forEach(d => {
+            d.source = that.nodeById.get(d.sourceId);
+            d.target = that.nodeById.get(d.targetId);
+            d.source.$out += d.dollars;
+            d.target.$in += d.dollars;
+            that.$outState[d.source.state] += d.dollars;
+            that.$inState[d.target.state] += d.dollars;
+        });
         that.nodes.forEach(d => {
             let $in = that.$nodeScale(d.$in);
             let $out = that.$nodeScale(d.$out);
-            if ($in > $out) {
+            if ($in === 0 && $out === 0) {
+                d.r = 0;
+            } else if ($in > $out) {
                 d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($in));
             } else {
                 d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($out));
             }
         });
-        TestApp('UpdateLinks', -1);
+        TestApp('CalculateData', -1);
         return that;
     };
 
@@ -352,7 +372,7 @@ function HybridMapClass() {
             .merge(infoImageGs);
         infoImageGs
             .transition().duration(transitionDuration).ease(transitionEase)
-            .style('opacity', d => +(nodeSelected && d.id === nodeSelected.id));
+            .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         infoTextGs = infoG.selectAll('g.info-text-g')
             .data(that.infoData);
         infoTextGs = infoTextGs.enter().append('g')
@@ -384,7 +404,7 @@ function HybridMapClass() {
             .merge(infoTextGs);
         infoTextGs
             .transition().duration(transitionDuration).ease(transitionEase)
-            .style('opacity', d => +(nodeSelected && d.id === nodeSelected.id));
+            .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         TestApp('DrawInfo', -1);
         return that;
     };
@@ -413,7 +433,7 @@ function HybridMapClass() {
                 step: 0.1,
             },
             radius: {
-                value: (node, i, nodes) => 1.5 + node.r,
+                value: (node, i, nodes) => node.r ? 1.5 + node.r : 0,
                 // value: 5,
                 // min: 0,
                 // max: 20,
@@ -588,24 +608,24 @@ function HybridMapClass() {
             .classed('node-circle', true)
             .on('mouseover', d => {
                 if (isDragging) { return; }
-                nodeSelected = d;
-                linksSelected = that.links.filter(d => {
-                    return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
+                that.nodeSelected = d;
+                that.linksSelected = that.links.filter(d => {
+                    return that.nodeSelected.id === d.source.id || that.nodeSelected.id === d.target.id;
                 });
-                if (!that.infoData.includes(nodeSelected)) {
-                    that.infoData.push(nodeSelected);
+                if (!that.infoData.includes(that.nodeSelected)) {
+                    that.infoData.push(that.nodeSelected);
                 }
                 that
-                    .DrawInfo()
-                    .DrawNetwork();
+                    .DrawNetwork()
+                    .DrawInfo();
             })
             .on('mouseout', () => {
                 if (isDragging) { return; }
-                nodeSelected = null;
-                linksSelected = [];
+                that.nodeSelected = null;
+                that.linksSelected = [];
                 that
-                    .DrawInfo()
-                    .DrawNetwork();
+                    .DrawNetwork()
+                    .DrawInfo();
             })
             .call(d3.drag()
                 .on('start', that.DragStarted)
@@ -630,13 +650,13 @@ function HybridMapClass() {
             .attr('r', d => d.r)
             // .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', d => {
-                if (!nodeSelected) {
+                if (!that.nodeSelected) {
                     return 1;
-                } else if (nodeSelected.id === d.id) {
+                } else if (that.nodeSelected.id === d.id) {
                     return 1;
-                } else if (linksSelected.map(d => d.source.id).includes(d.id)) {
+                } else if (that.linksSelected.map(d => d.source.id).includes(d.id)) {
                     return 1;
-                } else if (linksSelected.map(d => d.target.id).includes(d.id)) {
+                } else if (that.linksSelected.map(d => d.target.id).includes(d.id)) {
                     return 1;
                 } else {
                     return 0.05;
@@ -644,6 +664,8 @@ function HybridMapClass() {
             });
         linkLines = linksG.selectAll('line.link-line')
             .data(that.links);
+        linkLines.exit()
+            .remove();
         linkLines = linkLines.enter().append('line')
             .classed('link-line', true)
             .attr('x1', d => d.source.x)
@@ -668,15 +690,15 @@ function HybridMapClass() {
             })
             // .transition().duration(transitionDuration).ease(transitionEase)
             .style('display', d => {
-                if (!filtersDatum[d.year]) {
+                if (that.filteredOutObj.year[d.year]) {
                     return 'none';
-                } else if (!filtersDatum[d.report]) {
+                } else if (that.filteredOutObj.report[d.report]) {
                     return 'none';
-                } else if (!nodeSelected) {
+                } else if (!that.nodeSelected) {
                     return 'block';
-                } else if (nodeSelected.id === d.source.id) {
+                } else if (that.nodeSelected.id === d.source.id) {
                     return 'block';
-                } else if (nodeSelected.id === d.target.id) {
+                } else if (that.nodeSelected.id === d.target.id) {
                     return 'block';
                 } else {
                     return 'none';
@@ -783,11 +805,11 @@ function HybridMapClass() {
                     .attr('type', 'checkbox')
                     .each(function(d) {
                         this.checked = true;
-                        filtersDatum[d] = this.checked;
                     })
                     .on('change', function(d) {
-                        filtersDatum[d] = this.checked;
+                        that.filteredOutObj.year[d] = !this.checked;
                         that
+                            .CalculateData()
                             .DrawNetwork()
                             .UpdateSimulation();
                     });
@@ -806,11 +828,11 @@ function HybridMapClass() {
                     .attr('type', 'checkbox')
                     .each(function(d) {
                         this.checked = true;
-                        filtersDatum[d] = this.checked;
                     })
                     .on('change', function(d) {
-                        filtersDatum[d] = this.checked;
+                        that.filteredOutObj.report[d] = !this.checked;
                         that
+                            .CalculateData()
                             .DrawNetwork()
                             .UpdateSimulation();
                     });
@@ -858,8 +880,6 @@ function HybridMapClass() {
                             } else {
                                 datum.value = parseFloat(this.value);
                             }
-                            that.simulation
-                                .alpha(0);
                             that
                                 .UpdateSimulation()
                                 .DrawOptions();
