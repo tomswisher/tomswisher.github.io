@@ -40,10 +40,10 @@ const bgRect = body.select('#bg-rect');
 const clipPathRect = body.select('#clip-path-rect');
 const statesG = body.select('#states-g');
 let statePaths = statesG.select(null);
-const verticesG = body.select('#vertices-g');
-let verticeCircles = verticesG.select(null);
-const edgesG = body.select('#edges-g');
-let edgeLines = edgesG.select(null);
+const nodesG = body.select('#nodes-g');
+let nodeCircles = nodesG.select(null);
+const linksG = body.select('#links-g');
+let linkLines = linksG.select(null);
 const filtersDiv = body.select('#filters-div');
 let filtersYears = filtersDiv.select(null);
 let filtersReports = filtersDiv.select(null);
@@ -71,12 +71,9 @@ const vs = {
         selectedOpacity: 0.3,
         strokeWidthStates: 1,
     },
-    vertices: {
+    network: {
         rMin: 3,
         rFactor: 50,
-        strokeWidth: 1,
-    },
-    edges: {
         strokeWidth: 1,
     },
     info: {
@@ -172,9 +169,9 @@ const InitializePage = (error, results) => {
     results[1].links.forEach(link => linksAll.push(link));
     hybridMapObj = (new HybridMapClass())
         .statesFeatures(results[0].features)
-        .vertices(results[1].nodes)
-        .edges(results[1].links);
-    hybridMapObj.simulation = d3.forceSimulation(hybridMapObj.vertices())
+        .nodes(nodesAll)
+        .links(linksAll);
+    hybridMapObj.simulation = d3.forceSimulation(hybridMapObj.nodes())
         .on('tick', hybridMapObj.Tick);
     UpdatePageDimensions();
     requestAnimationFrame(() => {
@@ -192,48 +189,48 @@ function HybridMapClass() {
     that.$total = 0;
     that.$inState = {};
     that.$outState = {};
-    that.$verticeScale = d3.scaleLinear().range([0, 1]);
-    that.verticeById = null;
+    that.$nodeScale = d3.scaleLinear().range([0, 1]);
+    that.nodeById = null;
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
     let _statesFeatures = null;
     that.statesFeatures = d => {
         return d !== undefined ? (_statesFeatures = d, that) : _statesFeatures;
     };
-    let _vertices = null;
-    that.vertices = d => {
-        if (d === undefined) { return _vertices; }
-        _vertices = d;
-        _vertices.forEach(vertice => {
-            vertice.$in = 0;
-            vertice.$out = 0;
-            that.$inState[vertice.state] = 0;
-            that.$outState[vertice.state] = 0;
+    let _nodes = null;
+    that.nodes = d => {
+        if (d === undefined) { return _nodes; }
+        _nodes = d;
+        _nodes.forEach(node => {
+            node.$in = 0;
+            node.$out = 0;
+            that.$inState[node.state] = 0;
+            that.$outState[node.state] = 0;
         });
-        that.verticeById = d3.map(_vertices, d => d.id);
+        that.nodeById = d3.map(_nodes, d => d.id);
         return that;
     };
-    let _edges = null;
-    that.edges = d => {
-        if (d === undefined) { return _edges; }
-        _edges = d;
-        _edges.forEach(edge => {
-            edge.target = that.verticeById.get(edge.target);
-            edge.source = that.verticeById.get(edge.source);
-            edge.target.$in += edge.dollars;
-            edge.source.$out += edge.dollars;
-            that.$inState[edge.target.state] += edge.dollars;
-            that.$outState[edge.source.state] += edge.dollars;
-            that.$total += edge.dollars;
-            // edge.topId = topIds.includes(edge.source.id) || topIds.includes(edge.target.id);
-            // if (edge.topId) {
-            //     edge.source.topId = true;
-            //     edge.target.topId = true;
+    let _links = null;
+    that.links = d => {
+        if (d === undefined) { return _links; }
+        _links = d;
+        _links.forEach(link => {
+            link.target = that.nodeById.get(link.target);
+            link.source = that.nodeById.get(link.source);
+            link.target.$in += link.dollars;
+            link.source.$out += link.dollars;
+            that.$inState[link.target.state] += link.dollars;
+            that.$outState[link.source.state] += link.dollars;
+            that.$total += link.dollars;
+            // link.topId = topIds.includes(link.source.id) || topIds.includes(link.target.id);
+            // if (link.topId) {
+            //     link.source.topId = true;
+            //     link.target.topId = true;
             // }
         });
-        // _edges = _edges.filter(edge => edge.topId);
-        // _vertices = _vertices.filter(vertice => vertice.topId);
-        that.$verticeScale
+        // _links = _links.filter(link => link.topId);
+        // _nodes = _nodes.filter(node => node.topId);
+        that.$nodeScale
             .domain([0, that.$total]);
         return that;
     };
@@ -535,12 +532,12 @@ function HybridMapClass() {
         TestApp('DragEnded', -1);
     };
 
-    that.UpdateVerticesEdges = () => {
-        TestApp('UpdateVerticesEdges', 1);
+    that.UpdateNetwork = () => {
+        TestApp('UpdateNetwork', 1);
         let iCount = 0;
-        verticeCircles = verticesG.selectAll('circle.vertice-circle')
-            .data(that.vertices());
-        verticeCircles = verticeCircles.enter().append('circle')
+        nodeCircles = nodesG.selectAll('circle.node-circle')
+            .data(_nodes);
+        nodeCircles = nodeCircles.enter().append('circle')
             .each((d, i) => {
                 d.x = that.centroidByState[d.state][0];
                 d.y = that.centroidByState[d.state][1];
@@ -549,15 +546,15 @@ function HybridMapClass() {
                     iCount += 1;
                 }
             })
-            .classed('vertice-circle', true)
+            .classed('node-circle', true)
             .on('mouseover', d => {
                 if (isDragging) { return; }
                 nodeSelected = d;
-                linksSelected = that.edges().filter(d => {
+                linksSelected = _links.filter(d => {
                     return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
                 });
                 that
-                    .UpdateVerticesEdges();
+                    .UpdateNetwork();
                 that
                     .UpdateInfo();
             })
@@ -566,7 +563,7 @@ function HybridMapClass() {
                 nodeSelected = null;
                 linksSelected = [];
                 that
-                    .UpdateVerticesEdges();
+                    .UpdateNetwork();
                 that
                     .UpdateInfo();
             }).call(d3.drag()
@@ -575,18 +572,18 @@ function HybridMapClass() {
                 .on('end', that.DragEnded))
             .attr('cx', d => d.x)
             .attr('cy', d => d.y)
-            .merge(verticeCircles);
-        verticeCircles
+            .merge(nodeCircles);
+        nodeCircles
             .each(d => {
-                let $in = that.$verticeScale(d.$in);
-                let $out = that.$verticeScale(d.$out);
+                let $in = that.$nodeScale(d.$in);
+                let $out = that.$nodeScale(d.$out);
                 if ($in > $out) {
-                    d.r = Math.max(vs.vertices.rMin, vs.vertices.rFactor * Math.sqrt($in));
+                    d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($in));
                 } else {
-                    d.r = Math.max(vs.vertices.rMin, vs.vertices.rFactor * Math.sqrt($out));
+                    d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($out));
                 }
             })
-            .style('stroke-width', vs.vertices.strokeWidth + 'px')
+            .style('stroke-width', vs.network.strokeWidth + 'px')
             .style('fill', d => {
                 if (topIds.includes(d.id)) {
                     return d3.schemeCategory20[d.i];
@@ -612,17 +609,17 @@ function HybridMapClass() {
                     return 0.05;
                 }
             });
-        edgeLines = edgesG.selectAll('line.edge-line')
-            .data(that.edges());
-        edgeLines = edgeLines.enter().append('line')
-            .classed('edge-line', true)
+        linkLines = linksG.selectAll('line.link-line')
+            .data(_links);
+        linkLines = linkLines.enter().append('line')
+            .classed('link-line', true)
             .attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
             .attr('y2', d => d.target.y)
-            .merge(edgeLines);
-        edgeLines
-            .style('stroke-width', vs.edges.strokeWidth + 'px')
+            .merge(linkLines);
+        linkLines
+            .style('stroke-width', vs.network.strokeWidth + 'px')
             .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
                     return d3.schemeCategory20[d.source.i];
@@ -652,14 +649,14 @@ function HybridMapClass() {
                     return 'none';
                 }
             });
-        TestApp('UpdateVerticesEdges', -1);
+        TestApp('UpdateNetwork', -1);
         return that;
     };
 
     that.IsolateForce = (force, filter) => {
         let initialize = force.initialize;
         force.initialize = () => {
-            initialize.call(force, that.vertices().filter(filter));
+            initialize.call(force, _nodes.filter(filter));
         };
         return force;
     };
@@ -752,7 +749,7 @@ function HybridMapClass() {
                     .on('change', function(d) {
                         filtersDatum[d] = this.checked;
                         that
-                            .UpdateVerticesEdges()
+                            .UpdateNetwork()
                             .UpdateSimulation();
                     });
             })
@@ -775,7 +772,7 @@ function HybridMapClass() {
                     .on('change', function(d) {
                         filtersDatum[d] = this.checked;
                         that
-                            .UpdateVerticesEdges()
+                            .UpdateNetwork()
                             .UpdateSimulation();
                     });
             })
@@ -860,10 +857,10 @@ function HybridMapClass() {
 
     that.Tick = () => {
         // TestApp('Tick', 1);
-        verticeCircles
+        nodeCircles
             .attr('cx', d => d.x)
             .attr('cy', d => d.y);
-        edgeLines
+        linkLines
             .attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
@@ -898,7 +895,7 @@ function UpdatePageDimensions() {
         .UpdateStates()
         .UpdateInfo()
         .UpdateFilters()
-        .UpdateVerticesEdges()
+        .UpdateNetwork()
         .UpdateSimulation()
         .UpdateOptions();
     TestApp('UpdatePageDimensions', -1);
@@ -925,7 +922,7 @@ function TestApp(source, position) {
     } else {
         stringSymbol = '  ';
     }
-    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(28);
+    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(33);
     colorSource = 'color:black';
     if (sizeNodesNew !== sizeNodesOld) {
         stringNodes = (sizeNodesNew + ' n').padStart(6);

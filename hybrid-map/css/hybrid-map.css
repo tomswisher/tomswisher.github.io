@@ -29,7 +29,7 @@ body {
   pointer-events: none !important;
   fill: white !important;
 }
-#svg line.edge-line {
+#svg line.link-line {
   pointer-events: none;
 }
 #info-g rect.info-bg-rect {
