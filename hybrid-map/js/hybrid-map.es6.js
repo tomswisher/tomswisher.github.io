@@ -4,10 +4,9 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-let isLoaded = false;
-let logsLvl1 = false,
-    logsLvl2 = false,
-    logsTest = 'both';
+let logsTest = 'in',
+    logsLvl1 = false,
+    logsLvl2 = false;
 let resizeWait = 150,
     resizeCounter = 0;
 let stackLevel = 0,
@@ -31,6 +30,7 @@ let stringSource = '',
 let mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
     mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
 if (mobileBrowser) console.log('mobileBrowser', mobileBrowser);
+let isLoaded = false;
 
 // D3 Selections -----------------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ const vs = {
         w: null,
         h: null,
     },
-    states: {
+    map: {
         w: null,
         wMin: 300,
         h: null,
@@ -127,9 +127,9 @@ let topIds = [
     'Laura Arnold'
 ];
 let hybridMapObj = null;
+let statesAll = [];
 let nodesAll = [];
 let linksAll = [];
-let infoData = [];
 let filtersDatum = {};
 let isDragging = false;
 let nodeSelected = null;
@@ -156,24 +156,52 @@ window.onresize = () => {
         } else if (resizeCounter === 1) {
             resizeCounter -= 1;
             if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-            UpdatePageDimensions();
+            UpdateVSValues();
+            hybridMapObj
+                .DrawMap()
+                .DrawInfo()
+                .DrawFilters()
+                .DrawNetwork()
+                .UpdateSimulation()
+                .DrawOptions();
         }
     }, resizeWait);
 };
 
 // Functions ---------------------------------------------------------------------------------------
 
+function UpdateVSValues() {
+    TestApp('UpdateVSValues', 1);
+    let clientWidth = body.node().clientWidth;
+    if (clientWidth >= vs.map.wMin + vs.info.w) {
+        vs.map.w = clientWidth - vs.info.w;
+        vs.svg.w = clientWidth;
+    } else {
+        vs.map.w = vs.map.wMin;
+        vs.svg.w = vs.map.wMin + vs.info.w;
+    }
+    vs.filters.w = vs.map.w;
+    vs.map.h = vs.map.w / vs.map.ratioMapWH;
+    vs.svg.h = Math.max(vs.map.h, vs.info.h);
+    TestApp('UpdateVSValues', -1);
+}
+
 const InitializePage = (error, results) => {
     TestApp('InitializePage', 1);
-    results[1].nodes.forEach(node => nodesAll.push(node));
-    results[1].links.forEach(link => linksAll.push(link));
+    results[0].features.forEach(d => statesAll.push(d));
+    results[1].nodes.forEach(d => nodesAll.push(d));
+    results[1].links.forEach(d => linksAll.push(d));
+    UpdateVSValues();
     hybridMapObj = (new HybridMapClass())
-        .statesFeatures(results[0].features)
-        .nodes(nodesAll)
-        .links(linksAll);
-    hybridMapObj.simulation = d3.forceSimulation(hybridMapObj.nodes())
-        .on('tick', hybridMapObj.Tick);
-    UpdatePageDimensions();
+        .UpdateStates(statesAll)
+        .DrawMap()
+        .UpdateNodes(nodesAll)
+        .UpdateLinks(linksAll)
+        .DrawInfo()
+        .DrawFilters()
+        .DrawNetwork()
+        .UpdateSimulation()
+        .DrawOptions();
     requestAnimationFrame(() => {
         body
             .classed('loading', false);
@@ -185,6 +213,7 @@ const InitializePage = (error, results) => {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
+    that.infoData = [];
     that.centroidByState = {};
     that.$total = 0;
     that.$inState = {};
@@ -193,75 +222,97 @@ function HybridMapClass() {
     that.nodeById = null;
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
-    let _statesFeatures = null;
-    that.statesFeatures = d => {
-        return d !== undefined ? (_statesFeatures = d, that) : _statesFeatures;
-    };
-    let _nodes = null;
-    that.nodes = d => {
-        if (d === undefined) { return _nodes; }
-        _nodes = d;
-        _nodes.forEach(node => {
-            node.$in = 0;
-            node.$out = 0;
-            that.$inState[node.state] = 0;
-            that.$outState[node.state] = 0;
-        });
-        that.nodeById = d3.map(_nodes, d => d.id);
-        return that;
-    };
-    let _links = null;
-    that.links = d => {
-        if (d === undefined) { return _links; }
-        _links = d;
-        _links.forEach(link => {
-            link.target = that.nodeById.get(link.target);
-            link.source = that.nodeById.get(link.source);
-            link.target.$in += link.dollars;
-            link.source.$out += link.dollars;
-            that.$inState[link.target.state] += link.dollars;
-            that.$outState[link.source.state] += link.dollars;
-            that.$total += link.dollars;
-            // link.topId = topIds.includes(link.source.id) || topIds.includes(link.target.id);
-            // if (link.topId) {
-            //     link.source.topId = true;
-            //     link.target.topId = true;
-            // }
-        });
-        // _links = _links.filter(link => link.topId);
-        // _nodes = _nodes.filter(node => node.topId);
-        that.$nodeScale
-            .domain([0, that.$total]);
+    that.states = [];
+    that.nodes = [];
+    that.links = [];
+
+    that.UpdateStates = d => {
+        TestApp('UpdateStates', 1);
+        that.states = d;
+        TestApp('UpdateStates', -1);
         return that;
     };
 
-    that.UpdateStates = () => {
-        TestApp('UpdateStates', 1);
+    that.UpdateNodes = d => {
+        TestApp('UpdateNodes', 1);
+        that.nodes = d;
+        let iCount = 0;
+        that.nodes.forEach((d, i) => {
+            d.$in = 0;
+            d.$out = 0;
+            that.$inState[d.state] = 0;
+            that.$outState[d.state] = 0;
+            d.x = that.centroidByState[d.state][0];
+            d.y = that.centroidByState[d.state][1];
+            if (topIds.includes(d.id)) {
+                d.i = iCount;
+                iCount += 1;
+            }
+        });
+        that.nodeById = d3.map(that.nodes, d => d.id);
+        TestApp('UpdateNodes', -1);
+        return that;
+    };
+
+    that.UpdateLinks = d => {
+        TestApp('UpdateLinks', 1);
+        that.links = d;
+        that.links.forEach(d => {
+            d.target = that.nodeById.get(d.target);
+            d.source = that.nodeById.get(d.source);
+            d.target.$in += d.dollars;
+            d.source.$out += d.dollars;
+            that.$inState[d.target.state] += d.dollars;
+            that.$outState[d.source.state] += d.dollars;
+            that.$total += d.dollars;
+            // d.topId = topIds.includes(d.source.id) || topIds.includes(d.target.id);
+            // if (d.topId) {
+            //     d.source.topId = true;
+            //     d.target.topId = true;
+            // }
+        });
+        // that.links = that.links.filter(d => d.topId);
+        // that.nodes = that.nodes.filter(d => d.topId);
+        that.$nodeScale
+            .domain([0, that.$total]);
+        that.nodes.forEach(d => {
+            let $in = that.$nodeScale(d.$in);
+            let $out = that.$nodeScale(d.$out);
+            if ($in > $out) {
+                d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($in));
+            } else {
+                d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($out));
+            }
+        });
+        TestApp('UpdateLinks', -1);
+        return that;
+    };
+
+    that.DrawMap = () => {
+        TestApp('DrawMap', 1);
         svg
             .attr('width', vs.svg.w)
             .attr('height', vs.svg.h);
         bgRect
-            .attr('width', vs.states.w)
-            .attr('height', vs.states.h);
+            .attr('width', vs.map.w)
+            .attr('height', vs.map.h);
         clipPathRect
-            .attr('width', vs.states.w)
+            .attr('width', vs.map.w)
             .attr('height', vs.svg.h);
         that.projection
-            .scale(vs.states.w * vs.states.projectionScale)
-            .translate([vs.states.w / 2, vs.states.h / 2]);
+            .scale(vs.map.w * vs.map.projectionScale)
+            .translate([vs.map.w / 2, vs.map.h / 2]);
         that.path
             .projection(that.projection);
         statePaths = statesG.selectAll('path.state-path')
-            .data(_statesFeatures, d => d.properties.ansi);
+            .data(that.states, d => d.properties.ansi);
         statePaths = statePaths.enter().append('path')
-            .classed('state-path', true)
-            .attr('d', that.path)
+            .classed('state-path', true).classed('inactive', true)
             .merge(statePaths);
         statePaths
-            .each(d => that.centroidByState[d.properties.ansi] = that.path.centroid(d))
-            .classed('inactive', true)
             .attr('d', that.path)
-            .style('stroke-width', vs.states.strokeWidthStates + 'px');
+            .each(d => that.centroidByState[d.properties.ansi] = that.path.centroid(d))
+            .style('stroke-width', vs.map.strokeWidthStates + 'px');
         // statePaths.each(d => {
         //     let centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
@@ -274,19 +325,16 @@ function HybridMapClass() {
         //         .style('stroke', 'red');
         //     d3.select(this).remove();
         // });
-        TestApp('UpdateStates', -1);
+        TestApp('DrawMap', -1);
         return that;
     };
 
-    that.UpdateInfo = () => {
-        TestApp('UpdateInfo', 1);
-        if (nodeSelected && !(infoData.filter(d => d.id === nodeSelected.id)[0])) {
-            infoData.push(nodeSelected);
-        }
+    that.DrawInfo = () => {
+        TestApp('DrawInfo', 1);
         infoG
-            .attr('transform', 'translate(' + (vs.states.w + vs.info.margin) + ',' + (vs.info.margin) + ')');
+            .attr('transform', 'translate(' + (vs.map.w + vs.info.margin) + ',' + (vs.info.margin) + ')');
         infoImageGs = infoG.selectAll('g.info-image-g')
-            .data(infoData);
+            .data(that.infoData);
         infoImageGs = infoImageGs.enter().append('g')
             .classed('info-image-g', true)
             .each(function(datum) {
@@ -306,7 +354,7 @@ function HybridMapClass() {
             .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', d => +(nodeSelected && d.id === nodeSelected.id));
         infoTextGs = infoG.selectAll('g.info-text-g')
-            .data(infoData);
+            .data(that.infoData);
         infoTextGs = infoTextGs.enter().append('g')
             .classed('info-text-g', true)
             .attr('transform', 'translate(' + (vs.info.wImage / 2) + ',' + (vs.info.hImage + vs.info.margin) + ')')
@@ -337,7 +385,7 @@ function HybridMapClass() {
         infoTextGs
             .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', d => +(nodeSelected && d.id === nodeSelected.id));
-        TestApp('UpdateInfo', -1);
+        TestApp('DrawInfo', -1);
         return that;
     };
 
@@ -498,17 +546,17 @@ function HybridMapClass() {
     };
 
     that.DragStarted = d => {
-        TestApp('DragStarted', 1);
+        // TestApp('DragStarted', 1);
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
         d.fy = d.y;
         // that.Tick();
-        TestApp('DragStarted', -1);
+        // TestApp('DragStarted', -1);
     };
 
     that.Dragged = d => {
-        TestApp('Dragged', 1);
+        // TestApp('Dragged', 1);
         d.fx = d3.event.x;
         d.fy = d3.event.y;
         d.x = d3.event.x;
@@ -516,11 +564,11 @@ function HybridMapClass() {
         d.cx = d3.event.x;
         d.cy = d3.event.y;
         that.Tick();
-        TestApp('Dragged', -1);
+        // TestApp('Dragged', -1);
     };
 
     that.DragEnded = d => {
-        TestApp('DragEnded', 1);
+        // TestApp('DragEnded', 1);
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
@@ -529,60 +577,45 @@ function HybridMapClass() {
             that.simulation
                 .alpha(1).restart();
         }
-        TestApp('DragEnded', -1);
+        // TestApp('DragEnded', -1);
     };
 
-    that.UpdateNetwork = () => {
-        TestApp('UpdateNetwork', 1);
-        let iCount = 0;
+    that.DrawNetwork = () => {
+        TestApp('DrawNetwork', 1);
         nodeCircles = nodesG.selectAll('circle.node-circle')
-            .data(_nodes);
+            .data(that.nodes);
         nodeCircles = nodeCircles.enter().append('circle')
-            .each((d, i) => {
-                d.x = that.centroidByState[d.state][0];
-                d.y = that.centroidByState[d.state][1];
-                if (topIds.includes(d.id)) {
-                    d.i = iCount;
-                    iCount += 1;
-                }
-            })
             .classed('node-circle', true)
             .on('mouseover', d => {
                 if (isDragging) { return; }
                 nodeSelected = d;
-                linksSelected = _links.filter(d => {
+                linksSelected = that.links.filter(d => {
                     return nodeSelected.id === d.source.id || nodeSelected.id === d.target.id;
                 });
+                if (!that.infoData.includes(nodeSelected)) {
+                    that.infoData.push(nodeSelected);
+                }
                 that
-                    .UpdateNetwork();
-                that
-                    .UpdateInfo();
+                    .DrawInfo()
+                    .DrawNetwork();
             })
             .on('mouseout', () => {
                 if (isDragging) { return; }
                 nodeSelected = null;
                 linksSelected = [];
                 that
-                    .UpdateNetwork();
-                that
-                    .UpdateInfo();
-            }).call(d3.drag()
+                    .DrawInfo()
+                    .DrawNetwork();
+            })
+            .call(d3.drag()
                 .on('start', that.DragStarted)
                 .on('drag', that.Dragged)
-                .on('end', that.DragEnded))
-            .attr('cx', d => d.x)
-            .attr('cy', d => d.y)
+                .on('end', that.DragEnded)
+            )
             .merge(nodeCircles);
         nodeCircles
-            .each(d => {
-                let $in = that.$nodeScale(d.$in);
-                let $out = that.$nodeScale(d.$out);
-                if ($in > $out) {
-                    d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($in));
-                } else {
-                    d.r = Math.max(vs.network.rMin, vs.network.rFactor * Math.sqrt($out));
-                }
-            })
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
             .style('stroke-width', vs.network.strokeWidth + 'px')
             .style('fill', d => {
                 if (topIds.includes(d.id)) {
@@ -610,7 +643,7 @@ function HybridMapClass() {
                 }
             });
         linkLines = linksG.selectAll('line.link-line')
-            .data(_links);
+            .data(that.links);
         linkLines = linkLines.enter().append('line')
             .classed('link-line', true)
             .attr('x1', d => d.source.x)
@@ -649,20 +682,26 @@ function HybridMapClass() {
                     return 'none';
                 }
             });
-        TestApp('UpdateNetwork', -1);
+        TestApp('DrawNetwork', -1);
         return that;
     };
 
     that.IsolateForce = (force, filter) => {
         let initialize = force.initialize;
         force.initialize = () => {
-            initialize.call(force, _nodes.filter(filter));
+            initialize.call(force, that.nodes.filter(filter));
         };
         return force;
     };
 
     that.UpdateSimulation = () => {
         TestApp('UpdateSimulation', 1);
+        if (that.simulation === undefined) {
+            that.simulation = d3.forceSimulation()
+                .on('tick', that.Tick);
+        }
+        that.simulation
+            .nodes(that.nodes);
         Object.keys(that.forcesObj).forEach(forceType => {
             if (forceType === 'simulation') { return; }
             let optionsObj = that.forcesObj[forceType];
@@ -694,10 +733,10 @@ function HybridMapClass() {
                     let optionValue = optionsObj[optionName].value; // do not mutate original value
                     switch (optionValue) {
                         case 'cx':
-                            optionValue = 0.5 * vs.states.w;
+                            optionValue = 0.5 * vs.map.w;
                             break;
                         case 'cy':
-                            optionValue = 0.5 * vs.states.h;
+                            optionValue = 0.5 * vs.map.h;
                             break;
                     }
                     forceNew[optionName](optionValue);
@@ -726,13 +765,13 @@ function HybridMapClass() {
         return that;
     };
 
-    that.UpdateFilters = () => {
-        TestApp('UpdateFilters', 1);
+    that.DrawFilters = () => {
+        TestApp('DrawFilters', 1);
         filtersDiv
             .style('width', vs.filters.w + 'px')
             .style('height', vs.filters.h + 'px')
             .style('left', '0px')
-            .style('top', (vs.states.h) + 'px');
+            .style('top', (vs.map.h) + 'px');
         filtersYears = filtersDiv.selectAll('div.filters-year')
             .data(yearsData);
         filtersYears = filtersYears.enter().append('div')
@@ -749,7 +788,7 @@ function HybridMapClass() {
                     .on('change', function(d) {
                         filtersDatum[d] = this.checked;
                         that
-                            .UpdateNetwork()
+                            .DrawNetwork()
                             .UpdateSimulation();
                     });
             })
@@ -772,22 +811,22 @@ function HybridMapClass() {
                     .on('change', function(d) {
                         filtersDatum[d] = this.checked;
                         that
-                            .UpdateNetwork()
+                            .DrawNetwork()
                             .UpdateSimulation();
                     });
             })
             .merge(filtersReports)
             .style('width', (vs.filters.w / reportsData.length) + 'px')
             .style('height', (0.5 * vs.filters.h) + 'px');
-        TestApp('UpdateFilters', -1);
+        TestApp('DrawFilters', -1);
         return that;
     };
 
-    that.UpdateOptions = () => {
-        TestApp('UpdateOptions', 1);
+    that.DrawOptions = () => {
+        TestApp('DrawOptions', 1);
         optionsDiv
             .style('left', '0px')
-            .style('top', Math.max(vs.svg.h, vs.states.h + vs.filters.h) + 'px');
+            .style('top', Math.max(vs.svg.h, vs.map.h + vs.filters.h) + 'px');
         optionRows = optionsDiv.selectAll('div.option-row')
             .data(that.optionsData);
         optionRows = optionRows.enter().append('div')
@@ -823,7 +862,7 @@ function HybridMapClass() {
                                 .alpha(0);
                             that
                                 .UpdateSimulation()
-                                .UpdateOptions();
+                                .DrawOptions();
                         });
                 }
                 if (datum.max !== undefined) {
@@ -851,7 +890,7 @@ function HybridMapClass() {
                     .style('line-height', vs.options.hRow + 'px');
             })
             .style('width', vs.options.wRow + 'px');
-        TestApp('UpdateOptions', -1);
+        TestApp('DrawOptions', -1);
         return that;
     };
 
@@ -878,52 +917,29 @@ function HybridMapClass() {
     return that;
 }
 
-function UpdatePageDimensions() {
-    TestApp('UpdatePageDimensions', 1);
-    let clientWidth = body.node().clientWidth;
-    if (clientWidth >= vs.states.wMin + vs.info.w) {
-        vs.states.w = clientWidth - vs.info.w;
-        vs.svg.w = clientWidth;
-    } else {
-        vs.states.w = vs.states.wMin;
-        vs.svg.w = vs.states.wMin + vs.info.w;
-    }
-    vs.filters.w = vs.states.w;
-    vs.states.h = vs.states.w / vs.states.ratioMapWH;
-    vs.svg.h = Math.max(vs.states.h, vs.info.h);
-    hybridMapObj
-        .UpdateStates()
-        .UpdateInfo()
-        .UpdateFilters()
-        .UpdateNetwork()
-        .UpdateSimulation()
-        .UpdateOptions();
-    TestApp('UpdatePageDimensions', -1);
-}
-
 function TestApp(source, position) {
     if (!logsTest || !performance || !performance.memory) { return; }
-    stackLevelTemp = stackLevel;
+    if (position === 1) {
+        stackLevel += 1;
+        stackLevelTemp = stackLevel;
+        stringSymbol = '> ';
+        if (logsTest === 'out') { return; }
+    } else if (position === -1) {
+        stackLevelTemp = stackLevel;
+        stackLevel -= 1;
+        stringSymbol = '< ';
+        if (logsTest === 'in') { return; }
+    } else {
+        stringSymbol = '• ';
+    }
+    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(24);
+    colorSource = 'color:black';
     sizeNodesOld = sizeNodesNew;
     sizeUsedOld = sizeUsedNew;
     sizeTotalOld = sizeTotalNew;
     sizeNodesNew = d3.selectAll('*').size();
     sizeUsedNew = performance.memory.usedJSHeapSize;
     sizeTotalNew = performance.memory.totalJSHeapSize;
-    if (position === 1) {
-        stringSymbol = '> ';
-        stackLevel += 1;
-    } else if (position === -1) {
-        stackLevel -= 1;
-        stringSymbol = '< ';
-        stackLevelTemp = stackLevel;
-    } else if (position === 0) {
-        stringSymbol = '• ';
-    } else {
-        stringSymbol = '  ';
-    }
-    stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(33);
-    colorSource = 'color:black';
     if (sizeNodesNew !== sizeNodesOld) {
         stringNodes = (sizeNodesNew + ' n').padStart(6);
         colorNodes = 'color:' + (sizeNodesNew < sizeNodesOld ? vs.test.colorGood : vs.test.colorBad);
@@ -949,7 +965,5 @@ function TestApp(source, position) {
     }
     stringTotal = '%c' + stringTotal.padEnd(12);
     stringCombined = stringSource + stringNodes + stringUsed + stringTotal;
-    if (position === 1 && logsTest === 'out') { return; }
-    if (position === -1 && logsTest === 'in') { return; }
     console.log(stringCombined, colorSource, colorNodes, colorUsed, colorTotal);
 }
