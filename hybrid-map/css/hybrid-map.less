@@ -7,6 +7,7 @@
 6   768     1024    P iPad
 7   1024    768
 */
+
 @font1Size: 14px;
 @bgColor: PowderBlue;
 @inactiveColor: white;
@@ -20,6 +21,7 @@ body {
     overflow-x: scroll;
     overflow-y: scroll;
 }
+
 #svg {
     font-size: @font1Size;
     #bg-rect {
@@ -29,51 +31,22 @@ body {
         stroke: @bgColor;
         &.inactive {
             pointer-events: none !important;
-            fill: @inactiveColor !important;
-            // transform: translate(2px,2px) !important;
+            fill: @inactiveColor !important; // transform: translate(2px,2px) !important;
         }
     }
-    circle.vertice-circle {
-    }
+    circle.vertice-circle {}
     line.edge-line {
         pointer-events: none;
     }
-    #hover-g {
-        pointer-events: none;
-    }
-    #hover-text {
-        dominant-baseline: middle;
-        text-anchor: middle;
-    }
-    #hover-rect {
-        stroke: black;
-        stroke-width: 0px;
-        fill: white;
-    }
-    #grades-g {
-        rect.grade-bg {
-            opacity: 0;
-        }
-        rect.grade-rect {
-            stroke: black;
-            stroke-width: 0px;
-            pointer-events: none;
-        }
-        text.grade-label, text.grades-text {
-            dominant-baseline: middle;
-            text-anchor: middle;
-            pointer-events: none;
-        }
-    }
 }
+
 #info-g {
     rect.info-bg-rect {
         stroke: gainsboro;
         fill: @inactiveColor;
     }
     g.info-image-g {
-        image {
-        }
+        image {}
     }
     g.info-text-g {
         text {
@@ -82,15 +55,18 @@ body {
         }
     }
 }
+
 #filters-div {
     position: absolute;
     background: @inactiveColor;
-    .filters-year, .filters-report {
+    .filters-year,
+    .filters-report {
         display: inline-block;
         font-size: @font1Size;
         text-align: center;
     }
 }
+
 #options-div {
     position: absolute;
     background: @inactiveColor;
@@ -99,7 +75,7 @@ body {
     .option-row {
         display: inline-block;
         outline: 1px solid gainsboro;
-        > * {
+        >* {
             font-size: @font1Size;
         }
         label {
@@ -108,23 +84,23 @@ body {
             overflow: hidden;
             white-space: nowrap;
             dominant-baseline: central;
-            &.label-small {
-            }
-            &.label-medium {
-            }
+            &.label-small {}
+            &.label-medium {}
         }
         input[type='Range'] {
             margin: 0px;
         }
     }
 }
+
+
+
 /* General Styles */
-.hovered {
-    opacity: 0.3;
-}
+
 .button-object {
     cursor: pointer;
 }
+
 .unselectable {
     -webkit-touch-callout: none;
     -moz-user-select: -moz-none;
@@ -137,15 +113,19 @@ body {
     -ms-user-select: none;
     user-select: none;
 }
+
 .loading {
     opacity: 0;
 }
+
 .collapsed {
     visibility: hidden;
     width: 0px;
     height: 0px;
 }
-.resizing {
-    -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+
+.grayscale {
+    -webkit-filter: grayscale(100%);
+    /* Safari 6.0 - 9.0 */
     filter: grayscale(100%);
 }

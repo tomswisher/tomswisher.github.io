@@ -19,10 +19,10 @@ var sizeNodesOld = -1,
 var sizeNodesNew = 0,
     sizeUsedNew = 0,
     sizeTotalNew = 0;
-var colorSource = 'color:black',
-    colorNodes = 'color:black',
-    colorUsed = 'color:black',
-    colorTotal = 'color:black';
+var colorSource = '',
+    colorNodes = '',
+    colorUsed = '',
+    colorTotal = '';
 var stringSource = '',
     stringNodes = '',
     stringUsed = '',
@@ -31,9 +31,7 @@ var stringSource = '',
     stringSymbol = '';
 var mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
     mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
-if (mobileBrowser) {
-    console.log('mobileBrowser', mobileBrowser);
-}
+if (mobileBrowser) console.log('mobileBrowser', mobileBrowser);
 
 // D3 Selections -----------------------------------------------------------------------------------
 
@@ -41,28 +39,22 @@ var body = d3.select('body');
 var svg = body.select('#svg');
 var bgRect = body.select('#bg-rect');
 var clipPathRect = body.select('#clip-path-rect');
-var statesG = body.select('#states-g'),
-    statePaths = d3.select(null);
-var verticesG = body.select('#vertices-g'),
-    verticeCircles = d3.select(null);
-var edgesG = body.select('#edges-g'),
-    edgeLines = d3.select(null);
-var hoverG = body.select('#hover-g'),
-    hoverRect = d3.select(null),
-    hoverText = d3.select(null);
-var gradesG = body.select('#grades-g'),
-    gradeGs = d3.select(null);
-var defs = gradesG.append('defs');
-var filtersDiv = body.select('#filters-div'),
-    filtersYears = d3.select(null),
-    filtersReports = d3.select(null);
-var optionsDiv = body.select('#options-div'),
-    optionRows = d3.select(null),
-    optionsAlphaLabel = d3.select(null),
-    optionsAlphaSlider = d3.select(null);
-var infoG = body.select('#info-g'),
-    infoImageGs = d3.select(null),
-    infoTextGs = d3.select(null);
+var statesG = body.select('#states-g');
+var statePaths = statesG.select(null);
+var verticesG = body.select('#vertices-g');
+var verticeCircles = verticesG.select(null);
+var edgesG = body.select('#edges-g');
+var edgeLines = edgesG.select(null);
+var filtersDiv = body.select('#filters-div');
+var filtersYears = filtersDiv.select(null);
+var filtersReports = filtersDiv.select(null);
+var optionsDiv = body.select('#options-div');
+var optionRows = optionsDiv.select(null);
+var optionsAlphaLabel = optionsDiv.select(null);
+var optionsAlphaSlider = optionsDiv.select(null);
+var infoG = body.select('#info-g');
+var infoImageGs = infoG.select(null);
+var infoTextGs = infoG.select(null);
 
 // Visual Styling ----------------------------------------------------------------------------------
 
@@ -97,20 +89,6 @@ var vs = {
         margin: 5,
         textRowH: 15
     },
-    grades: {
-        w: null,
-        h: 0,
-        margin: 3,
-        // colorArray: ['rgb(50,50,50)','rgb(28,44,160)','rgb(240,6,55)','rgb(251,204,12)','rgb(239,230,221)'], /*BH1*/
-        // colorArray: ['rgb(240,243,247)','rgb(191,162,26)','rgb(20,65,132)','rgb(153,40,26)','rgb(34,34,34)'], /*BH2*/
-        colorArray: ['#de2d26', '#fb6a4a', '#fc9272', '#fcbba1', '#fee5d9']
-        /*red*/
-    },
-    hover: {
-        w: null,
-        h: null,
-        margin: 5
-    },
     filters: {
         w: null,
         h: 70
@@ -120,7 +98,7 @@ var vs = {
         wMedium: 90,
         wSlider: 130,
         wRow: null,
-        hRow: 25
+        hRow: 20
     },
     test: {
         colorNeutral: 'black',
@@ -132,18 +110,6 @@ vs.info.wImage = vs.info.w - 2 * vs.info.margin;
 vs.info.hImage = vs.info.wImage / vs.info.ratioImageWH;
 vs.info.h = vs.info.hImage + 4 * vs.info.textRowH + 3 * vs.info.margin;
 vs.options.wRow = 2 * vs.options.wSmall + 3 * vs.options.wMedium + vs.options.wSlider;
-vs.colorScale = d3.scaleQuantize().domain([0, 5]).range(vs.grades.colorArray);
-defs.append('filter').attr('id', 'drop-shadow').attr('height', '130%') // so the shadow is not clipped
-.attr('width', '120%').each(function () {
-    d3.select(this).append('feGaussianBlur').attr('in', 'SourceAlpha') // opacity of source node
-    .attr('stdDeviation', 2) // convolve with Gaussian
-    .attr('result', 'blur');
-    d3.select(this).append('feOffset').attr('in', 'blur').attr('dx', 2).attr('dy', 2).attr('result', 'offsetBlur');
-    d3.select(this).append('feMerge').each(function () {
-        d3.select(this).append('feMergeNode').attr('in', 'offsetBlur');
-        d3.select(this).append('feMergeNode').attr('in', 'SourceGraphic'); // source node is on top
-    });
-});
 
 // Global Variables --------------------------------------------------------------------------------
 
@@ -155,12 +121,9 @@ var nodesAll = [];
 var linksAll = [];
 var infoData = [];
 var filtersDatum = {};
-var stateSelected = '';
 var isDragging = false;
 var nodeSelected = null;
 var linksSelected = [];
-var gradesObj = { 'A': true, 'B': true, 'C': true, 'D': true, 'F': true };
-var gradesData = ['A', 'B', 'C', 'D', 'F'];
 var yearsData = ['2011', '2012', '2013', '2014', '2015', '2016', '2017'];
 var reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -190,7 +153,7 @@ window.onresize = function () {
 
 // Functions ---------------------------------------------------------------------------------------
 
-function InitializePage(error, results) {
+var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     results[1].nodes.forEach(function (node) {
         return nodesAll.push(node);
@@ -200,21 +163,6 @@ function InitializePage(error, results) {
     });
     hybridMapObj = new HybridMapClass().statesFeatures(results[0].features).vertices(results[1].nodes).edges(results[1].links);
     hybridMapObj.simulation = d3.forceSimulation(hybridMapObj.vertices()).on('tick', hybridMapObj.Tick);
-    vs.hover.h = parseFloat(svg.style('font-size')) + 2 * vs.hover.margin;
-    hoverRect.attr('height', vs.hover.h).attr('y', -1 * vs.hover.h - vs.hover.margin).style('filter', 'url(#drop-shadow)');
-    hoverText.attr('x', 0).attr('y', -0.5 * vs.hover.h - vs.hover.margin);
-    bgRect.on('mouseover', function () {
-        stateSelected = '';
-        // hybridMapObj
-        //     .UpdateStates();
-        // hoverText
-        //     .text('');
-        // that.UpdateHover('mouse');
-        // hybridMapObj
-        //     .UpdateVerticesEdges();
-    }).style('opacity', function (d) {
-        return 1;
-    });
     UpdatePageDimensions();
     requestAnimationFrame(function () {
         hybridMapObj.UpdateOptions();
@@ -223,7 +171,7 @@ function InitializePage(error, results) {
         TestApp('hybrid-map', -1);
     });
     TestApp('InitializePage', -1);
-}
+};
 
 function HybridMapClass() {
     // TestApp('HybridMapClass', 1);
@@ -236,28 +184,17 @@ function HybridMapClass() {
     that.verticeById = null;
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
-    var _width = 0;
-    that.width = function (_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.width = function(_) {", "color:blue");
-        return arguments.length ? (_width = _, that) : _width;
-    };
-    var _height = 0;
-    that.height = function (_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.height = function(_) {", "color:blue");
-        return arguments.length ? (_height = _, that) : _height;
-    };
     var _statesFeatures = null;
-    that.statesFeatures = function (_) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.statesFeatures = function(_) {", "color:blue");
-        return arguments.length ? (_statesFeatures = _, that) : _statesFeatures;
+    that.statesFeatures = function (d) {
+        return d !== undefined ? (_statesFeatures = d, that) : _statesFeatures;
     };
     var _vertices = null;
-    that.vertices = function (vertices) {
+    that.vertices = function (d) {
         console.log(''.padStart(2 * stackLevel) + "%cthat.vertices = function(vertices) {", "color:blue");
-        if (!arguments.length) {
+        if (d === undefined) {
             return _vertices;
         }
-        _vertices = vertices;
+        _vertices = d;
         _vertices.forEach(function (vertice) {
             vertice.$in = 0;
             vertice.$out = 0;
@@ -270,12 +207,12 @@ function HybridMapClass() {
         return that;
     };
     var _edges = null;
-    that.edges = function (edges) {
+    that.edges = function (d) {
         console.log(''.padStart(2 * stackLevel) + "%cthat.edges = function(edges) {", "color:blue");
-        if (!arguments.length) {
+        if (d === undefined) {
             return _edges;
         }
-        _edges = edges;
+        _edges = d;
         _edges.forEach(function (edge) {
             edge.target = that.verticeById.get(edge.target);
             edge.source = that.verticeById.get(edge.source);
@@ -290,13 +227,15 @@ function HybridMapClass() {
             //     edge.target.topId = true;
             // }
         });
-        // _edges = _edges.filter(function(edge) {
-        //     return edge.topId;
-        // });
-        // _vertices = _vertices.filter(function(vertice) {
-        //     return vertice.topId;
-        // });
+        // _edges = _edges.filter(edge => edge.topId);
+        // _vertices = _vertices.filter(vertice => vertice.topId);
         that.$verticeScale.domain([0, that.$total]);
+        return that;
+    };
+
+    that.UpdateSVG = function () {
+        svg.attr('width', vs.svg.w).attr('height', vs.svg.h);
+        TestApp('UpdateSVG');
         return that;
     };
 
@@ -305,32 +244,19 @@ function HybridMapClass() {
         if (logsLvl2) console.log('UpdateStates');
         bgRect.attr('width', vs.states.w).attr('height', vs.states.h);
         clipPathRect.attr('width', vs.states.w).attr('height', vs.svg.h);
-        that.projection.scale(_width * vs.states.projectionScale).translate([_width / 2, _height / 2]);
+        that.projection.scale(vs.states.w * vs.states.projectionScale).translate([vs.states.w / 2, vs.states.h / 2]);
         that.path.projection(that.projection);
         statePaths = statesG.selectAll('path.state-path').data(_statesFeatures, function (d) {
             return d.properties.ansi;
         });
-        statePaths = statePaths.enter().append('path').classed('state-path', true).each(function (d) {
-            d.$in = parseInt(that.$inState[d.properties.ansi]);
-            d.$out = parseInt(that.$outState[d.properties.ansi]);
-        }).on('mouseover', function (d) {
-            stateSelected = d.properties.ansi;
-            // that
-            //     .UpdateStates();
-            // hoverText.text(d.properties.ansi+': '+d.$out+' '+d.$in);
-            // that.UpdateHover('mouse');
-        }).on('mousemove', function (d) {
-            // that.UpdateHover('mouse');
-        }).attr('d', that.path).merge(statePaths);
+        statePaths = statePaths.enter().append('path').classed('state-path', true).attr('d', that.path).merge(statePaths);
         statePaths.each(function (d) {
-            that.centroidByState[d.properties.ansi] = that.path.centroid(d);
-        }).classed('inactive', function (d) {
-            return true;
-        }).attr('d', that.path).style('stroke-width', vs.states.strokeWidthStates + 'px');
-        // statePaths.each(function(d) {
-        //     var centroid = that.centroidByState[d.properties.ansi];
+            return that.centroidByState[d.properties.ansi] = that.path.centroid(d);
+        }).classed('inactive', true).attr('d', that.path).style('stroke-width', vs.states.strokeWidthStates + 'px');
+        // statePaths.each(d => {
+        //     let centroid = that.centroidByState[d.properties.ansi];
         //     console.log(d.properties.ansi, centroid);
-        //     var rect = d3.select(this.parentNode).append('rect')
+        //     let rect = d3.select(this.parentNode).append('rect')
         //         .attr('x', centroid[0]-20)
         //         .attr('y', centroid[1]-20)
         //         .attr('width', 40)
@@ -340,61 +266,6 @@ function HybridMapClass() {
         //     d3.select(this).remove();
         // });
         TestApp('UpdateStates');
-        return that;
-    };
-
-    that.UpdateGrades = function () {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateGrades = function() {", "color:blue");
-        if (vs.grades.h === 0) {
-            return that;
-        }
-        gradesG.attr('transform', function () {
-            return 'translate(' + 0 + ',' + vs.states.h + ')';
-        });
-        // var gradesText = gradesG.selectAll('text.grades-text')
-        //     .data([null]);
-        // gradesText = gradesText.enter().append('text')
-        //     .classed('grades-text', true)
-        //     .merge(gradesText)
-        //     .attr('x', 0.5*vs.grades.w-130)
-        //     .attr('y', 0.5*vs.grades.h)
-        //     .text('$out');
-        gradeGs = gradesG.selectAll('g.grade-g').data(gradesData);
-        gradeGs = gradeGs.enter().append('g').classed('grade-g', true).merge(gradeGs);
-        gradeGs.attr('transform', function (d, i) {
-            var tx = 0.5 * vs.grades.w + (0.5 - 0.5 * gradesData.length + i) * vs.grades.h;
-            var ty = 0.5 * vs.grades.h - 2;
-            return 'translate(' + tx + ',' + ty + ')';
-        }).on('mouseover', function (d) {
-            // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = false;
-            // gradesObj[d] = true;
-            // UpdateGrades();
-            // that
-            //     .UpdateStates();
-        }).on('mouseout', function (d) {
-            // gradesObj.A = gradesObj.B = gradesObj.C = gradesObj.D = gradesObj.F = true;
-            // UpdateGrades();
-            // that
-            //     .UpdateStates();
-        }).each(function (grade) {
-            var gradeBG = d3.select(this).selectAll('rect.grade-bg').data([grade]);
-            gradeBG = gradeBG.enter().append('rect').classed('grade-bg', true).merge(gradeBG).attr('x', -0.5 * vs.grades.h).attr('y', -0.5 * vs.grades.h).attr('width', vs.grades.h).attr('height', vs.grades.h);
-            var gradeRect = d3.select(this).selectAll('rect.grade-rect').data([grade]);
-            gradeRect = gradeRect.enter().append('rect').classed('grade-rect', true).merge(gradeRect).classed('inactive', function (d) {
-                return !gradesObj[d];
-            }).attr('x', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('y', -0.5 * Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('width', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).attr('height', Math.max(0, vs.grades.h - 2 * vs.grades.margin)).style('filter', function (d) {
-                return gradesObj[d] ? 'url(#drop-shadow)' : null;
-            }).style('fill', function (d) {
-                return vs.colorScale(['F', 'D', 'C', 'B', 'A'].indexOf(d));
-            });
-            var gradeLabel = d3.select(this).selectAll('text.grade-label').data([grade]);
-            gradeLabel = gradeLabel.enter().append('text').classed('grade-label', true).classed('button-text', true).text(function (d) {
-                return d;
-            }).merge(gradeLabel).classed('inactive', function (d) {
-                return !gradesObj[d];
-            });
-        });
-        TestApp('UpdateGrades');
         return that;
     };
 
@@ -416,17 +287,11 @@ function HybridMapClass() {
                 }
             });
         }).merge(infoImageGs);
-        infoImageGs
-        // .style('pointer-events', function(d) {
-        //     return (nodeSelected && d.id === nodeSelected.id) ? 'all' : 'none';
-        // })
-        .transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-            return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
+        infoImageGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
+            return +(nodeSelected && d.id === nodeSelected.id);
         });
         infoTextGs = infoG.selectAll('g.info-text-g').data(infoData);
-        infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', function () {
-            return 'translate(' + vs.info.wImage / 2 + ',' + (vs.info.hImage + vs.info.margin) + ')';
-        }).each(function (datum) {
+        infoTextGs = infoTextGs.enter().append('g').classed('info-text-g', true).attr('transform', 'translate(' + vs.info.wImage / 2 + ',' + (vs.info.hImage + vs.info.margin) + ')').each(function (datum) {
             d3.select(this).append('text').attr('x', 0).attr('y', 0.5 * vs.info.textRowH).text(datum.id);
             d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * vs.info.textRowH).text('State: ' + datum.state);
             if (datum.$in > 0) {
@@ -437,42 +302,10 @@ function HybridMapClass() {
             }
         }).style('opacity', 0).merge(infoTextGs);
         infoTextGs.transition().duration(transitionDuration).ease(transitionEase).style('opacity', function (d) {
-            return nodeSelected && d.id === nodeSelected.id ? 1 : 0;
+            return +(nodeSelected && d.id === nodeSelected.id);
         });
         TestApp('UpdateInfo');
         return that;
-    };
-
-    that.UpdateHover = function (source) {
-        console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateHover = function(source) {", "color:blue");
-        vs.hover.w = 0;
-        if (hoverText.text() !== '') {
-            vs.hover.w = hoverText.node().getBBox().width + 2 * vs.hover.margin;
-        }
-        hoverRect.attr('width', vs.hover.w).attr('x', -0.5 * vs.hover.w);
-        hoverG.attr('transform', function () {
-            var tx, ty;
-            if (source === 'mouse') {
-                tx = d3.mouse(svg.node())[0];
-                ty = d3.mouse(svg.node())[1];
-            } else if (that.centroidByState[stateSelected]) {
-                tx = that.centroidByState[stateSelected][0];
-                ty = that.centroidByState[stateSelected][1] + 0.5 * (vs.hover.h + 2 * vs.hover.margin);
-            } else {
-                tx = that.width() / 2;
-                ty = that.height() / 2;
-            }
-            if (tx < vs.hover.w / 2 + 1) {
-                tx = vs.hover.w / 2 + 1;
-            } else if (tx > parseInt(svg.style('width')) - vs.hover.w / 2 - 1) {
-                tx = parseInt(svg.style('width')) - vs.hover.w / 2 - 1;
-            }
-            if (ty < vs.hover.h + 5 + 1) {
-                ty = vs.hover.h + 5 + 1;
-            }
-            return 'translate(' + tx + ',' + ty + ')';
-        });
-        TestApp('UpdateHover');
     };
 
     that.forcesObj = {
@@ -483,7 +316,7 @@ function HybridMapClass() {
         //     y: {
         //         value: 'cy',
         //     },
-        //     _IsolateForce: true,
+        //     _isIsolated: true,
         // },
         forceCollide: {
             iterations: {
@@ -513,7 +346,7 @@ function HybridMapClass() {
         //     //     value: [],
         //     // },
         //     // id: {
-        //     //     value: function(node) { return node.index; },
+        //     //     value: node => node.index,
         //     // },
         //     iterations: {
         //         value: 1,
@@ -522,10 +355,10 @@ function HybridMapClass() {
         //         step: 1,
         //     },
         //     // strength: {
-        //     //     value: function(link, i, links) { return 1/Math.min(count[link.source.index],count[link.target.index]); },
+        //     //     value: (link, i, links) => 1/Math.min(count[link.source.index],count[link.target.index]),
         //     // },
         //     distance: {
-        //         value: 30, // function(link, i, links) { return 30; },
+        //         value: 30, // (link, i, links) => return 30,
         //         min: 0,
         //         max: 100,
         //         step: 1,
@@ -533,7 +366,7 @@ function HybridMapClass() {
         // },
         // forceManyBody: {
         //     strength: {
-        //         value: -30, // function(node, i, nodes) { return -30; },
+        //         value: -30, // (node, i, nodes) => return -30,
         //         min: -100,
         //         max: 0,
         //         step: 1,
@@ -556,17 +389,17 @@ function HybridMapClass() {
         //     //     max: 1,
         //     //     step: 0.1,
         //     // },
-        //     _IsolateForce: true,
+        //     _isIsolated: true,
         // },
         // forceRadial: {
         //     strength: {
-        //         value: 0.1, // function(node, i, nodes) { return 0.1; },
+        //         value: 0.1, // (node, i, nodes) => return 0.1,
         //         min: 0,
         //         max: 1,
         //         step: 0.01,
         //     },
         //     radius: {
-        //         value: function(node, i, nodes) { return node.r; },
+        //         value: (node, i, nodes) => node.r,
         //     },
         //     x: {
         //         value: 'cx',
@@ -577,27 +410,27 @@ function HybridMapClass() {
         // },
         forceX: {
             strength: {
-                value: 0.1, // function(node, i, nodes) { return 0.1; },
+                value: 0.1, // (node, i, nodes) => return 0.1,
                 min: 0,
                 max: 1,
                 step: 0.05
             },
             x: {
-                value: 'cx' // value: function(node, i, nodes) { return node.x; },
+                value: 'cx' // (node, i, nodes) => return node.x,
             },
-            _IsolateForce: true
+            _isIsolated: true
         },
         forceY: {
             strength: {
-                value: 0.1, // function(node, i, nodes) { return 0.1; },
+                value: 0.1, // (node, i, nodes) => return 0.1,
                 min: 0,
                 max: 1,
                 step: 0.05
             },
             y: {
-                value: 'cy' // value: function(node, i, nodes) { return node.y; },
+                value: 'cy' // (node, i, nodes) => return node.y,
             },
-            _IsolateForce: true
+            _isIsolated: true
         },
         simulation: {
             alpha: {
@@ -607,7 +440,7 @@ function HybridMapClass() {
                 step: 0.01
             },
             alphaMin: {
-                value: 0.4, //0.001,
+                value: 0.4, // 0.001,
                 min: 0,
                 max: 1,
                 step: 0.05
@@ -633,6 +466,34 @@ function HybridMapClass() {
         }
     };
 
+    that.DragStarted = function (d) {
+        isDragging = true;
+        // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
+        d.fx = d.x;
+        d.fy = d.y;
+        // that.Tick();
+    };
+
+    that.Dragged = function (d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+        d.x = d3.event.x;
+        d.y = d3.event.y;
+        d.cx = d3.event.x;
+        d.cy = d3.event.y;
+        that.Tick();
+    };
+
+    that.DragEnded = function (d) {
+        isDragging = false;
+        // if (!d3.event.active) { that.simulation.alphaTarget(0); }
+        d.fx = null;
+        d.fy = null;
+        if (!d3.event.active) {
+            that.simulation.alpha(1).restart();
+        }
+    };
+
     that.UpdateVerticesEdges = function () {
         console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateVerticesEdges = function() {", "color:blue");
         var iCount = 0;
@@ -654,7 +515,7 @@ function HybridMapClass() {
             });
             that.UpdateVerticesEdges();
             that.UpdateInfo();
-        }).on('mouseout', function (d) {
+        }).on('mouseout', function () {
             if (isDragging) {
                 return;
             }
@@ -662,7 +523,7 @@ function HybridMapClass() {
             linksSelected = [];
             that.UpdateVerticesEdges();
             that.UpdateInfo();
-        }).call(d3.drag().on('start', _DragStarted).on('drag', _Dragged).on('end', _DragEnded)).attr('cx', function (d) {
+        }).call(d3.drag().on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).attr('cx', function (d) {
             return d.x;
         }).attr('cy', function (d) {
             return d.y;
@@ -683,30 +544,7 @@ function HybridMapClass() {
             } else {
                 return 'white';
             }
-            // return 'white';
-            // if (topIds.includes(d.id)) {
-            //     return 'white';
-            // }
-            // return vs.colorScale(fillValue);
-        }).style('stroke', function (d) {
-            return 'gray';
-            // if (topIds.includes(d.id)) {
-            //     return d3.schemeCategory20[d.i];
-            // } else {
-            //     return 'gray';
-            // }
-            // } else if (d.$out > 0) {
-            //     return 'gray';
-            // }
-            // } else {
-            //     return 'black';
-            // }
-            // } else if (d.$out > 0) {
-            //     return null;
-            // } else {
-            //     return 'black';
-            // }
-        }).attr('r', function (d) {
+        }).style('stroke', 'gray').attr('r', function (d) {
             return d.r;
         })
         // .transition().duration(transitionDuration).ease(transitionEase)
@@ -770,6 +608,15 @@ function HybridMapClass() {
         return that;
     };
 
+    that.IsolateForce = function (force, filter) {
+        var initialize = force.initialize;
+        force.initialize = function () {
+            console.log(''.padStart(2 * stackLevel) + "%cforce.initialize = function() {", "color:blue");
+            initialize.call(force, that.vertices().filter(filter));
+        };
+        return force;
+    };
+
     that.UpdateSimulation = function () {
         console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateSimulation = function() {", "color:blue");
         Object.keys(that.forcesObj).forEach(function (forceType) {
@@ -777,11 +624,11 @@ function HybridMapClass() {
                 return;
             }
             var optionsObj = that.forcesObj[forceType];
-            if (optionsObj['_IsolateForce'] === true) {
+            if (optionsObj['_isIsolated'] === true) {
                 Object.keys(that.$outState).forEach(function (state) {
                     var cx = that.centroidByState[state][0];
                     var cy = that.centroidByState[state][1];
-                    var forceNew = _IsolateForce(d3[forceType](), function (d) {
+                    var forceNew = that.IsolateForce(d3[forceType](), function (d) {
                         return d.state === state;
                     });
                     Object.keys(optionsObj).forEach(function (optionName) {
@@ -843,7 +690,7 @@ function HybridMapClass() {
 
     that.UpdateFilters = function () {
         console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateFilters = function() {", "color:blue");
-        filtersDiv.style('width', vs.filters.w + 'px').style('height', vs.filters.h + 'px').style('left', '0px').style('top', vs.states.h + vs.grades.h + 'px');
+        filtersDiv.style('width', vs.filters.w + 'px').style('height', vs.filters.h + 'px').style('left', '0px').style('top', vs.states.h + 'px');
         filtersYears = filtersDiv.selectAll('div.filters-year').data(yearsData);
         filtersYears = filtersYears.enter().append('div').classed('filters-year', true).each(function (datum) {
             d3.select(this).append('div').text(datum);
@@ -871,7 +718,7 @@ function HybridMapClass() {
 
     that.UpdateOptions = function () {
         console.log(''.padStart(2 * stackLevel) + "%cthat.UpdateOptions = function() {", "color:blue");
-        optionsDiv.style('left', '0px').style('top', Math.max(vs.svg.h, vs.states.h + vs.grades.h + vs.filters.h) + 'px');
+        optionsDiv.style('left', '0px').style('top', Math.max(vs.svg.h, vs.states.h + vs.filters.h) + 'px');
         optionRows = optionsDiv.selectAll('div.option-row').data(that.optionsData);
         optionRows = optionRows.enter().append('div').classed('option-row', true).each(function (datum) {
             d3.select(this).append('label').classed('label-medium', true).text(datum._category);
@@ -894,64 +741,22 @@ function HybridMapClass() {
             if (datum.max !== undefined) {
                 d3.select(this).append('label').classed('label-small', true).text(datum.max);
             }
+            if (datum._category === 'simulation' && datum._name === 'alpha') {
+                optionsAlphaLabel = d3.select(this).selectAll('label.option-value');
+                optionsAlphaSlider = d3.select(this).selectAll('input[type="range"]');
+            }
         }).merge(optionRows).each(function (datum) {
             d3.select(this).selectAll('label.option-value').text(function () {
-                if (typeof datum.value === 'function') {
-                    return 'function';
-                } else {
-                    return datum.value;
-                }
+                return typeof datum.value === 'function' ? 'function' : datum.value;
             });
             d3.select(this).selectAll('label.label-small').style('width', vs.options.wSmall + 'px');
             d3.select(this).selectAll('label.label-medium').style('width', vs.options.wMedium + 'px');
             d3.select(this).selectAll('input[type=\'Range\']').style('width', vs.options.wSlider + 'px');
-        }).style('width', vs.options.wRow + 'px').selectAll('*').style('height', vs.options.hRow + 'px').style('line-height', vs.options.hRow + 'px');
-        optionsAlphaLabel = optionsDiv.selectAll('label.option-value').filter(function (d) {
-            return d._category === 'simulation' && d._name === 'alpha';
-        });
-        optionsAlphaSlider = optionsDiv.selectAll('input[type="range"]').filter(function (d) {
-            return d._category === 'simulation' && d._name === 'alpha';
-        });
+            d3.select(this).selectAll('*').style('height', vs.options.hRow + 'px').style('line-height', vs.options.hRow + 'px');
+        }).style('width', vs.options.wRow + 'px');
         TestApp('UpdateOptions');
         return that;
     };
-
-    function _IsolateForce(force, filter) {
-        var initialize = force.initialize;
-        force.initialize = function () {
-            console.log(''.padStart(2 * stackLevel) + "%cforce.initialize = function() {", "color:blue");
-            initialize.call(force, that.vertices().filter(filter));
-        };
-        return force;
-    }
-
-    function _DragStarted(d) {
-        isDragging = true;
-        // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
-        d.fx = d.x;
-        d.fy = d.y;
-        // that.Tick();
-    }
-
-    function _Dragged(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-        d.x = d3.event.x;
-        d.y = d3.event.y;
-        d.cx = d3.event.x;
-        d.cy = d3.event.y;
-        that.Tick();
-    }
-
-    function _DragEnded(d) {
-        isDragging = false;
-        // if (!d3.event.active) { that.simulation.alphaTarget(0); }
-        d.fx = null;
-        d.fy = null;
-        if (!d3.event.active) {
-            that.simulation.alpha(1).restart();
-        }
-    }
 
     that.Tick = function () {
         verticeCircles
@@ -962,10 +767,7 @@ function HybridMapClass() {
         }).attr('cy', function (d) {
             return d.y;
         });
-        edgeLines
-        // .interrupt('edges-transition')
-        // .transition('edges-transition')
-        .attr('x1', function (d) {
+        edgeLines.attr('x1', function (d) {
             return d.source.x;
         }).attr('y1', function (d) {
             return d.source.y;
@@ -998,10 +800,8 @@ function UpdatePageDimensions() {
     }
     vs.filters.w = vs.states.w;
     vs.states.h = vs.states.w / vs.states.ratioMapWH;
-    vs.svg.h = Math.max(vs.states.h, vs.info.h) + vs.grades.h;
-    vs.grades.w = vs.states.w;
-    svg.attr('width', vs.svg.w).attr('height', vs.svg.h);
-    hybridMapObj.width(vs.states.w).height(vs.states.h).UpdateStates().UpdateGrades().UpdateInfo().UpdateFilters().UpdateVerticesEdges().UpdateSimulation().UpdateOptions();
+    vs.svg.h = Math.max(vs.states.h, vs.info.h);
+    hybridMapObj.UpdateSVG().UpdateStates().UpdateInfo().UpdateFilters().UpdateVerticesEdges().UpdateSimulation().UpdateOptions();
     TestApp('UpdatePageDimensions', -1);
 }
 
@@ -1027,6 +827,7 @@ function TestApp(source, position) {
         stringSymbol = '• ';
     }
     stringSource = '%c' + (''.padStart(2 * stackLevelTemp) + stringSymbol + String(source)).padEnd(27);
+    colorSource = 'color:black';
     if (sizeNodesNew !== sizeNodesOld) {
         stringNodes = (sizeNodesNew + ' n').padStart(6);
         colorNodes = 'color:' + (sizeNodesNew < sizeNodesOld ? vs.test.colorGood : vs.test.colorBad);

@@ -32,32 +32,6 @@ body {
 #svg line.edge-line {
   pointer-events: none;
 }
-#svg #hover-g {
-  pointer-events: none;
-}
-#svg #hover-text {
-  dominant-baseline: middle;
-  text-anchor: middle;
-}
-#svg #hover-rect {
-  stroke: black;
-  stroke-width: 0px;
-  fill: white;
-}
-#svg #grades-g rect.grade-bg {
-  opacity: 0;
-}
-#svg #grades-g rect.grade-rect {
-  stroke: black;
-  stroke-width: 0px;
-  pointer-events: none;
-}
-#svg #grades-g text.grade-label,
-#svg #grades-g text.grades-text {
-  dominant-baseline: middle;
-  text-anchor: middle;
-  pointer-events: none;
-}
 #info-g rect.info-bg-rect {
   stroke: gainsboro;
   fill: white;
@@ -100,9 +74,6 @@ body {
   margin: 0px;
 }
 /* General Styles */
-.hovered {
-  opacity: 0.3;
-}
 .button-object {
   cursor: pointer;
 }
@@ -126,7 +97,7 @@ body {
   width: 0px;
   height: 0px;
 }
-.resizing {
+.grayscale {
   -webkit-filter: grayscale(100%);
   /* Safari 6.0 - 9.0 */
   filter: grayscale(100%);
