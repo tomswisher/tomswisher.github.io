@@ -4,7 +4,7 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-let logsTest = 'both',
+let logsTest = 'in',
     logsLvl1 = false,
     logsLvl2 = false;
 let resizeWait = 150,
@@ -27,8 +27,8 @@ let stringSource = '',
     stringTotal = '',
     stringCombined = '',
     stringSymbol = '';
-let mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
-    mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
+let mobileUserAgents = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
+    mobileBrowser = navigator && mobileUserAgents.test(navigator.userAgent);
 if (mobileBrowser) console.log('mobileBrowser', mobileBrowser);
 let isLoaded = false;
 
@@ -36,6 +36,8 @@ let isLoaded = false;
 
 const body = d3.select('body');
 const svg = body.select('#svg');
+const svgDefs = body.select('#svg-defs');
+let svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead');
 const bgRect = body.select('#bg-rect');
 const clipPathRect = body.select('#clip-path-rect');
 const statesG = body.select('#states-g');
@@ -72,8 +74,8 @@ const vs = {
         strokeWidthStates: 1,
     },
     network: {
-        rMin: 3,
-        rFactor: 50,
+        rMin: 4,
+        rFactor: 60,
         strokeWidth: 1,
     },
     info: {
@@ -412,12 +414,12 @@ function HybridMapClass() {
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
-        //         value: 'cx',
+        //         value: body.node().clientWidth/2,
         //     },
         //     y: {
-        //         value: 'cy',
+        //         value: body.node().clientHeight/2,
         //     },
-        //     _isIsolated: true,
+        //     // _isIsolated: true,
         // },
         forceCollide: {
             iterations: {
@@ -430,7 +432,7 @@ function HybridMapClass() {
                 value: 1, // 1
                 min: 0,
                 max: 1,
-                step: 0.1,
+                step: 0.01,
             },
             radius: {
                 value: (node, i, nodes) => node.r ? 1.5 + node.r : 0,
@@ -441,21 +443,21 @@ function HybridMapClass() {
             },
         },
         // forceLink: {
-        //     // links: {
-        //     //     value: [],
-        //     // },
-        //     // id: {
-        //     //     value: node => node.index,
-        //     // },
+        //     links: {
+        //         value: [],
+        //     },
+        //     id: {
+        //         value: node => node.index,
+        //     },
         //     iterations: {
         //         value: 1,
         //         min: 0,
         //         max: 10,
         //         step: 1,
         //     },
-        //     // strength: {
-        //     //     value: (link, i, links) => 1/Math.min(count[link.source.index],count[link.target.index]),
-        //     // },
+        //     strength: {
+        //         value: (link, i, links) => 1/Math.min(count[link.source.index],count[link.target.index]),
+        //     },
         //     distance: {
         //         value: 30, // (link, i, links) => return 30,
         //         min: 0,
@@ -662,6 +664,26 @@ function HybridMapClass() {
                     return 0.05;
                 }
             });
+        svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead')
+            .data(topIds.concat('misc'));
+        svgDefsArrowheads = svgDefsArrowheads.enter().append('marker')
+            .classed('arrowhead', true)
+            .attr('id', (d, i) => 'arrowhead-id'+i)
+            .each(function(datum, i) {
+                d3.select(this).selectAll('path')
+                    .data([null]).enter().append('path')
+                    .attr('d', 'M 0 0 12 6 0 12 3 6 Z')
+                    .style('stroke', () => (i < topIds.length) ? d3.schemeCategory20[i] : 'gray')
+                    .style('fill', () => (i < topIds.length) ? d3.schemeCategory20[i] : 'gainsboro');
+            })
+            .merge(svgDefsArrowheads);
+        svgDefsArrowheads
+            .attr('refX', 12)
+            .attr('refY', 6)
+            .attr('markerUnits', 'userSpaceOnUse')
+            .attr('markerWidth', 112)
+            .attr('markerHeight', 118)
+            .attr('orient', 'auto');
         linkLines = linksG.selectAll('line.link-line')
             .data(that.links);
         linkLines.exit()
@@ -674,6 +696,13 @@ function HybridMapClass() {
             .attr('y2', d => d.target.y)
             .merge(linkLines);
         linkLines
+            .attr('marker-end', d => {
+                if (topIds.includes(d.source.id)) {
+                    return 'url(#arrowhead-id'+d.source.i+')';
+                } else {
+                    return 'url(#arrowhead-id'+topIds.length+')';
+                }
+            })
             .style('stroke-width', vs.network.strokeWidth + 'px')
             .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
@@ -723,6 +752,7 @@ function HybridMapClass() {
                 .on('tick', that.Tick);
         }
         that.simulation
+            .stop()
             .nodes(that.nodes);
         Object.keys(that.forcesObj).forEach(forceType => {
             if (forceType === 'simulation') { return; }

@@ -4,7 +4,7 @@
 
 // Performance -------------------------------------------------------------------------------------
 
-var logsTest = 'both',
+var logsTest = 'in',
     logsLvl1 = false,
     logsLvl2 = false;
 var resizeWait = 150,
@@ -27,8 +27,8 @@ var stringSource = '',
     stringTotal = '',
     stringCombined = '',
     stringSymbol = '';
-var mobileNavigators = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
-    mobileBrowser = navigator && mobileNavigators.test(navigator.userAgent);
+var mobileUserAgents = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
+    mobileBrowser = navigator && mobileUserAgents.test(navigator.userAgent);
 if (mobileBrowser) console.log('mobileBrowser', mobileBrowser);
 var isLoaded = false;
 
@@ -36,6 +36,8 @@ var isLoaded = false;
 
 var body = d3.select('body');
 var svg = body.select('#svg');
+var svgDefs = body.select('#svg-defs');
+var svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead');
 var bgRect = body.select('#bg-rect');
 var clipPathRect = body.select('#clip-path-rect');
 var statesG = body.select('#states-g');
@@ -72,8 +74,8 @@ var vs = {
         strokeWidthStates: 1
     },
     network: {
-        rMin: 3,
-        rFactor: 50,
+        rMin: 4,
+        rFactor: 60,
         strokeWidth: 1
     },
     info: {
@@ -346,12 +348,12 @@ function HybridMapClass() {
     that.forcesObj = {
         // forceCenter: { // visual centering based on mass
         //     x: {
-        //         value: 'cx',
+        //         value: body.node().clientWidth/2,
         //     },
         //     y: {
-        //         value: 'cy',
+        //         value: body.node().clientHeight/2,
         //     },
-        //     _isIsolated: true,
+        //     // _isIsolated: true,
         // },
         forceCollide: {
             iterations: {
@@ -364,7 +366,7 @@ function HybridMapClass() {
                 value: 1, // 1
                 min: 0,
                 max: 1,
-                step: 0.1
+                step: 0.01
             },
             radius: {
                 value: function value(node, i, nodes) {
@@ -377,21 +379,21 @@ function HybridMapClass() {
             }
         },
         // forceLink: {
-        //     // links: {
-        //     //     value: [],
-        //     // },
-        //     // id: {
-        //     //     value: node => node.index,
-        //     // },
+        //     links: {
+        //         value: [],
+        //     },
+        //     id: {
+        //         value: node => node.index,
+        //     },
         //     iterations: {
         //         value: 1,
         //         min: 0,
         //         max: 10,
         //         step: 1,
         //     },
-        //     // strength: {
-        //     //     value: (link, i, links) => 1/Math.min(count[link.source.index],count[link.target.index]),
-        //     // },
+        //     strength: {
+        //         value: (link, i, links) => 1/Math.min(count[link.source.index],count[link.target.index]),
+        //     },
         //     distance: {
         //         value: 30, // (link, i, links) => return 30,
         //         min: 0,
@@ -591,6 +593,17 @@ function HybridMapClass() {
                 return 0.05;
             }
         });
+        svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead').data(topIds.concat('misc'));
+        svgDefsArrowheads = svgDefsArrowheads.enter().append('marker').classed('arrowhead', true).attr('id', function (d, i) {
+            return 'arrowhead-id' + i;
+        }).each(function (datum, i) {
+            d3.select(this).selectAll('path').data([null]).enter().append('path').attr('d', 'M 0 0 12 6 0 12 3 6 Z').style('stroke', function () {
+                return i < topIds.length ? d3.schemeCategory20[i] : 'gray';
+            }).style('fill', function () {
+                return i < topIds.length ? d3.schemeCategory20[i] : 'gainsboro';
+            });
+        }).merge(svgDefsArrowheads);
+        svgDefsArrowheads.attr('refX', 12).attr('refY', 6).attr('markerUnits', 'userSpaceOnUse').attr('markerWidth', 112).attr('markerHeight', 118).attr('orient', 'auto');
         linkLines = linksG.selectAll('line.link-line').data(that.links);
         linkLines.exit().remove();
         linkLines = linkLines.enter().append('line').classed('link-line', true).attr('x1', function (d) {
@@ -602,7 +615,13 @@ function HybridMapClass() {
         }).attr('y2', function (d) {
             return d.target.y;
         }).merge(linkLines);
-        linkLines.style('stroke-width', vs.network.strokeWidth + 'px').style('stroke', function (d) {
+        linkLines.attr('marker-end', function (d) {
+            if (topIds.includes(d.source.id)) {
+                return 'url(#arrowhead-id' + d.source.i + ')';
+            } else {
+                return 'url(#arrowhead-id' + topIds.length + ')';
+            }
+        }).style('stroke-width', vs.network.strokeWidth + 'px').style('stroke', function (d) {
             if (topIds.includes(d.source.id)) {
                 return d3.schemeCategory20[d.source.i];
             } else if (topIds.includes(d.target.id)) {
@@ -648,7 +667,7 @@ function HybridMapClass() {
         if (that.simulation === undefined) {
             that.simulation = d3.forceSimulation().on('tick', that.Tick);
         }
-        that.simulation.nodes(that.nodes);
+        that.simulation.stop().nodes(that.nodes);
         Object.keys(that.forcesObj).forEach(function (forceType) {
             if (forceType === 'simulation') {
                 return;
