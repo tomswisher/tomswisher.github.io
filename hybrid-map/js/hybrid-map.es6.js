@@ -218,8 +218,10 @@ function HybridMapClass() {
     that.infoData = [];
     that.centroidByState = {};
     that.$total = 0;
-    that.$inState = {};
-    that.$outState = {};
+    that.$inByState = {};
+    that.$outByState = {};
+    that.$inById = {};
+    that.$outById = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
     that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
@@ -270,10 +272,10 @@ function HybridMapClass() {
         let iCount = 0;
         that.nodes = that.nodesLoaded;
         that.nodes.forEach((d, i) => {
-            d.$out = 0;
-            d.$in = 0;
-            that.$outState[d.state] = 0;
-            that.$inState[d.state] = 0;
+            that.$outById[d.id] = 0;
+            that.$inById[d.id] = 0;
+            that.$outByState[d.state] = 0;
+            that.$inByState[d.state] = 0;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
@@ -290,14 +292,14 @@ function HybridMapClass() {
         that.links.forEach(d => {
             d.source = that.nodeById.get(d.sourceId);
             d.target = that.nodeById.get(d.targetId);
-            d.source.$out += d.dollars;
-            d.target.$in += d.dollars;
-            that.$outState[d.source.state] += d.dollars;
-            that.$inState[d.target.state] += d.dollars;
+            that.$outById[d.source.id] += d.dollars;
+            that.$inById[d.target.id] += d.dollars;
+            that.$outByState[d.source.state] += d.dollars;
+            that.$inByState[d.target.state] += d.dollars;
         });
         that.nodes.forEach(d => {
-            let $in = that.$nodeScale(d.$in);
-            let $out = that.$nodeScale(d.$out);
+            let $in = that.$nodeScale(that.$inById[d.id]);
+            let $out = that.$nodeScale(that.$outById[d.id]);
             if ($in === 0 && $out === 0) {
                 d.r = 0;
             } else if ($in > $out) {
@@ -380,6 +382,11 @@ function HybridMapClass() {
         infoTextGs = infoTextGs.enter().append('g')
             .classed('info-text-g', true)
             .attr('transform', 'translate(' + (vs.info.wImage / 2) + ',' + (vs.info.hImage + vs.info.margin) + ')')
+            .style('opacity', 0)
+            .merge(infoTextGs);
+        infoTextGs
+            .selectAll('text').remove();
+        infoTextGs
             .each(function(datum) {
                 d3.select(this).append('text')
                     .attr('x', 0)
@@ -389,22 +396,30 @@ function HybridMapClass() {
                     .attr('x', 0)
                     .attr('y', 1.5 * vs.info.textRowH)
                     .text('State: ' + datum.state);
-                if (datum.$in > 0) {
+                // if (that.$inById[datum.id] > 0) {
                     d3.select(this).append('text')
                         .attr('x', 0)
                         .attr('y', 2.5 * vs.info.textRowH)
-                        .text('Received: ' + d3.format('$,')(datum.$in));
-                }
-                if (datum.$out > 0) {
+                        .text('Received: ' + d3.format('$,')(that.$inById[datum.id]));
+                // }
+                // if (that.$outById[datum.id] > 0) {
                     d3.select(this).append('text')
                         .attr('x', 0)
                         .attr('y', 3.5 * vs.info.textRowH)
-                        .text('Donated: ' + d3.format('$,')(datum.$out));
-                }
+                        .text('Donated: ' + d3.format('$,')(that.$outById[datum.id]));
+                // }
+                // d3.select(this).append('text')
+                //     .attr('x', 0)
+                //     .attr('y', 4.5 * vs.info.textRowH)
+                //     .text(() => {
+                //         let yearsArray = yearsData.filter(d => !(that.filteredOutObj.year[d]));
+                //         if (yearsArray.length === 0) {
+                //             return 'Years: None';
+                //         } else {
+                //             return 'Years: [' + yearsArray + ']';
+                //         }
+                //     });
             })
-            .style('opacity', 0)
-            .merge(infoTextGs);
-        infoTextGs
             .transition().duration(transitionDuration).ease(transitionEase)
             .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         TestApp('DrawInfo', -1);
@@ -667,7 +682,7 @@ function HybridMapClass() {
                     that.simulation[optionName](optionsObj[optionName].value);
                 });
             } else if (optionsObj._isIsolated === true) {
-                Object.keys(that.$outState).forEach(state => {
+                Object.keys(that.$outByState).forEach(state => {
                     let cx = that.centroidByState[state][0];
                     let cy = that.centroidByState[state][1];
                     let forceNew = d3[optionsObj._category]();
