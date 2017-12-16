@@ -189,7 +189,7 @@ window.onresize = function () {
             resizeCounter -= 1;
             if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
             UpdateVSValues();
-            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
+            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
         }
     }, resizeWait);
 };
@@ -211,6 +211,7 @@ function UpdateVSValues() {
         vs.svg.w.val = vs.map.wMin.val + vs.info.w.val;
     }
     vs.filters.w.val = vs.map.wMin.val;
+    vs.map.w.val = Math.min(vs.map.w.val, (window.innerHeight - vs.filters.h.val) * vs.map.ratioMapWH.val);
     vs.map.h.val = vs.map.w.val / vs.map.ratioMapWH.val;
     vs.svg.h.val = Math.max(vs.map.h.val, vs.info.h.val);
     TestApp('UpdateVSValues', -1);
@@ -312,8 +313,10 @@ function HybridMapClass() {
                 d.i = iCount;
                 iCount += 1;
             }
-            d.x = d.x === undefined ? that.centroidByState[d.state][0] : d.x;
-            d.y = d.y === undefined ? that.centroidByState[d.state][1] : d.y;
+            d.x = that.centroidByState[d.state][0];
+            d.y = that.centroidByState[d.state][1];
+            d.vx = 0;
+            d.vy = 0;
         });
         that.nodeById = d3.map(that.nodes, function (d) {
             return d.id;
@@ -444,7 +447,7 @@ function HybridMapClass() {
         rows: [{
             name: 'iterations',
             inputType: 'range',
-            val: 10,
+            val: 1,
             min: 0,
             max: 10,
             step: 1,
