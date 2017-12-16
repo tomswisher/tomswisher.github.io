@@ -136,6 +136,9 @@ const vs = {
         hRow: {
             val: 20,
         },
+        margin: {
+            val: 3,
+        },
     },
     transition: {
         duration: {
@@ -221,7 +224,7 @@ function UpdateVSValues() {
     vs.info.wImage.val = vs.info.w.val - 2 * vs.info.margin.val;
     vs.info.hImage.val = vs.info.wImage.val / vs.info.ratioImageWH.val;
     vs.info.h.val = vs.info.hImage.val + 4 * vs.info.textRowH.val + 3 * vs.info.margin.val;
-    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val;
+    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val + 2*vs.options.margin.val;
     let clientWidth = body.node().clientWidth;
     if (clientWidth >= vs.map.wMin.val + vs.info.w.val) {
         vs.map.w.val = clientWidth - vs.info.w.val;
@@ -1077,13 +1080,16 @@ function HybridMapClass() {
         optionGroups = optionGroups.enter().append('div')
             .classed('option-group', true)
             .each(function(optionsObj) {
+                let rowsFiltered = optionsObj.rows.filter(row => row.inputType);
+                d3.select(this)
+                    .style('display', rowsFiltered.length ? null : 'none');
                 d3.select(this).append('div')
                     .classed('option-category', true)
                     .append('label')
                     .classed('label-medium', true)
                     .text(optionsObj.category);
                 d3.select(this).selectAll('div.option-row')
-                    .data(d => d.rows.filter(row => row.inputType))
+                    .data(rowsFiltered)
                     .enter().append('div')
                     .classed('option-row', true)
                     .each(function(row) {
@@ -1132,7 +1138,8 @@ function HybridMapClass() {
                     .style('width', (vs.options.wGroup.val - vs.options.wMedium.val) + 'px');
             })
             .merge(optionGroups)
-            .style('width', vs.options.wGroup.val + 'px');
+            .style('width', vs.options.wGroup.val + 'px')
+            .style('margin', vs.options.margin.val + 'px');
         optionGroups.selectAll('label.option-value')
             .text(d => typeof(d.val) !== 'number' ? '' : d.val);
         optionGroups.selectAll('label.label-small')

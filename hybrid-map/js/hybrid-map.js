@@ -135,6 +135,9 @@ var vs = {
         wGroup: {},
         hRow: {
             val: 20
+        },
+        margin: {
+            val: 3
         }
     },
     transition: {
@@ -198,7 +201,7 @@ function UpdateVSValues() {
     vs.info.wImage.val = vs.info.w.val - 2 * vs.info.margin.val;
     vs.info.hImage.val = vs.info.wImage.val / vs.info.ratioImageWH.val;
     vs.info.h.val = vs.info.hImage.val + 4 * vs.info.textRowH.val + 3 * vs.info.margin.val;
-    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val;
+    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val + 2 * vs.options.margin.val;
     var clientWidth = body.node().clientWidth;
     if (clientWidth >= vs.map.wMin.val + vs.info.w.val) {
         vs.map.w.val = clientWidth - vs.info.w.val;
@@ -918,12 +921,12 @@ function HybridMapClass() {
         optionsDiv.style('top', Math.max(vs.svg.h.val, vs.map.h.val + vs.filters.h.val) + 'px').style('width', Math.max(vs.options.wGroup.val, vs.map.w.val) + 'px');
         optionGroups = optionsDiv.selectAll('div.option-group').data(that.optionsData);
         optionGroups = optionGroups.enter().append('div').classed('option-group', true).each(function (optionsObj) {
+            var rowsFiltered = optionsObj.rows.filter(function (row) {
+                return row.inputType;
+            });
+            d3.select(this).style('display', rowsFiltered.length ? null : 'none');
             d3.select(this).append('div').classed('option-category', true).append('label').classed('label-medium', true).text(optionsObj.category);
-            d3.select(this).selectAll('div.option-row').data(function (d) {
-                return d.rows.filter(function (row) {
-                    return row.inputType;
-                });
-            }).enter().append('div').classed('option-row', true).each(function (row) {
+            d3.select(this).selectAll('div.option-row').data(rowsFiltered).enter().append('div').classed('option-row', true).each(function (row) {
                 d3.select(this).append('label').classed('label-medium', true).text(row.name);
                 d3.select(this).append('label').classed('label-small', true).classed('option-value', true);
                 d3.select(this).append('label').classed('label-small', true).text(row.min);
@@ -946,7 +949,7 @@ function HybridMapClass() {
                     optionsAlphaSlider = d3.select(this).selectAll('input[type="range"]');
                 }
             }).style('width', vs.options.wGroup.val - vs.options.wMedium.val + 'px');
-        }).merge(optionGroups).style('width', vs.options.wGroup.val + 'px');
+        }).merge(optionGroups).style('width', vs.options.wGroup.val + 'px').style('margin', vs.options.margin.val + 'px');
         optionGroups.selectAll('label.option-value').text(function (d) {
             return typeof d.val !== 'number' ? '' : d.val;
         });

@@ -62,7 +62,6 @@ body {
   vertical-align: top;
   overflow: hidden;
   outline: 1px solid gainsboro;
-  padding: 1px;
 }
 #options-div .option-group > * {
   font-size: 14px;
@@ -70,7 +69,6 @@ body {
 #options-div .option-category {
   display: inline-block;
   float: left;
-  height: 0px;
 }
 #options-div .option-row {
   display: inline-block;
