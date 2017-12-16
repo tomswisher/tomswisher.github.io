@@ -36,6 +36,9 @@ body {
   stroke: gainsboro;
   fill: white;
 }
+#info-g g.info-text-g {
+  pointer-events: none;
+}
 #info-g g.info-text-g text {
   dominant-baseline: middle;
   text-anchor: middle;

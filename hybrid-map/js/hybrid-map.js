@@ -245,7 +245,6 @@ function HybridMapClass() {
     that.linksSelected = [];
     that.infoData = [];
     that.centroidByState = {};
-    that.$total = 0;
     that.$inByState = {};
     that.$outByState = {};
     that.$inById = {};
@@ -283,13 +282,10 @@ function HybridMapClass() {
     that.LoadLinks = function (d) {
         TestApp('LoadLinks', 1);
         that.linksLoaded = d;
-        that.$total = 0;
         that.linksLoaded.forEach(function (d) {
             d.sourceId = d.source;
             d.targetId = d.target;
-            that.$total += d.dollars;
         });
-        that.$nodeScale.domain([0, that.$total]);
         that.filteredOutObj = {
             year: {},
             report: {}
@@ -313,8 +309,10 @@ function HybridMapClass() {
                 d.i = iCount;
                 iCount += 1;
             }
-            d.x = that.centroidByState[d.state][0];
-            d.y = that.centroidByState[d.state][1];
+            // d.x = that.centroidByState[d.state][0];
+            // d.y = that.centroidByState[d.state][1];
+            d.x = d.x !== undefined ? d.x : that.centroidByState[d.state][0];
+            d.y = d.y !== undefined ? d.y : that.centroidByState[d.state][1];
             d.vx = 0;
             d.vy = 0;
         });
@@ -330,6 +328,7 @@ function HybridMapClass() {
             }
             return true;
         });
+        that.$total = 0;
         that.links.forEach(function (d) {
             d.source = that.nodeById.get(d.sourceId);
             d.target = that.nodeById.get(d.targetId);
@@ -337,7 +336,9 @@ function HybridMapClass() {
             that.$inById[d.target.id] += d.dollars;
             that.$outByState[d.source.state] += d.dollars;
             that.$inByState[d.target.state] += d.dollars;
+            that.$total += d.dollars;
         });
+        that.$nodeScale.domain([0, that.$total]);
         that.nodes.forEach(function (d) {
             var $in = that.$nodeScale(that.$inById[d.id]);
             var $out = that.$nodeScale(that.$outById[d.id]);
@@ -447,7 +448,7 @@ function HybridMapClass() {
         rows: [{
             name: 'iterations',
             inputType: 'range',
-            val: 1,
+            val: 5,
             min: 0,
             max: 10,
             step: 1,
