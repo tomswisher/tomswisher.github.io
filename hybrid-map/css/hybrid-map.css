@@ -55,10 +55,12 @@ body {
   background: white;
   width: 100%;
   height: auto;
+  text-align: center;
 }
 #options-div .option-group {
   display: inline-block;
   vertical-align: top;
+  overflow: hidden;
   outline: 1px solid gainsboro;
 }
 #options-div .option-group > * {
@@ -67,10 +69,12 @@ body {
 #options-div .option-category {
   display: inline-block;
   float: left;
+  height: 0px;
 }
 #options-div .option-row {
   display: inline-block;
   float: right;
+  text-align: left;
 }
 #options-div label {
   display: inline-block;
