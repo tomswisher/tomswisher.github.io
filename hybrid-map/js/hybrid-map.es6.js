@@ -50,7 +50,8 @@ const filtersDiv = body.select('#filters-div');
 let filtersYears = filtersDiv.select(null);
 let filtersReports = filtersDiv.select(null);
 const optionsDiv = body.select('#options-div');
-let optionRows = optionsDiv.select(null);
+let optionGroups = optionsDiv.select(null);
+let optionRows = optionGroups.select(null);
 let optionsAlphaLabel = optionsDiv.select(null);
 let optionsAlphaSlider = optionsDiv.select(null);
 const infoG = body.select('#info-g');
@@ -107,7 +108,7 @@ const vs = {
 vs.info.wImage = vs.info.w - 2 * vs.info.margin;
 vs.info.hImage = vs.info.wImage / vs.info.ratioImageWH;
 vs.info.h = vs.info.hImage + 4 * vs.info.textRowH + 3 * vs.info.margin;
-vs.options.wRow = 2 * vs.options.wSmall + 3 * vs.options.wMedium + vs.options.wSlider;
+vs.options.wRow = 2 * vs.options.wSmall + 2 * vs.options.wMedium + vs.options.wSlider;
 
 // Global Variables --------------------------------------------------------------------------------
 
@@ -142,7 +143,9 @@ window.onload = () => {
         .awaitAll(InitializePage);
 };
 window.onresize = () => {
-    if (!isLoaded) { return; }
+    if (!isLoaded) {
+        return;
+    }
     if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
     resizeCounter += 1;
     setTimeout(() => {
@@ -206,7 +209,10 @@ const InitializePage = (error, results) => {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
-    that.filteredOutObj = { year: {}, report: {} };
+    that.filteredOutObj = {
+        year: {},
+        report: {}
+    };
     that.states = [];
     that.nodes = [];
     that.links = [];
@@ -231,7 +237,10 @@ function HybridMapClass() {
         TestApp('UpdateStates', 1);
         that.statesLoaded = d;
         that.states = that.statesLoaded;
-        that.filteredOutObj = { year: {}, report: {} };
+        that.filteredOutObj = {
+            year: {},
+            report: {}
+        };
         that
             .DrawFilters();
         TestApp('UpdateStates', -1);
@@ -241,7 +250,10 @@ function HybridMapClass() {
     that.LoadNodes = d => {
         TestApp('LoadNodes', 1);
         that.nodesLoaded = d;
-        that.filteredOutObj = { year: {}, report: {} };
+        that.filteredOutObj = {
+            year: {},
+            report: {}
+        };
         that
             .DrawFilters();
         TestApp('LoadNodes', -1);
@@ -259,7 +271,10 @@ function HybridMapClass() {
         });
         that.$nodeScale
             .domain([0, that.$total]);
-        that.filteredOutObj = { year: {}, report: {} };
+        that.filteredOutObj = {
+            year: {},
+            report: {}
+        };
         that
             .DrawFilters();
         TestApp('LoadLinks', -1);
@@ -285,8 +300,12 @@ function HybridMapClass() {
         });
         that.nodeById = d3.map(that.nodes, d => d.id);
         that.links = that.linksLoaded.filter(function(d) {
-            if (that.filteredOutObj.year[d.year]) { return false; }
-            if (that.filteredOutObj.report[d.report]) { return false; }
+            if (that.filteredOutObj.year[d.year]) {
+                return false;
+            }
+            if (that.filteredOutObj.report[d.report]) {
+                return false;
+            }
             return true;
         });
         that.links.forEach(d => {
@@ -397,16 +416,16 @@ function HybridMapClass() {
                     .attr('y', 1.5 * vs.info.textRowH)
                     .text('State: ' + datum.state);
                 // if (that.$inById[datum.id] > 0) {
-                    d3.select(this).append('text')
-                        .attr('x', 0)
-                        .attr('y', 2.5 * vs.info.textRowH)
-                        .text('Received: ' + d3.format('$,')(that.$inById[datum.id]));
+                d3.select(this).append('text')
+                    .attr('x', 0)
+                    .attr('y', 2.5 * vs.info.textRowH)
+                    .text('Received: ' + d3.format('$,')(that.$inById[datum.id]));
                 // }
                 // if (that.$outById[datum.id] > 0) {
-                    d3.select(this).append('text')
-                        .attr('x', 0)
-                        .attr('y', 3.5 * vs.info.textRowH)
-                        .text('Donated: ' + d3.format('$,')(that.$outById[datum.id]));
+                d3.select(this).append('text')
+                    .attr('x', 0)
+                    .attr('y', 3.5 * vs.info.textRowH)
+                    .text('Donated: ' + d3.format('$,')(that.$outById[datum.id]));
                 // }
                 // d3.select(this).append('text')
                 //     .attr('x', 0)
@@ -426,307 +445,288 @@ function HybridMapClass() {
         return that;
     };
 
-    that.optionsDataMaster = [{
-            _category: 'forceCenter',
-            _isDisabled: true,
-            x: {
-                _name: 'x',
-                _category: 'forceCenter',
-                value: body.node().clientWidth / 2,
-            },
-            y: {
-                _name: 'y',
-                _category: 'forceCenter',
-                value: body.node().clientHeight / 2,
-            },
+    that.optionsDataMaster = [
+        {
+            category: 'forceCenter',
+            isEnabled: false,
+            rows: [
+                {
+                    name: 'x',
+                    value: 'cx',
+                },
+                {
+                    name: 'y',
+                    value: 'cy',
+                }
+            ],
         },
         {
-            _category: 'forceCollide',
-            // _isDisabled: true,
-            iterations: {
-                _name: 'iterations',
-                _category: 'forceCollide',
-                value: 10, // 1
-                min: 0,
-                max: 10,
-                step: 1,
-            },
-            strength: {
-                _name: 'strength',
-                _category: 'forceCollide',
-                value: 1, // 1
-                min: 0,
-                max: 1,
-                step: 0.01,
-            },
-            radius: {
-                _name: 'radius',
-                _category: 'forceCollide',
-                value: (node, i, nodes) => node.r ? 1.5 + node.r : 0,
-            },
+            category: 'forceCollide',
+            isEnabled: true,
+            rows: [
+                {
+                    name: 'iterations',
+                    value: 10,
+                    min: 0,
+                    max: 10,
+                    step: 1,
+                    _default: 1,
+                },
+                {
+                    name: 'strength',
+                    value: 1,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    _default: 1,
+                },
+                {
+                    name: 'radius',
+                    value: (node, i, nodes) => node.r ? 1.5 + node.r : 0,
+                }
+            ],
         },
         {
-            _category: 'forceLink',
-            _isDisabled: true,
-            links: {
-                _name: 'links',
-                _category: 'forceLink',
-                value: [],
-            },
-            id: {
-                _name: 'id',
-                _category: 'forceLink',
-                value: node => node.index,
-            },
-            iterations: {
-                _name: 'iterations',
-                _category: 'forceLink',
-                value: 1,
-                min: 0,
-                max: 10,
-                step: 1,
-            },
-            strength: {
-                _name: 'strength',
-                _category: 'forceLink',
-                value: (link, i, links) => 1 / Math.min(count[link.source.index], count[link.target.index]),
-            },
-            distance: {
-                _name: 'distance',
-                _category: 'forceLink',
-                value: 30, // (link, i, links) => return 30,
-                min: 0,
-                max: 100,
-                step: 1,
-            },
+            category: 'forceLink',
+            isEnabled: false,
+            rows: [
+                {
+                    name: 'links',
+                    value: [],
+                    _default: [],
+                },
+                {
+                    name: 'id',
+                    value: node => node.index,
+
+                },
+                {
+                    name: 'iterations',
+                    value: 1,
+                    min: 0,
+                    max: 10,
+                    step: 1,
+                    _default: 1,
+                },
+                {
+                    name: 'strength',
+                    value: 0.5,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    _default: (link, i, links) => 1 / Math.min(count[link.source.index], count[link.target.index]),
+                },
+                {
+                    name: 'distance',
+                    value: 30,
+                    min: 0,
+                    max: 100,
+                    step: 1,
+                    _default: (link, i, links) => 30,
+                }
+            ],
         },
         {
-            _category: 'forceManyBody',
-            _isDisabled: true,
-            _isIsolated: true,
-            strength: {
-                _name: 'strength',
-                _category: 'forceManyBody',
-                value: -30, // (node, i, nodes) => return -30,
-                min: -100,
-                max: 0,
-                step: 1,
-            },
-            distanceMin: {
-                _name: 'distanceMin',
-                _category: 'forceManyBody',
-                value: 1,
-                min: 0,
-                max: 10000,
-                step: 1,
-            },
-            distanceMax: {
-                _name: 'distanceMax',
-                _category: 'forceManyBody',
-                value: 100, // Infinity
-                min: 0,
-                max: 200,
-                step: 1,
-            },
-            theta: {
-                _name: 'theta',
-                _category: 'forceManyBody',
-                value: 0.81,
-                min: 0,
-                max: 1,
-                step: 0.1,
-            },
+            category: 'forceManyBody',
+            isEnabled: false,
+            isIsolated: true,
+            rows: [
+                {
+                    name: 'strength',
+                    value: -30,
+                    min: -100,
+                    max: 0,
+                    step: 1,
+                    _default: (node, i, nodes) => -30,
+                },
+                {
+                    name: 'distanceMin',
+                    value: 1,
+                    min: 0,
+                    max: 10000,
+                    step: 1,
+                },
+                {
+                    name: 'distanceMax',
+                    value: 100,
+                    min: 0,
+                    max: 200,
+                    step: 1,
+                    _default: Infinity,
+                },
+                {
+                    name: 'theta',
+                    value: 0.81,
+                    min: 0,
+                    max: 1,
+                    step: 0.1,
+                }
+            ],
         },
         {
-            _category: 'forceRadial',
-            _isDisabled: true,
-            strength: {
-                _name: 'strength',
-                _category: 'forceRadial',
-                value: 0.1, // (node, i, nodes) => return 0.1,
-                min: 0,
-                max: 1,
-                step: 0.01,
-            },
-            radius: {
-                _name: 'radius',
-                _category: 'forceRadial',
-                value: (node, i, nodes) => node.r,
-            },
-            x: {
-                _name: 'x',
-                _category: 'forceRadial',
-                value: 'cx',
-            },
-            y: {
-                _name: 'y',
-                _category: 'forceRadial',
-                value: 'cy',
-            },
+            category: 'forceRadial',
+            isEnabled: false,
+            rows: [
+                {
+                    name: 'strength',
+                    value: 0.1,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    _default: (node, i, nodes) => 0.1,
+                },
+                {
+                    name: 'radius',
+                    value: (node, i, nodes) => node.r,
+                },
+                {
+                    name: 'x',
+                    value: 'cx',
+                },
+                {
+                    name: 'y',
+                    value: 'cy',
+                }
+            ],
         },
         {
-            _category: 'forceX',
-            _isDisabled: false,
-            _isIsolated: true,
-            strength: {
-                _name: 'strength',
-                _category: 'forceX',
-                value: 0.1, // (node, i, nodes) => return 0.1,
-                min: 0,
-                max: 1,
-                step: 0.05,
-            },
-            x: {
-                _name: 'x',
-                _category: 'forceX',
-                value: 'cx', // (node, i, nodes) => return node.x,
-            },
+            category: 'forceX',
+            isEnabled: true,
+            isIsolated: true,
+            rows: [
+                {
+                    name: 'strength',
+                    value: 0.1,
+                    min: 0,
+                    max: 1,
+                    step: 0.05,
+                    _default: (node, i, nodes) => 0.1,
+                },
+                {
+                    name: 'x',
+                    value: 'cx',
+                    _default: (node, i, nodes) => node.x,
+                }
+            ],
         },
         {
-            _category: 'forceY',
-            // _isDisabled: true,
-            _isIsolated: true,
-            strength: {
-                _name: 'strength',
-                _category: 'forceY',
-                value: 0.1, // (node, i, nodes) => return 0.1,
-                min: 0,
-                max: 1,
-                step: 0.05,
-            },
-            y: {
-                _name: 'y',
-                _category: 'forceY',
-                value: 'cy', // (node, i, nodes) => return node.y,
-            },
+            category: 'forceY',
+            isEnabled: true,
+            isIsolated: true,
+            rows: [
+                {
+                    name: 'strength',
+                    value: 0.1,
+                    min: 0,
+                    max: 1,
+                    step: 0.05,
+                    _default: (node, i, nodes) => 0.1,
+                },
+                {
+                    name: 'y',
+                    value: 'cy',
+                    _default: (node, i, nodes) => node.y,
+                }
+            ],
         },
         {
-            _category: 'simulation',
-            alpha: {
-                _name: 'alpha',
-                _category: 'simulation',
-                value: 1,
-                min: 0,
-                max: 1,
-                step: 0.01,
-            },
-            alphaMin: {
-                _name: 'alphaMin',
-                _category: 'simulation',
-                value: 0.4, // 0.001,
-                min: 0,
-                max: 1,
-                step: 0.05,
-            },
-            alphaDecay: {
-                _name: 'alphaDecay',
-                _category: 'simulation',
-                value: 0.02276277904418933,
-                min: 0.01,
-                max: 0.2,
-                step: 0.01,
-            },
-            alphaTarget: {
-                _name: 'alphaTarget',
-                _category: 'simulation',
-                value: 0,
-                min: 0,
-                max: 0.19,
-                step: 0.01,
-            },
-            velocityDecay: {
-                _name: 'velocityDecay',
-                _category: 'simulation',
-                value: 0.3,
-                min: 0,
-                max: 1,
-                step: 0.1,
-            },
+            category: 'simulation',
+            isEnabled: true,
+            rows: [
+                {
+                    name: 'alpha',
+                    value: 1,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                },
+                {
+                    name: 'alphaMin',
+                    value: 0.4,
+                    min: 0,
+                    max: 1,
+                    step: 0.05,
+                    _default: 0.001,
+                },
+                {
+                    name: 'alphaDecay',
+                    value: 0.02276277904418933,
+                    min: 0.01,
+                    max: 0.2,
+                    step: 0.01,
+                },
+                {
+                    name: 'alphaTarget',
+                    value: 0,
+                    min: 0,
+                    max: 0.19,
+                    step: 0.01,
+                },
+                {
+                    name: 'velocityDecay',
+                    value: 0.3,
+                    min: 0,
+                    max: 1,
+                    step: 0.1,
+                }
+            ],
         }
     ];
-    that.optionRowDatumAlpha = {};
+    that.optionDatumAlpha = that.optionsDataMaster[that.optionsDataMaster.length - 1];
 
     that.UpdateSimulation = () => {
         TestApp('UpdateSimulation', 1);
-        if (that.simulation === undefined) {
-            that.simulation = d3.forceSimulation()
-                .on('tick', that.Tick);
-        }
-        that.simulation
+        that.simulation = d3.forceSimulation()
             .nodes(that.nodes)
+            .on('tick', that.Tick)
             .stop();
-        that.optionsData = that.optionsDataMaster;
-        that.optionRowsData = [];
-        that.optionsDataMaster.forEach(optionsObj => {
-            if (optionsObj._isDisabled) {
-                return;
-            }
-            Object.keys(optionsObj).forEach(optionName => {
-                if (optionName[0] === '_') {
-                    return;
-                }
-                if (optionName === 'alpha') {
-                    that.optionRowDatumAlpha = optionsObj[optionName];
-                }
-                that.optionRowsData.push(optionsObj[optionName]);
-            });
-        });
-        that.optionsDataMaster.forEach(optionsObj => {
-            if (optionsObj._isDisabled) {
-                return;
-            } else if (optionsObj._category === 'simulation') {
-                Object.keys(optionsObj).forEach(optionName => {
-                    if (optionName[0] === '_') {
-                        return;
-                    }
-                    that.simulation[optionName](optionsObj[optionName].value);
+        that.optionsData = that.optionsDataMaster.filter(d => d.isEnabled);
+        that.optionsData.forEach(optionsObj => {
+            if (optionsObj.category === 'simulation') {
+                optionsObj.rows.forEach(row => {
+                    that.simulation[row.name](row.value);
                 });
-            } else if (optionsObj._isIsolated === true) {
+            } else if (optionsObj.isIsolated === true) {
                 Object.keys(that.$outByState).forEach(state => {
                     let cx = that.centroidByState[state][0];
                     let cy = that.centroidByState[state][1];
-                    let forceNew = d3[optionsObj._category]();
+                    let forceNew = d3[optionsObj.category]();
                     let initialize = forceNew.initialize;
                     forceNew.initialize = () => {
                         initialize.call(forceNew, that.nodes.filter(d => d.state === state));
                     };
-                    Object.keys(optionsObj).forEach(optionName => {
-                        if (optionName[0] === '_') {
-                            return;
-                        } else {
-                            let optionValue = optionsObj[optionName].value; // do not mutate original
-                            switch (optionValue) {
-                                case 'cx':
-                                    optionValue = cx;
-                                    break;
-                                case 'cy':
-                                    optionValue = cy;
-                                    break;
-                            }
-                            forceNew[optionName](optionValue);
+                    optionsObj.rows.forEach(row => {
+                        let rowValue = row.value; // do not mutate original
+                        switch (rowValue) {
+                            case 'cx':
+                                rowValue = cx;
+                                break;
+                            case 'cy':
+                                rowValue = cy;
+                                break;
                         }
+                        forceNew[row.name](rowValue);
                     });
                     that.simulation
-                        .force(optionsObj._category + state, forceNew)
+                        .force(optionsObj.category + state, forceNew)
                         .stop();
                 });
             } else {
-                let forceNew = d3[optionsObj._category]();
-                Object.keys(optionsObj).forEach(optionName => {
-                    if (optionName[0] === '_') { return; }
-                    let optionValue = optionsObj[optionName].value; // do not mutate original
-                    switch (optionValue) {
+                let forceNew = d3[optionsObj.category]();
+                optionsObj.rows.forEach(row => {
+                    let rowValue = row.value; // do not mutate original
+                    switch (rowValue) {
                         case 'cx':
-                            optionValue = 0.5 * vs.map.w;
+                            rowValue = 0.5 * vs.map.w;
                             break;
                         case 'cy':
-                            optionValue = 0.5 * vs.map.h;
+                            rowValue = 0.5 * vs.map.h;
                             break;
                     }
-                    forceNew[optionName](optionValue);
+                    forceNew[row.name](rowValue);
                 });
                 that.simulation
-                    .force(optionsObj._category, forceNew)
+                    .force(optionsObj.category, forceNew)
                     .stop();
             }
         });
@@ -737,7 +737,6 @@ function HybridMapClass() {
         TestApp('UpdateSimulation', -1);
         return that;
     };
-
 
     that.DragStarted = d => {
         // TestApp('DragStarted', 1);
@@ -781,7 +780,9 @@ function HybridMapClass() {
         nodeCircles = nodeCircles.enter().append('circle')
             .classed('node-circle', true)
             .on('mouseover', d => {
-                if (isDragging) { return; }
+                if (isDragging) {
+                    return;
+                }
                 that.nodeSelected = d;
                 that.linksSelected = that.links.filter(d => {
                     return that.nodeSelected.id === d.source.id || that.nodeSelected.id === d.target.id;
@@ -794,7 +795,9 @@ function HybridMapClass() {
                     .DrawInfo();
             })
             .on('mouseout', () => {
-                if (isDragging) { return; }
+                if (isDragging) {
+                    return;
+                }
                 that.nodeSelected = null;
                 that.linksSelected = [];
                 that
@@ -971,17 +974,27 @@ function HybridMapClass() {
         optionsDiv
             .style('left', '0px')
             .style('top', Math.max(vs.svg.h, vs.map.h + vs.filters.h) + 'px');
-        optionRows = optionsDiv.selectAll('div.option-row')
-            .data(that.optionRowsData);
+        optionGroups = optionsDiv.selectAll('div.option-group')
+            .data(that.optionsData);
+        optionGroups = optionGroups.enter().append('div')
+            .classed('option-group', true)
+            .each(function(datum) {
+                d3.select(this).append('div')
+                    .classed('option-category', true)
+                    .append('label')
+                    .classed('label-medium', true)
+                    .text(datum.category);
+            })
+            .merge(optionGroups)
+            .style('width', (vs.options.wRow + vs.options.wMedium) + 'px');
+        optionRows = optionGroups.selectAll('div.option-row')
+            .data(d => d.rows);
         optionRows = optionRows.enter().append('div')
             .classed('option-row', true)
             .each(function(datum) {
                 d3.select(this).append('label')
                     .classed('label-medium', true)
-                    .text(datum._category);
-                d3.select(this).append('label')
-                    .classed('label-medium', true)
-                    .text(datum._name);
+                    .text(datum.name);
                 d3.select(this).append('label')
                     .classed('label-medium', true).classed('option-value', true);
                 if (datum.min !== undefined) {
@@ -1012,7 +1025,7 @@ function HybridMapClass() {
                         .classed('label-small', true)
                         .text(datum.max);
                 }
-                if (datum._name === 'alpha') {
+                if (datum.name === 'alpha') {
                     optionsAlphaLabel = d3.select(this).selectAll('label.option-value');
                     optionsAlphaSlider = d3.select(this).selectAll('input[type="range"]');
                 }
@@ -1032,6 +1045,15 @@ function HybridMapClass() {
                     .style('line-height', vs.options.hRow + 'px');
             })
             .style('width', vs.options.wRow + 'px');
+        optionGroups.selectAll('label.label-small')
+            .style('width', vs.options.wSmall + 'px');
+        optionGroups.selectAll('label.label-medium')
+            .style('width', vs.options.wMedium + 'px');
+        optionGroups.selectAll('input[type=\'Range\']')
+            .style('width', vs.options.wSlider + 'px');
+        optionGroups.selectAll('*')
+            .style('height', vs.options.hRow + 'px')
+            .style('line-height', vs.options.hRow + 'px');
         TestApp('DrawOptions', -1);
         return that;
     };
@@ -1046,11 +1068,11 @@ function HybridMapClass() {
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
             .attr('y2', d => d.target.y);
-        that.optionRowDatumAlpha.value = parseFloat(that.simulation.alpha()).toFixed(8);
+        that.optionDatumAlpha.value = parseFloat(that.simulation.alpha()).toFixed(8);
         optionsAlphaLabel
-            .text(that.optionRowDatumAlpha.value);
+            .text(that.optionDatumAlpha.value);
         optionsAlphaSlider
-            .property('value', that.optionRowDatumAlpha.value);
+            .property('value', that.optionDatumAlpha.value);
         // TestApp('Tick', -1);
     };
 
@@ -1059,17 +1081,23 @@ function HybridMapClass() {
 }
 
 function TestApp(source, position) {
-    if (!logsTest || !performance || !performance.memory) { return; }
+    if (!logsTest || !performance || !performance.memory) {
+        return;
+    }
     if (position === 1) {
         stackLevel += 1;
         stackLevelTemp = stackLevel;
         stringSymbol = '> ';
-        if (logsTest === 'out') { return; }
+        if (logsTest === 'out') {
+            return;
+        }
     } else if (position === -1) {
         stackLevelTemp = stackLevel;
         stackLevel -= 1;
         stringSymbol = '< ';
-        if (logsTest === 'in') { return; }
+        if (logsTest === 'in') {
+            return;
+        }
     } else {
         stringSymbol = '• ';
     }

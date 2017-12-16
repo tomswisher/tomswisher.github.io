@@ -56,21 +56,30 @@ body {
   width: 100%;
   height: auto;
 }
-#options-div .option-row {
+#options-div .option-group {
   display: inline-block;
+  vertical-align: top;
   outline: 1px solid gainsboro;
 }
-#options-div .option-row > * {
+#options-div .option-group > * {
   font-size: 14px;
 }
-#options-div .option-row label {
+#options-div .option-category {
+  display: inline-block;
+  float: left;
+}
+#options-div .option-row {
+  display: inline-block;
+  float: right;
+}
+#options-div label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
   dominant-baseline: central;
 }
-#options-div .option-row input[type='Range'] {
+#options-div input[type='Range'] {
   margin: 0px;
 }
 /* General Styles */

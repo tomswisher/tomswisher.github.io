@@ -72,26 +72,36 @@ body {
     background: @inactiveColor;
     width: 100%;
     height: auto;
-    .option-row {
+    .option-group {
         display: inline-block;
+        vertical-align: top;
         outline: 1px solid gainsboro;
         >* {
             font-size: @font1Size;
         }
-        label {
-            display: inline-block;
-            text-align: center;
-            overflow: hidden;
-            white-space: nowrap;
-            dominant-baseline: central;
-            &.label-small {}
-            &.label-medium {}
-        }
-        input[type='Range'] {
-            margin: 0px;
-        }
+    }
+    .option-category {
+        display: inline-block;
+        float: left;
+    }
+    .option-row {
+        display: inline-block;
+        float: right;
+    }
+    label {
+        display: inline-block;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        dominant-baseline: central;
+        &.label-small {}
+        &.label-medium {}
+    }
+    input[type='Range'] {
+        margin: 0px;
     }
 }
+
 
 
 
