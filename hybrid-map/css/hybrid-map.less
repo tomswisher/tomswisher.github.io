@@ -13,21 +13,19 @@
 @font1Color: gray;
 @outlineColor: gainsboro;
 @inactiveColor: white;
-@basicMargin: 10px;
-@containerMargin: @basicMargin/2 0 @basicMargin/2 @basicMargin;
+@bodyMargin: 10px;
+@containerMargin: @bodyMargin @bodyMargin/2 0px @bodyMargin/2;
 
 body {
-    margin: @basicMargin/2 @basicMargin/2 @basicMargin/2 @basicMargin/2;
+    margin: @bodyMargin @bodyMargin @bodyMargin @bodyMargin;
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     font-size: 0px;
     color: @font1Color;
     overflow-x: scroll;
-    overflow-y: scroll;
 }
 
 #svg {
-    margin: @containerMargin;
     font-size: @font1Size;
     outline: 1px solid @outlineColor;
     #bg-rect {

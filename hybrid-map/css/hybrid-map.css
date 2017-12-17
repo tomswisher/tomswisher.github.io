@@ -8,16 +8,14 @@
 7   1024    768
 */
 body {
-  margin: 5px 5px 5px 5px;
+  margin: 10px 10px 10px 10px;
   font-family: 'Lato', sans-serif;
   font-weight: 400;
   font-size: 0px;
   color: gray;
   overflow-x: scroll;
-  overflow-y: scroll;
 }
 #svg {
-  margin: 5px 0 5px 10px;
   font-size: 14px;
   outline: 1px solid gainsboro;
 }
@@ -53,7 +51,7 @@ body {
 }
 #filters-div .filter-group {
   display: inline-block;
-  margin: 5px 0 5px 10px;
+  margin: 10px 5px 0px 5px;
   outline: 1px solid gainsboro;
 }
 #filters-div .filter-group .filters-year,
@@ -68,7 +66,7 @@ body {
 }
 #options-div .option-group {
   display: inline-block;
-  margin: 5px 0 5px 10px;
+  margin: 10px 5px 0px 5px;
   vertical-align: top;
   outline: 1px solid gainsboro;
 }
