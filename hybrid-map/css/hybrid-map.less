@@ -10,20 +10,26 @@
 
 @font1Size: 14px;
 @bgColor: PowderBlue;
+@font1Color: gray;
+@outlineColor: gainsboro;
 @inactiveColor: white;
+@basicMargin: 10px;
+@containerMargin: @basicMargin/2 0 @basicMargin/2 @basicMargin;
 
 body {
-    margin: 0px;
+    margin: @basicMargin/2 @basicMargin/2 @basicMargin/2 @basicMargin/2;
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     font-size: 0px;
-    color: gray;
+    color: @font1Color;
     overflow-x: scroll;
     overflow-y: scroll;
 }
 
 #svg {
+    margin: @containerMargin;
     font-size: @font1Size;
+    outline: 1px solid @outlineColor;
     #bg-rect {
         fill: @bgColor;
     }
@@ -31,88 +37,88 @@ body {
         stroke: @bgColor;
         &.inactive {
             pointer-events: none !important;
-            fill: @inactiveColor !important; // transform: translate(2px,2px) !important;
+            fill: @inactiveColor !important;
         }
     }
     circle.node-circle {}
     line.link-line {
         pointer-events: none;
     }
-}
-
-#info-g {
-    rect.info-bg-rect {
-        stroke: gainsboro;
-        fill: @inactiveColor;
-    }
-    g.info-image-g {
-        image {}
-    }
-    g.info-text-g {
-        pointer-events: none;
-        text {
-            dominant-baseline: middle;
-            text-anchor: middle;
+    #info-g {
+        fill: @font1Color;
+        #info-bg-rect {
+            fill: white; // stroke: @outlineColor;
+        }
+        g.info-image-g {
+            // outline: 1px solid @outlineColor;
+            image {}
+        }
+        g.info-text-g {
+            pointer-events: none;
+            text {
+                dominant-baseline: middle;
+                text-anchor: middle;
+            }
         }
     }
 }
 
 #filters-div {
-    position: absolute;
     background: @inactiveColor;
-    .filters-year,
-    .filters-report {
+    text-align: center;
+    .filter-group {
         display: inline-block;
-        font-size: @font1Size;
-        text-align: center;
+        margin: @containerMargin;
+        outline: 1px solid @outlineColor;
+        .filters-year,
+        .filters-report {
+            display: inline-block;
+            font-size: @font1Size;
+            text-align: center;
+        }
     }
 }
 
 #options-div {
-    position: absolute;
     background: @inactiveColor;
-    width: 100%;
-    height: auto;
     text-align: center;
     .option-group {
         display: inline-block;
+        margin: @containerMargin;
         vertical-align: top;
-        overflow: hidden;
-        outline: 1px solid gainsboro;
+        outline: 1px solid @outlineColor;
         >* {
             font-size: @font1Size;
         }
-    }
-    .option-category {
-        display: inline-block;
-        float: left;
-    }
-    .option-row {
-        display: inline-block;
-        float: right;
-        text-align: left;
-    }
-    label {
-        display: inline-block;
-        text-align: center;
-        overflow: hidden;
-        white-space: nowrap;
-        dominant-baseline: central;
-        &.label-small {}
-        &.label-medium {}
-    }
-    input[type='Range'] {
-        margin: 0px;
+        .option-category {
+            display: inline-block;
+            float: left;
+        }
+        .option-row {
+            display: inline-block;
+            float: right;
+            text-align: left;
+        }
+        label {
+            display: inline-block;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            dominant-baseline: central;
+            &.label-small {}
+            &.label-medium {}
+        }
+        input[type='Range'] {
+            margin: 0px;
+        }
     }
 }
 
-
-
-
-/* General Styles */
-
-.button-object {
-    cursor: pointer;
+#debug-div {
+    .debug-button {
+        background: @outlineColor;
+        cursor: pointer;
+    }
 }
 
 .unselectable {

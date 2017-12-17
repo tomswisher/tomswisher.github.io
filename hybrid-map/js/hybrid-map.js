@@ -46,16 +46,17 @@ var nodesG = body.select('#nodes-g');
 var nodeCircles = nodesG.select(null);
 var linksG = body.select('#links-g');
 var linkLines = linksG.select(null);
+var infoG = body.select('#info-g');
+var infoBGRect = body.select('#info-bg-rect');
+var infoImageGs = infoG.select(null);
+var infoTextGs = infoG.select(null);
 var filtersDiv = body.select('#filters-div');
-var filtersYears = filtersDiv.select(null);
-var filtersReports = filtersDiv.select(null);
+var filterGroups = filtersDiv.select(null);
 var optionsDiv = body.select('#options-div');
 var optionGroups = optionsDiv.select(null);
 var optionsAlphaLabel = optionsDiv.select(null);
 var optionsAlphaSlider = optionsDiv.select(null);
-var infoG = body.select('#info-g');
-var infoImageGs = infoG.select(null);
-var infoTextGs = infoG.select(null);
+var debugDiv = body.select('#debug-div');
 
 // Visual Styling ----------------------------------------------------------------------------------
 
@@ -67,18 +68,16 @@ var vs = {
     map: {
         w: {},
         h: {},
-        wMin: {
-            val: 300
-        },
-        ratioMapWH: {
-            val: 1.6
+        wMin: {},
+        whRatioMap: {
+            val: 1.7
         },
         projectionScale: {
             val: 1.2
         },
         strokeWidthState: {
-            val: 1,
-            inputType: 'range'
+            val: 1
+            // inputType: 'range',
         }
     },
     network: {
@@ -106,11 +105,11 @@ var vs = {
         h: {},
         wImage: {},
         hImage: {},
-        ratioImageWH: {
-            val: 0.5 * 396 / (0.5 * 432)
+        whRatioImage: {
+            val: 396 / 432
         },
         margin: {
-            val: 5
+            val: 10
         },
         textRowH: {
             val: 15
@@ -120,9 +119,13 @@ var vs = {
         w: {},
         h: {
             val: 70
+        },
+        wBox: {
+            val: 40
         }
     },
     options: {
+        w: {},
         wSmall: {
             val: 58
         },
@@ -135,15 +138,12 @@ var vs = {
         wGroup: {},
         hRow: {
             val: 20
-        },
-        margin: {
-            val: 3
         }
     },
     transition: {
         duration: {
-            val: 200,
-            inputType: 'range'
+            val: 200
+            // inputType: 'range',
         },
         ease: {
             val: d3.easeLinear
@@ -167,8 +167,6 @@ var vs = {
 var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Jim Walton', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jonathan Sackler', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman', 'John Arnold', 'Laura Arnold'];
 var mapObj = null;
 var isDragging = false;
-var yearsData = ['2011', '2012', '2013', '2014', '2015', '2016', '2017'];
-var reportsData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 // Window Events -----------------------------------------------------------------------------------
 
@@ -196,27 +194,6 @@ window.onresize = function () {
 
 // Functions ---------------------------------------------------------------------------------------
 
-function UpdateVSValues() {
-    TestApp('UpdateVSValues', 1);
-    vs.info.wImage.val = vs.info.w.val - 2 * vs.info.margin.val;
-    vs.info.hImage.val = vs.info.wImage.val / vs.info.ratioImageWH.val;
-    vs.info.h.val = vs.info.hImage.val + 4 * vs.info.textRowH.val + 3 * vs.info.margin.val;
-    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val + 2 * vs.options.margin.val;
-    var clientWidth = body.node().clientWidth;
-    if (clientWidth >= vs.map.wMin.val + vs.info.w.val) {
-        vs.map.w.val = clientWidth - vs.info.w.val;
-        vs.svg.w.val = clientWidth;
-    } else {
-        vs.map.w.val = vs.map.wMin.val;
-        vs.svg.w.val = vs.map.wMin.val + vs.info.w.val;
-    }
-    vs.filters.w.val = vs.map.wMin.val;
-    vs.map.w.val = Math.min(vs.map.w.val, (window.innerHeight - vs.filters.h.val) * vs.map.ratioMapWH.val);
-    vs.map.h.val = vs.map.w.val / vs.map.ratioMapWH.val;
-    vs.svg.h.val = Math.max(vs.map.h.val, vs.info.h.val);
-    TestApp('UpdateVSValues', -1);
-}
-
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     UpdateVSValues();
@@ -227,6 +204,29 @@ var InitializePage = function InitializePage(error, results) {
     });
     TestApp('InitializePage', -1);
 };
+
+function UpdateVSValues() {
+    TestApp('UpdateVSValues', 1);
+    vs.info.wImage.val = vs.info.w.val - 2 * vs.info.margin.val;
+    vs.info.hImage.val = vs.info.wImage.val / vs.info.whRatioImage.val;
+    vs.info.h.val = vs.info.hImage.val + 4 * vs.info.textRowH.val + 3 * vs.info.margin.val;
+    vs.map.wMin.val = vs.info.h.val * vs.map.whRatioMap.val;
+    vs.options.wGroup.val = 2 * vs.options.wMedium.val + 3 * vs.options.wSmall.val + vs.options.wSlider.val;
+    var clientWidth = body.node().clientWidth;
+    if (clientWidth >= vs.map.wMin.val + vs.info.w.val) {
+        vs.map.w.val = clientWidth - vs.info.w.val;
+        vs.svg.w.val = clientWidth;
+    } else {
+        vs.map.w.val = vs.map.wMin.val;
+        vs.svg.w.val = vs.map.wMin.val + vs.info.w.val;
+    }
+    vs.map.w.val = Math.min(vs.map.w.val, (window.innerHeight - vs.filters.h.val) * vs.map.whRatioMap.val);
+    vs.map.h.val = vs.map.w.val / vs.map.whRatioMap.val;
+    vs.svg.h.val = Math.max(vs.map.h.val, vs.info.h.val);
+    vs.filters.w.val = vs.map.w.val;
+    vs.options.w.val = vs.map.w.val;
+    TestApp('UpdateVSValues', -1);
+}
 
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
@@ -387,6 +387,7 @@ function HybridMapClass() {
     that.DrawInfo = function () {
         TestApp('DrawInfo', 1);
         infoG.attr('transform', 'translate(' + (vs.map.w.val + vs.info.margin.val) + ',' + vs.info.margin.val + ')');
+        infoBGRect.attr('transform', 'translate(' + (1 - vs.info.margin.val) + ',' + (1 - vs.info.margin.val) + ')').attr('width', vs.info.w.val - 2).attr('height', vs.info.h.val - 2);
         infoImageGs = infoG.selectAll('g.info-image-g').data(that.infoData);
         infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
             d3.select(this).append('image').attr('width', vs.info.wImage.val).attr('height', vs.info.hImage.val).attr('xlink:href', function () {
@@ -628,7 +629,7 @@ function HybridMapClass() {
         }, {
             name: 'alphaMin',
             inputType: 'range',
-            val: 0.4,
+            val: 0.3,
             min: 0,
             max: 1,
             step: 0.05,
@@ -743,17 +744,20 @@ function HybridMapClass() {
     };
 
     that.DragStarted = function (d) {
-        // TestApp('DragStarted', 1);
+        TestApp('DragStarted', 1);
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
         d.fy = d.y;
         // that.Tick();
-        // TestApp('DragStarted', -1);
+        // if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        // d3.event.subject.fx = d3.event.subject.x;
+        // d3.event.subject.fy = d3.event.subject.y;
+        TestApp('DragStarted', -1);
     };
 
     that.Dragged = function (d) {
-        // TestApp('Dragged', 1);
+        TestApp('Dragged', 1);
         d.fx = d3.event.x;
         d.fy = d3.event.y;
         d.x = d3.event.x;
@@ -761,11 +765,13 @@ function HybridMapClass() {
         d.cx = d3.event.x;
         d.cy = d3.event.y;
         that.Tick();
-        // TestApp('Dragged', -1);
+        // d3.event.subject.fx = d3.event.x;
+        // d3.event.subject.fy = d3.event.y;
+        TestApp('Dragged', -1);
     };
 
     that.DragEnded = function (d) {
-        // TestApp('DragEnded', 1);
+        TestApp('DragEnded', 1);
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
@@ -773,7 +779,10 @@ function HybridMapClass() {
         if (!d3.event.active) {
             that.simulation.alpha(1).restart();
         }
-        // TestApp('DragEnded', -1);
+        // if (!d3.event.active) simulation.alphaTarget(0);
+        // d3.event.subject.fx = null;
+        // d3.event.subject.fy = null;
+        TestApp('DragEnded', -1);
     };
 
     that.DrawNetwork = function () {
@@ -798,7 +807,10 @@ function HybridMapClass() {
             that.nodeSelected = null;
             that.linksSelected = [];
             that.DrawNetwork().DrawInfo();
-        }).call(d3.drag().on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).merge(nodeCircles);
+        }).call(d3.drag()
+        // .container(nodesG)
+        // .subject(() => that.simulation.find(d3.event.x, d3.event.y, 100))
+        .on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).merge(nodeCircles);
         nodeCircles.attr('cx', function (d) {
             return d.x;
         }).attr('cy', function (d) {
@@ -895,34 +907,31 @@ function HybridMapClass() {
 
     that.DrawFilters = function () {
         TestApp('DrawFilters', 1);
-        filtersDiv.style('width', vs.filters.w.val + 'px').style('height', vs.filters.h.val + 'px').style('left', 0.5 * (vs.map.w.val - vs.filters.w.val) + 'px').style('top', vs.map.h.val + 'px');
-        filtersYears = filtersDiv.selectAll('div.filters-year').data(yearsData);
-        filtersYears = filtersYears.enter().append('div').classed('filters-year', true).each(function (datum) {
-            d3.select(this).append('div').text(datum);
-            d3.select(this).append('input').attr('type', 'checkbox').each(function (d) {
-                this.checked = true;
-            }).on('change', function (d) {
-                that.filteredOutObj.year[d] = !this.checked;
-                that.UpdateData().DrawNetwork().UpdateSimulation();
-            });
-        }).merge(filtersYears).style('width', vs.filters.w.val / yearsData.length + 'px').style('height', 0.5 * vs.filters.h.val + 'px');
-        filtersReports = filtersDiv.selectAll('div.filters-report').data(reportsData);
-        filtersReports = filtersReports.enter().append('div').classed('filters-report', true).each(function (datum) {
-            d3.select(this).append('div').text(datum);
-            d3.select(this).append('input').attr('type', 'checkbox').each(function (d) {
-                this.checked = true;
-            }).on('change', function (d) {
-                that.filteredOutObj.report[d] = !this.checked;
-                that.UpdateData().DrawNetwork().UpdateSimulation();
-            });
-        }).merge(filtersReports).style('width', vs.filters.w.val / reportsData.length + 'px').style('height', 0.5 * vs.filters.h.val + 'px');
+        var filtersData = [{
+            key: 'year',
+            row: ['2011', '2012', '2013', '2014', '2015', '2016', '2017']
+        }, {
+            key: 'report',
+            row: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        }];
+        filtersDiv.style('width', vs.filters.w.val + 'px');
+        filterGroups = filtersDiv.selectAll('div.filter-group').data(filtersData);
+        filterGroups = filterGroups.enter().append('div').classed('filter-group', true).each(function (datum) {
+            d3.select(this).selectAll('div.filters-year').data(datum.row).enter().append('div').classed('filters-year', true).each(function (d) {
+                d3.select(this).append('div').text(d);
+                d3.select(this).append('input').attr('type', 'checkbox').attr('checked', true).on('change', function () {
+                    that.filteredOutObj.year[d] = !this.checked;
+                    that.UpdateData().DrawNetwork().UpdateSimulation();
+                });
+            }).style('width', vs.filters.wBox.val + 'px').style('height', 0.5 * vs.filters.h.val + 'px');
+        }).merge(filterGroups);
         TestApp('DrawFilters', -1);
         return that;
     };
 
     that.DrawOptions = function () {
         TestApp('DrawOptions', 1);
-        optionsDiv.style('top', Math.max(vs.svg.h.val, vs.map.h.val + vs.filters.h.val) + 'px').style('width', Math.max(vs.options.wGroup.val, vs.map.w.val) + 'px');
+        optionsDiv.style('width', vs.options.w.val + 'px');
         optionGroups = optionsDiv.selectAll('div.option-group').data(that.optionsData);
         optionGroups = optionGroups.enter().append('div').classed('option-group', true).each(function (optionsObj) {
             var rowsFiltered = optionsObj.rows.filter(function (row) {
@@ -942,6 +951,7 @@ function HybridMapClass() {
                     }
                     if (Object.keys(vs).includes(optionsObj.category)) {
                         vs[optionsObj.category][row.name].val = row.val;
+                        UpdateVSValues();
                         that.UpdateData().UpdateSimulation().DrawMap().DrawNetwork().DrawOptions();
                     } else {
                         that.UpdateSimulation().DrawOptions();
@@ -953,7 +963,7 @@ function HybridMapClass() {
                     optionsAlphaSlider = d3.select(this).selectAll('input[type="range"]');
                 }
             }).style('width', vs.options.wGroup.val - vs.options.wMedium.val + 'px');
-        }).merge(optionGroups).style('width', vs.options.wGroup.val + 'px').style('margin', vs.options.margin.val + 'px');
+        }).merge(optionGroups).style('width', vs.options.wGroup.val + 'px');
         optionGroups.selectAll('label.option-value').text(function (d) {
             return typeof d.val !== 'number' ? '' : d.val;
         });

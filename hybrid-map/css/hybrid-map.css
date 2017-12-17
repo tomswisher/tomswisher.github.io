@@ -8,7 +8,7 @@
 7   1024    768
 */
 body {
-  margin: 0px;
+  margin: 5px 5px 5px 5px;
   font-family: 'Lato', sans-serif;
   font-weight: 400;
   font-size: 0px;
@@ -17,7 +17,9 @@ body {
   overflow-y: scroll;
 }
 #svg {
+  margin: 5px 0 5px 10px;
   font-size: 14px;
+  outline: 1px solid gainsboro;
 }
 #svg #bg-rect {
   fill: PowderBlue;
@@ -32,64 +34,68 @@ body {
 #svg line.link-line {
   pointer-events: none;
 }
-#info-g rect.info-bg-rect {
-  stroke: gainsboro;
+#svg #info-g {
+  fill: gray;
+}
+#svg #info-g #info-bg-rect {
   fill: white;
 }
-#info-g g.info-text-g {
+#svg #info-g g.info-text-g {
   pointer-events: none;
 }
-#info-g g.info-text-g text {
+#svg #info-g g.info-text-g text {
   dominant-baseline: middle;
   text-anchor: middle;
 }
 #filters-div {
-  position: absolute;
   background: white;
+  text-align: center;
 }
-#filters-div .filters-year,
-#filters-div .filters-report {
+#filters-div .filter-group {
+  display: inline-block;
+  margin: 5px 0 5px 10px;
+  outline: 1px solid gainsboro;
+}
+#filters-div .filter-group .filters-year,
+#filters-div .filter-group .filters-report {
   display: inline-block;
   font-size: 14px;
   text-align: center;
 }
 #options-div {
-  position: absolute;
   background: white;
-  width: 100%;
-  height: auto;
   text-align: center;
 }
 #options-div .option-group {
   display: inline-block;
+  margin: 5px 0 5px 10px;
   vertical-align: top;
-  overflow: hidden;
   outline: 1px solid gainsboro;
 }
 #options-div .option-group > * {
   font-size: 14px;
 }
-#options-div .option-category {
+#options-div .option-group .option-category {
   display: inline-block;
   float: left;
 }
-#options-div .option-row {
+#options-div .option-group .option-row {
   display: inline-block;
   float: right;
   text-align: left;
 }
-#options-div label {
+#options-div .option-group label {
   display: inline-block;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
   dominant-baseline: central;
 }
-#options-div input[type='Range'] {
+#options-div .option-group input[type='Range'] {
   margin: 0px;
 }
-/* General Styles */
-.button-object {
+#debug-div .debug-button {
+  background: gainsboro;
   cursor: pointer;
 }
 .unselectable {
