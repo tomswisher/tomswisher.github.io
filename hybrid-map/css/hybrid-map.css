@@ -67,7 +67,6 @@ body {
 #options-div .option-group {
   display: inline-block;
   margin: 10px 5px 0px 5px;
-  vertical-align: top;
   outline: 1px solid gainsboro;
 }
 #options-div .option-group > * {
