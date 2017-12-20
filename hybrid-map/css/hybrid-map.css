@@ -23,11 +23,18 @@ body {
   fill: PowderBlue;
 }
 #svg path.state-path {
+  pointer-events: none !important;
+  fill: white;
   stroke: PowderBlue;
+  stroke-width: 1px;
 }
 #svg path.state-path.inactive {
-  pointer-events: none !important;
-  fill: white !important;
+  fill: PowderBlue;
+  stroke: white;
+}
+#svg circle.node-circle {
+  stroke: gray;
+  stroke-width: 1px;
 }
 #svg line.link-line {
   pointer-events: none;
@@ -46,7 +53,6 @@ body {
   text-anchor: middle;
 }
 #filters-div {
-  background: white;
   text-align: center;
 }
 #filters-div .filter-group {
@@ -61,7 +67,6 @@ body {
   text-align: center;
 }
 #options-div {
-  background: white;
   text-align: center;
 }
 #options-div .option-group {

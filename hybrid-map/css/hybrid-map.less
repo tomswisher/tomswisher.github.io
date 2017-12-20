@@ -9,10 +9,10 @@
 */
 
 @font1Size: 14px;
+@bodyColor: white;
 @bgColor: PowderBlue;
 @font1Color: gray;
 @outlineColor: gainsboro;
-@inactiveColor: white;
 @bodyMargin: 10px;
 @containerMargin: @bodyMargin @bodyMargin/2 0px @bodyMargin/2;
 
@@ -32,13 +32,19 @@ body {
         fill: @bgColor;
     }
     path.state-path {
+        pointer-events: none !important;
+        fill: @bodyColor;
         stroke: @bgColor;
+        stroke-width: 1px;
         &.inactive {
-            pointer-events: none !important;
-            fill: @inactiveColor !important;
+            fill: @bgColor;
+            stroke: @bodyColor;
         }
     }
-    circle.node-circle {}
+    circle.node-circle {
+        stroke: gray;
+        stroke-width: 1px;
+    }
     line.link-line {
         pointer-events: none;
     }
@@ -62,7 +68,6 @@ body {
 }
 
 #filters-div {
-    background: @inactiveColor;
     text-align: center;
     .filter-group {
         display: inline-block;
@@ -78,7 +83,6 @@ body {
 }
 
 #options-div {
-    background: @inactiveColor;
     text-align: center;
     .option-group {
         display: inline-block;

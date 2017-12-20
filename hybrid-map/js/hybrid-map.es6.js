@@ -7,7 +7,7 @@
 const body = d3.select('body');
 const svg = body.select('#svg');
 const svgDefs = body.select('#svg-defs');
-let svgDefsArrowheads = svgDefs.select(null);
+let svgDefsArrows = svgDefs.select(null);
 const bgRect = body.select('#bg-rect');
 const clipPathRect = body.select('#clip-path-rect');
 const statePathsG = body.select('#state-paths-g');
@@ -89,38 +89,40 @@ let rData = [
                 name: 'projectionScale',
                 value: 1.2,
             }, {
-                name: 'strokeWidthState',
-                value: 1,
-                // inputType: 'range',
+                name: 'mode',
+                value: 'states',
+                inputType: 'select',
             }
-            // , {
-            //     name: 'mode',
-            //     value: 'states',
-            //     inputType: 'select',
-            // }
         ],
     }, {
         category: 'network',
         rows: [
             {
                 name: 'rMin',
-                value: 5,
+                value: 3,
                 inputType: 'range',
             }, {
                 name: 'rFactor',
                 value: 75,
                 inputType: 'range',
             }, {
-                name: 'strokeWidthNode',
+                name: 'swMin',
                 value: 1,
                 inputType: 'range',
             }, {
-                name: 'strokeWidthLink',
-                value: 1.5,
+                name: 'swFactor',
+                value: 250,
+                inputType: 'range',
+            }, {
+                name: 'arrowScale',
+                value: 0.25,
+                min: 0.05,
+                max: 2,
+                step: 0.05,
                 inputType: 'range',
             }, {
                 name: 'fillGeneral',
-                value: 'gainsboro',
+                value: 'gray',
             }, {
                 name: 'strokeGeneral',
                 value: 'gray',
@@ -173,7 +175,7 @@ let rData = [
                 value: 58,
             }, {
                 name: 'wMedium',
-                value: 110,
+                value: 115,
             }, {
                 name: 'wInput',
                 value: 100,
@@ -232,7 +234,7 @@ let rData = [
                 _default: 1,
             }, {
                 name: 'radius',
-                value: (node, i, nodes) => node.r ? 1.5 + node.r : 0,
+                value: (node, i, nodes) => node.r ? 3 + node.r : 0,
             }
         ],
     }, {
@@ -460,6 +462,7 @@ window.onresize = () => {
                 .DrawInfo()
                 .DrawFilters()
                 .UpdateData()
+                .DrawMap() // coloring
                 .UpdateSimulation()
                 .DrawOptions();
         }
@@ -485,6 +488,7 @@ const InitializePage = (error, results) => {
         .DrawMap()
         .LoadData(results[1])
         .UpdateData()
+        .DrawMap() // coloring
         .DrawNetwork()
         .DrawInfo()
         .DrawFilters()
@@ -524,10 +528,8 @@ function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
     that.infoData = [];
-    that.centroidByState = {};
-    that.$inByState = {};
-    that.$outByState = {};
-    that.$nodeScale = d3.scaleLinear().range([0, 1]);
+    that.centroidByANSI = {};
+    that.$outTotalScale = d3.scaleLinear().range([0, 1]);
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
     that.filteredOutObj = {
@@ -535,10 +537,10 @@ function HybridMapClass() {
         report: {}
     };
 
-    that.LoadStates = d => {
+    that.LoadStates = data => {
         TestApp('UpdateStates', 1);
-        that.statesLoaded = d;
-        that.states = that.statesLoaded;
+        that.statesLoaded = data;
+        that.states = that.statesLoaded.map(d => d);
         TestApp('UpdateStates', -1);
         return that;
     };
@@ -551,16 +553,19 @@ function HybridMapClass() {
         that.nodeById = {};
         that.linkByIds = {};
         that.dataLoaded.forEach(d => {
+            if (d.sourceState === d.targetState) {
+                return;
+            }
             if (that.nodeById[d.sourceId] === undefined) {
                 that.nodeById[d.sourceId] = {
                     id: d.sourceId,
-                    state: d.sourceState,
+                    ansi: d.sourceState,
                 };
             }
             if (that.nodeById[d.targetId] === undefined) {
                 that.nodeById[d.targetId] = {
                     id: d.targetId,
-                    state: d.targetState,
+                    ansi: d.targetState,
                 };
             }
             if (that.linkByIds[d.sourceId + d.targetId] === undefined) {
@@ -596,22 +601,23 @@ function HybridMapClass() {
     that.UpdateData = () => {
         TestApp('UpdateData', 1);
         let iCount = 0;
-        that.states = that.statesLoaded;
+        let $outByANSI = {};
+        let $inByANSI = {};
         that.nodes = that.nodesLoaded.map(d => d);
         that.nodes.forEach((d, i) => {
             d.$out = 0;
             d.$in = 0;
-            that.$outByState[d.state] = 0;
-            that.$inByState[d.state] = 0;
+            $outByANSI[d.ansi] = 0;
+            $inByANSI[d.ansi] = 0;
             d.i = undefined;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
             }
-            // d.x = that.centroidByState[d.state][0];
-            // d.y = that.centroidByState[d.state][1];
-            d.x = (d.x !== undefined) ? d.x : that.centroidByState[d.state][0];
-            d.y = (d.y !== undefined) ? d.y : that.centroidByState[d.state][1];
+            // d.x = that.centroidByANSI[d.ansi][0];
+            // d.y = that.centroidByANSI[d.ansi][1];
+            d.x = (d.x !== undefined) ? d.x : that.centroidByANSI[d.ansi][0];
+            d.y = (d.y !== undefined) ? d.y : that.centroidByANSI[d.ansi][1];
             d.vx = 0;
             d.vy = 0;
         });
@@ -624,31 +630,32 @@ function HybridMapClass() {
             }
             return true;
         });
-        that.$total = 0;
+        that.$outTotal = 0;
         that.links.forEach(d => {
             d.source = that.nodeById[d.sourceId];
             d.target = that.nodeById[d.targetId];
             d.source.$out += d.dollars;
             d.target.$in += d.dollars;
-            that.$outByState[d.source.state] += d.dollars;
-            that.$inByState[d.target.state] += d.dollars;
-            that.$total += d.dollars;
+            $outByANSI[d.source.ansi] += d.dollars;
+            $inByANSI[d.target.ansi] += d.dollars;
+            that.$outTotal += d.dollars;
         });
-        that.nodes = that.nodes.filter(d => {
-            return that.$nodeScale(d.$in) || that.$nodeScale(d.$out);
-        });
-        that.$nodeScale
-            .domain([0, that.$total]);
+        that.nodes = that.nodes.filter(d => d.$in > 0 || d.$out > 0);
+        that.$outTotalScale
+            .domain([0, that.$outTotal]);
         that.nodes.forEach(d => {
-            let $in = that.$nodeScale(d.$in);
-            let $out = that.$nodeScale(d.$out);
-            if ($in === 0 && $out === 0) {
+            let $in = that.$outTotalScale(d.$in);
+            let $out = that.$outTotalScale(d.$out);
+            if ($in > $out) {
                 d.r = 0;
-            } else if ($in > $out) {
-                d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($in));
+                // d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($in));
             } else {
                 d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($out));
             }
+        });
+        that.states.forEach(d => {
+            d.$in = $inByANSI[d.properties.ansi] || 0;
+            d.$out = $outByANSI[d.properties.ansi] || 0;
         });
         TestApp('UpdateData', -1);
         return that;
@@ -673,13 +680,20 @@ function HybridMapClass() {
         statePaths = statePathsG.selectAll('path.state-path')
             .data(that.states, d => d.properties.ansi);
         statePaths = statePaths.enter().append('path')
-            .classed('state-path', true).classed('inactive', true)
+            .classed('state-path', true)
             .merge(statePaths)
+            .attr('class', d => {
+                if (d.$out !== 0 || d.$in !== 0) {
+                    return 'state-path';
+                } else {
+                    return 'state-path inactive';
+                }
+            })
             .attr('d', that.path)
-            .each(d => that.centroidByState[d.properties.ansi] = that.path.centroid(d))
-            .style('stroke-width', r.map.strokeWidthState + 'px')
+            .each(d => that.centroidByANSI[d.properties.ansi] = that.path.centroid(d))
+            // .style('opacity', 0.75)
         // .each(function(d) {
-        //     let centroid = that.centroidByState[d.properties.ansi];
+        //     let centroid = that.centroidByANSI[d.properties.ansi];
         //     let rect = d3.select(this.parentNode).append('rect')
         //         .classed('path-rect', true)
         //         .attr('x', centroid[0]-20)
@@ -741,7 +755,7 @@ function HybridMapClass() {
                 d3.select(this).append('text')
                     .attr('x', 0)
                     .attr('y', 1.5 * r.info.textRowH)
-                    .text('State: ' + datum.state);
+                    .text('State: ' + datum.ansi);
                 // if (datum.$in > 0) {
                 d3.select(this).append('text')
                     .attr('x', 0)
@@ -788,13 +802,13 @@ function HybridMapClass() {
             } else if (optionsObj.category.substring(0, 5) !== 'force') {
                 return;
             } else if (optionsObj.isIsolated === true) {
-                Object.keys(that.$outByState).forEach(state => {
-                    let cx = that.centroidByState[state][0];
-                    let cy = that.centroidByState[state][1];
+                that.states.map(d => d.properties.ansi).forEach(ansi => {
+                    let cx = that.centroidByANSI[ansi][0];
+                    let cy = that.centroidByANSI[ansi][1];
                     let forceNew = d3[optionsObj.category]();
                     let initialize = forceNew.initialize;
                     forceNew.initialize = () => {
-                        initialize.call(forceNew, that.nodes.filter(d => d.state === state));
+                        initialize.call(forceNew, that.nodes.filter(d => d.ansi === ansi));
                     };
                     optionsObj.rows.forEach(row => {
                         let rowValue = row.value; // do not mutate original
@@ -809,7 +823,7 @@ function HybridMapClass() {
                         forceNew[row.name](rowValue);
                     });
                     that.simulation
-                        .force(optionsObj.category + state, forceNew)
+                        .force(optionsObj.category + ansi, forceNew)
                         .stop();
                 });
             } else {
@@ -858,8 +872,6 @@ function HybridMapClass() {
         d.fy = d3.event.y;
         d.x = d3.event.x;
         d.y = d3.event.y;
-        d.cx = d3.event.x;
-        d.cy = d3.event.y;
         that.Tick();
         // d3.event.subject.fx = d3.event.x;
         // d3.event.subject.fy = d3.event.y;
@@ -924,7 +936,6 @@ function HybridMapClass() {
         nodeCircles
             .attr('cx', d => d.x)
             .attr('cy', d => d.y)
-            .style('stroke-width', r.network.strokeWidthNode + 'px')
             .style('fill', function(d) {
                 if (topIds.includes(d.id)) {
                     return d3.schemeCategory20[d.i];
@@ -934,7 +945,6 @@ function HybridMapClass() {
                     return 'white';
                 }
             })
-            .style('stroke', r.network.strokeGeneral)
             .attr('r', d => d.r)
             // .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('opacity', d => {
@@ -947,26 +957,29 @@ function HybridMapClass() {
                 } else if (that.linksSelected.map(d => d.target.id).includes(d.id)) {
                     return 1;
                 } else {
-                    return 0.05;
+                    return 0;
                 }
             });
-        svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead')
+        svgDefsArrows = svgDefs.selectAll('marker.arrow')
             .data(topIds.concat('misc'));
-        svgDefsArrowheads = svgDefsArrowheads.enter().append('marker')
-            .classed('arrowhead', true)
-            .attr('id', (d, i) => 'arrowhead-id' + i)
+        svgDefsArrows = svgDefsArrows.enter().append('marker')
+            .classed('arrow', true)
+            .attr('id', (d, i) => 'arrow-id' + i)
+            .merge(svgDefsArrows);
+        svgDefsArrows
             .each(function(datum, i) {
-                d3.select(this).selectAll('path')
-                    .data([null]).enter().append('path')
+                let path = d3.select(this).selectAll('path')
+                    .data([null]);
+                path = path.enter().append('path')
+                    .merge(path)
                     .attr('d', 'M 0 0 12 6 0 12 3 6 Z')
+                    .attr('transform', 'scale('+(r.network.arrowScale)+')')
                     .style('stroke', () => (i < topIds.length) ? d3.schemeCategory20[i] : r.network.strokeGeneral)
                     .style('fill', () => (i < topIds.length) ? d3.schemeCategory20[i] : r.network.fillGeneral);
             })
-            .merge(svgDefsArrowheads);
-        svgDefsArrowheads
-            .attr('refX', 12)
-            .attr('refY', 6)
-            .attr('markerUnits', 'userSpaceOnUse')
+            .attr('refX', (12-2.5)*r.network.arrowScale)
+            .attr('refY', 6*r.network.arrowScale)
+            // .attr('markerUnits', 'userSpaceOnUse')
             .attr('markerWidth', 112)
             .attr('markerHeight', 118)
             .attr('orient', 'auto');
@@ -984,12 +997,14 @@ function HybridMapClass() {
         linkLines
             .attr('marker-end', d => {
                 if (topIds.includes(d.source.id)) {
-                    return 'url(#arrowhead-id' + d.source.i + ')';
+                    return 'url(#arrow-id' + d.source.i + ')';
                 } else {
-                    return 'url(#arrowhead-id' + topIds.length + ')';
+                    return 'url(#arrow-id' + topIds.length + ')';
                 }
             })
-            .style('stroke-width', r.network.strokeWidthLink + 'px')
+            .style('stroke-width', d => {
+                return Math.max(r.network.swMin, r.network.swFactor*d.dollars/that.$outTotal) + 'px';
+            })
             .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
                     return d3.schemeCategory20[d.source.i];
@@ -1001,7 +1016,9 @@ function HybridMapClass() {
             })
             // .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('display', d => {
-                if (that.filteredOutObj.year[d.year]) {
+                if (d.source.ansi === d.target.ansi) {
+                    return 'none';
+                } else if (that.filteredOutObj.year[d.year]) {
                     return 'none';
                 } else if (that.filteredOutObj.report[d.report]) {
                     return 'none';
@@ -1109,8 +1126,8 @@ function HybridMapClass() {
                                         if (Object.keys(r).includes(optionsObj.category)) {
                                             SetRData(optionsObj.category, row.name, row.value);
                                             UpdateLayout();
-                                            that.DrawMap()
-                                                .UpdateData()
+                                            that.UpdateData()
+                                                .DrawMap()
                                                 .DrawNetwork()
                                                 .DrawInfo();
                                         }
@@ -1131,8 +1148,8 @@ function HybridMapClass() {
                                         if (Object.keys(r).includes(optionsObj.category)) {
                                             SetRData(optionsObj.category, row.name, row.value);
                                             UpdateLayout();
-                                            that.DrawMap()
-                                                .UpdateData()
+                                            that.UpdateData()
+                                                .DrawMap()
                                                 .DrawNetwork()
                                                 .DrawInfo();
                                         }
@@ -1172,13 +1189,13 @@ function HybridMapClass() {
     that.Tick = () => {
         // TestApp('Tick', 1);
         nodeCircles
-            .attr('cx', d => d.x)
-            .attr('cy', d => d.y);
+            .attr('cx', d => d.$out > 0 ? d.x : that.centroidByANSI[d.ansi][0])
+            .attr('cy', d => d.$out > 0 ? d.y : that.centroidByANSI[d.ansi][1]);
         linkLines
             .attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x)
-            .attr('y2', d => d.target.y);
+            .attr('x2', d => d.target.$out > 0 ? d.target.x : that.centroidByANSI[d.target.ansi][0])
+            .attr('y2', d => d.target.$out > 0 ? d.target.y : that.centroidByANSI[d.target.ansi][1]);
         SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
         optionsAlphaLabel
             .text(r.simulation.alpha);

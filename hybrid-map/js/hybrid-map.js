@@ -7,7 +7,7 @@
 var body = d3.select('body');
 var svg = body.select('#svg');
 var svgDefs = body.select('#svg-defs');
-var svgDefsArrowheads = svgDefs.select(null);
+var svgDefsArrows = svgDefs.select(null);
 var bgRect = body.select('#bg-rect');
 var clipPathRect = body.select('#clip-path-rect');
 var statePathsG = body.select('#state-paths-g');
@@ -81,37 +81,38 @@ var rData = [{
         name: 'projectionScale',
         value: 1.2
     }, {
-        name: 'strokeWidthState',
-        value: 1
-        // inputType: 'range',
-
-        // , {
-        //     name: 'mode',
-        //     value: 'states',
-        //     inputType: 'select',
-        // }
+        name: 'mode',
+        value: 'states',
+        inputType: 'select'
     }]
 }, {
     category: 'network',
     rows: [{
         name: 'rMin',
-        value: 5,
+        value: 3,
         inputType: 'range'
     }, {
         name: 'rFactor',
         value: 75,
         inputType: 'range'
     }, {
-        name: 'strokeWidthNode',
+        name: 'swMin',
         value: 1,
         inputType: 'range'
     }, {
-        name: 'strokeWidthLink',
-        value: 1.5,
+        name: 'swFactor',
+        value: 250,
+        inputType: 'range'
+    }, {
+        name: 'arrowScale',
+        value: 0.25,
+        min: 0.05,
+        max: 2,
+        step: 0.05,
         inputType: 'range'
     }, {
         name: 'fillGeneral',
-        value: 'gainsboro'
+        value: 'gray'
     }, {
         name: 'strokeGeneral',
         value: 'gray'
@@ -158,7 +159,7 @@ var rData = [{
         value: 58
     }, {
         name: 'wMedium',
-        value: 110
+        value: 115
     }, {
         name: 'wInput',
         value: 100
@@ -212,7 +213,7 @@ var rData = [{
     }, {
         name: 'radius',
         value: function value(node, i, nodes) {
-            return node.r ? 1.5 + node.r : 0;
+            return node.r ? 3 + node.r : 0;
         }
     }]
 }, {
@@ -440,7 +441,8 @@ window.onresize = function () {
             resizeCounter -= 1;
             if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
             UpdateLayout();
-            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
+            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().DrawMap() // coloring
+            .UpdateSimulation().DrawOptions();
         }
     }, resizeWait);
 };
@@ -460,7 +462,8 @@ function SetRData(category, name, value) {
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     UpdateLayout();
-    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData().DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
+    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData().DrawMap() // coloring
+    .DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
     requestAnimationFrame(function () {
         body.classed('loading', false);
         isLoaded = true;
@@ -494,10 +497,8 @@ function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     var that = this;
     that.infoData = [];
-    that.centroidByState = {};
-    that.$inByState = {};
-    that.$outByState = {};
-    that.$nodeScale = d3.scaleLinear().range([0, 1]);
+    that.centroidByANSI = {};
+    that.$outTotalScale = d3.scaleLinear().range([0, 1]);
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
     that.filteredOutObj = {
@@ -505,10 +506,12 @@ function HybridMapClass() {
         report: {}
     };
 
-    that.LoadStates = function (d) {
+    that.LoadStates = function (data) {
         TestApp('UpdateStates', 1);
-        that.statesLoaded = d;
-        that.states = that.statesLoaded;
+        that.statesLoaded = data;
+        that.states = that.statesLoaded.map(function (d) {
+            return d;
+        });
         TestApp('UpdateStates', -1);
         return that;
     };
@@ -521,16 +524,19 @@ function HybridMapClass() {
         that.nodeById = {};
         that.linkByIds = {};
         that.dataLoaded.forEach(function (d) {
+            if (d.sourceState === d.targetState) {
+                return;
+            }
             if (that.nodeById[d.sourceId] === undefined) {
                 that.nodeById[d.sourceId] = {
                     id: d.sourceId,
-                    state: d.sourceState
+                    ansi: d.sourceState
                 };
             }
             if (that.nodeById[d.targetId] === undefined) {
                 that.nodeById[d.targetId] = {
                     id: d.targetId,
-                    state: d.targetState
+                    ansi: d.targetState
                 };
             }
             if (that.linkByIds[d.sourceId + d.targetId] === undefined) {
@@ -570,24 +576,25 @@ function HybridMapClass() {
     that.UpdateData = function () {
         TestApp('UpdateData', 1);
         var iCount = 0;
-        that.states = that.statesLoaded;
+        var $outByANSI = {};
+        var $inByANSI = {};
         that.nodes = that.nodesLoaded.map(function (d) {
             return d;
         });
         that.nodes.forEach(function (d, i) {
             d.$out = 0;
             d.$in = 0;
-            that.$outByState[d.state] = 0;
-            that.$inByState[d.state] = 0;
+            $outByANSI[d.ansi] = 0;
+            $inByANSI[d.ansi] = 0;
             d.i = undefined;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
             }
-            // d.x = that.centroidByState[d.state][0];
-            // d.y = that.centroidByState[d.state][1];
-            d.x = d.x !== undefined ? d.x : that.centroidByState[d.state][0];
-            d.y = d.y !== undefined ? d.y : that.centroidByState[d.state][1];
+            // d.x = that.centroidByANSI[d.ansi][0];
+            // d.y = that.centroidByANSI[d.ansi][1];
+            d.x = d.x !== undefined ? d.x : that.centroidByANSI[d.ansi][0];
+            d.y = d.y !== undefined ? d.y : that.centroidByANSI[d.ansi][1];
             d.vx = 0;
             d.vy = 0;
         });
@@ -600,30 +607,33 @@ function HybridMapClass() {
             }
             return true;
         });
-        that.$total = 0;
+        that.$outTotal = 0;
         that.links.forEach(function (d) {
             d.source = that.nodeById[d.sourceId];
             d.target = that.nodeById[d.targetId];
             d.source.$out += d.dollars;
             d.target.$in += d.dollars;
-            that.$outByState[d.source.state] += d.dollars;
-            that.$inByState[d.target.state] += d.dollars;
-            that.$total += d.dollars;
+            $outByANSI[d.source.ansi] += d.dollars;
+            $inByANSI[d.target.ansi] += d.dollars;
+            that.$outTotal += d.dollars;
         });
         that.nodes = that.nodes.filter(function (d) {
-            return that.$nodeScale(d.$in) || that.$nodeScale(d.$out);
+            return d.$in > 0 || d.$out > 0;
         });
-        that.$nodeScale.domain([0, that.$total]);
+        that.$outTotalScale.domain([0, that.$outTotal]);
         that.nodes.forEach(function (d) {
-            var $in = that.$nodeScale(d.$in);
-            var $out = that.$nodeScale(d.$out);
-            if ($in === 0 && $out === 0) {
+            var $in = that.$outTotalScale(d.$in);
+            var $out = that.$outTotalScale(d.$out);
+            if ($in > $out) {
                 d.r = 0;
-            } else if ($in > $out) {
-                d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($in));
+                // d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($in));
             } else {
                 d.r = Math.max(r.network.rMin, r.network.rFactor * Math.sqrt($out));
             }
+        });
+        that.states.forEach(function (d) {
+            d.$in = $inByANSI[d.properties.ansi] || 0;
+            d.$out = $outByANSI[d.properties.ansi] || 0;
         });
         TestApp('UpdateData', -1);
         return that;
@@ -639,11 +649,18 @@ function HybridMapClass() {
         statePaths = statePathsG.selectAll('path.state-path').data(that.states, function (d) {
             return d.properties.ansi;
         });
-        statePaths = statePaths.enter().append('path').classed('state-path', true).classed('inactive', true).merge(statePaths).attr('d', that.path).each(function (d) {
-            return that.centroidByState[d.properties.ansi] = that.path.centroid(d);
-        }).style('stroke-width', r.map.strokeWidthState + 'px')
+        statePaths = statePaths.enter().append('path').classed('state-path', true).merge(statePaths).attr('class', function (d) {
+            if (d.$out !== 0 || d.$in !== 0) {
+                return 'state-path';
+            } else {
+                return 'state-path inactive';
+            }
+        }).attr('d', that.path).each(function (d) {
+            return that.centroidByANSI[d.properties.ansi] = that.path.centroid(d);
+        })
+        // .style('opacity', 0.75)
         // .each(function(d) {
-        //     let centroid = that.centroidByState[d.properties.ansi];
+        //     let centroid = that.centroidByANSI[d.properties.ansi];
         //     let rect = d3.select(this.parentNode).append('rect')
         //         .classed('path-rect', true)
         //         .attr('x', centroid[0]-20)
@@ -681,7 +698,7 @@ function HybridMapClass() {
         infoTextGs.selectAll('text').remove();
         infoTextGs.each(function (datum) {
             d3.select(this).append('text').attr('x', 0).attr('y', 0.5 * r.info.textRowH).text(datum.id);
-            d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * r.info.textRowH).text('State: ' + datum.state);
+            d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * r.info.textRowH).text('State: ' + datum.ansi);
             // if (datum.$in > 0) {
             d3.select(this).append('text').attr('x', 0).attr('y', 2.5 * r.info.textRowH).text('Received: ' + d3.format('$,')(datum.$in));
             // }
@@ -719,14 +736,16 @@ function HybridMapClass() {
             } else if (optionsObj.category.substring(0, 5) !== 'force') {
                 return;
             } else if (optionsObj.isIsolated === true) {
-                Object.keys(that.$outByState).forEach(function (state) {
-                    var cx = that.centroidByState[state][0];
-                    var cy = that.centroidByState[state][1];
+                that.states.map(function (d) {
+                    return d.properties.ansi;
+                }).forEach(function (ansi) {
+                    var cx = that.centroidByANSI[ansi][0];
+                    var cy = that.centroidByANSI[ansi][1];
                     var forceNew = d3[optionsObj.category]();
                     var initialize = forceNew.initialize;
                     forceNew.initialize = function () {
                         initialize.call(forceNew, that.nodes.filter(function (d) {
-                            return d.state === state;
+                            return d.ansi === ansi;
                         }));
                     };
                     optionsObj.rows.forEach(function (row) {
@@ -741,7 +760,7 @@ function HybridMapClass() {
                         }
                         forceNew[row.name](rowValue);
                     });
-                    that.simulation.force(optionsObj.category + state, forceNew).stop();
+                    that.simulation.force(optionsObj.category + ansi, forceNew).stop();
                 });
             } else {
                 var forceNew = d3[optionsObj.category]();
@@ -784,8 +803,6 @@ function HybridMapClass() {
         d.fy = d3.event.y;
         d.x = d3.event.x;
         d.y = d3.event.y;
-        d.cx = d3.event.x;
-        d.cy = d3.event.y;
         that.Tick();
         // d3.event.subject.fx = d3.event.x;
         // d3.event.subject.fy = d3.event.y;
@@ -838,7 +855,7 @@ function HybridMapClass() {
             return d.x;
         }).attr('cy', function (d) {
             return d.y;
-        }).style('stroke-width', r.network.strokeWidthNode + 'px').style('fill', function (d) {
+        }).style('fill', function (d) {
             if (topIds.includes(d.id)) {
                 return d3.schemeCategory20[d.i];
             } else if (d.$out > 0) {
@@ -846,7 +863,7 @@ function HybridMapClass() {
             } else {
                 return 'white';
             }
-        }).style('stroke', r.network.strokeGeneral).attr('r', function (d) {
+        }).attr('r', function (d) {
             return d.r;
         })
         // .transition().duration(r.transition.duration).ease(r.transition.ease)
@@ -864,20 +881,23 @@ function HybridMapClass() {
             }).includes(d.id)) {
                 return 1;
             } else {
-                return 0.05;
+                return 0;
             }
         });
-        svgDefsArrowheads = svgDefs.selectAll('marker.arrowhead').data(topIds.concat('misc'));
-        svgDefsArrowheads = svgDefsArrowheads.enter().append('marker').classed('arrowhead', true).attr('id', function (d, i) {
-            return 'arrowhead-id' + i;
-        }).each(function (datum, i) {
-            d3.select(this).selectAll('path').data([null]).enter().append('path').attr('d', 'M 0 0 12 6 0 12 3 6 Z').style('stroke', function () {
+        svgDefsArrows = svgDefs.selectAll('marker.arrow').data(topIds.concat('misc'));
+        svgDefsArrows = svgDefsArrows.enter().append('marker').classed('arrow', true).attr('id', function (d, i) {
+            return 'arrow-id' + i;
+        }).merge(svgDefsArrows);
+        svgDefsArrows.each(function (datum, i) {
+            var path = d3.select(this).selectAll('path').data([null]);
+            path = path.enter().append('path').merge(path).attr('d', 'M 0 0 12 6 0 12 3 6 Z').attr('transform', 'scale(' + r.network.arrowScale + ')').style('stroke', function () {
                 return i < topIds.length ? d3.schemeCategory20[i] : r.network.strokeGeneral;
             }).style('fill', function () {
                 return i < topIds.length ? d3.schemeCategory20[i] : r.network.fillGeneral;
             });
-        }).merge(svgDefsArrowheads);
-        svgDefsArrowheads.attr('refX', 12).attr('refY', 6).attr('markerUnits', 'userSpaceOnUse').attr('markerWidth', 112).attr('markerHeight', 118).attr('orient', 'auto');
+        }).attr('refX', (12 - 2.5) * r.network.arrowScale).attr('refY', 6 * r.network.arrowScale)
+        // .attr('markerUnits', 'userSpaceOnUse')
+        .attr('markerWidth', 112).attr('markerHeight', 118).attr('orient', 'auto');
         linkLines = linksG.selectAll('line.link-line').data(that.links);
         linkLines.exit().remove();
         linkLines = linkLines.enter().append('line').classed('link-line', true).attr('x1', function (d) {
@@ -891,11 +911,13 @@ function HybridMapClass() {
         }).merge(linkLines);
         linkLines.attr('marker-end', function (d) {
             if (topIds.includes(d.source.id)) {
-                return 'url(#arrowhead-id' + d.source.i + ')';
+                return 'url(#arrow-id' + d.source.i + ')';
             } else {
-                return 'url(#arrowhead-id' + topIds.length + ')';
+                return 'url(#arrow-id' + topIds.length + ')';
             }
-        }).style('stroke-width', r.network.strokeWidthLink + 'px').style('stroke', function (d) {
+        }).style('stroke-width', function (d) {
+            return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
+        }).style('stroke', function (d) {
             if (topIds.includes(d.source.id)) {
                 return d3.schemeCategory20[d.source.i];
             } else if (topIds.includes(d.target.id)) {
@@ -906,7 +928,9 @@ function HybridMapClass() {
         })
         // .transition().duration(r.transition.duration).ease(r.transition.ease)
         .style('display', function (d) {
-            if (that.filteredOutObj.year[d.year]) {
+            if (d.source.ansi === d.target.ansi) {
+                return 'none';
+            } else if (that.filteredOutObj.year[d.year]) {
                 return 'none';
             } else if (that.filteredOutObj.report[d.report]) {
                 return 'none';
@@ -973,7 +997,7 @@ function HybridMapClass() {
                             if (Object.keys(r).includes(optionsObj.category)) {
                                 SetRData(optionsObj.category, row.name, row.value);
                                 UpdateLayout();
-                                that.DrawMap().UpdateData().DrawNetwork().DrawInfo();
+                                that.UpdateData().DrawMap().DrawNetwork().DrawInfo();
                             }
                             that.UpdateSimulation().DrawOptions();
                         });
@@ -986,7 +1010,7 @@ function HybridMapClass() {
                             if (Object.keys(r).includes(optionsObj.category)) {
                                 SetRData(optionsObj.category, row.name, row.value);
                                 UpdateLayout();
-                                that.DrawMap().UpdateData().DrawNetwork().DrawInfo();
+                                that.UpdateData().DrawMap().DrawNetwork().DrawInfo();
                             }
                             that.UpdateSimulation().DrawOptions();
                         });
@@ -1016,18 +1040,18 @@ function HybridMapClass() {
     that.Tick = function () {
         // TestApp('Tick', 1);
         nodeCircles.attr('cx', function (d) {
-            return d.x;
+            return d.$out > 0 ? d.x : that.centroidByANSI[d.ansi][0];
         }).attr('cy', function (d) {
-            return d.y;
+            return d.$out > 0 ? d.y : that.centroidByANSI[d.ansi][1];
         });
         linkLines.attr('x1', function (d) {
             return d.source.x;
         }).attr('y1', function (d) {
             return d.source.y;
         }).attr('x2', function (d) {
-            return d.target.x;
+            return d.target.$out > 0 ? d.target.x : that.centroidByANSI[d.target.ansi][0];
         }).attr('y2', function (d) {
-            return d.target.y;
+            return d.target.$out > 0 ? d.target.y : that.centroidByANSI[d.target.ansi][1];
         });
         SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
         optionsAlphaLabel.text(r.simulation.alpha);
