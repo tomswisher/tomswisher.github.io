@@ -527,6 +527,8 @@ function UpdateLayout() {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
+    that.nodeSelected = null;
+    that.linksSelected = [];
     that.infoData = [];
     that.centroidByANSI = {};
     that.$outTotalScale = d3.scaleLinear().range([0, 1]);
@@ -683,7 +685,13 @@ function HybridMapClass() {
             .classed('state-path', true)
             .merge(statePaths)
             .attr('class', d => {
-                if (d.$out !== 0 || d.$in !== 0) {
+                if (d.$out === 0 && d.$in === 0) {
+                    return 'state-path inactive';
+                } else if (that.linksSelected.length === 0) {
+                    return 'state-path';
+                } else if (that.linksSelected.map(d => d.source.ansi).includes(d.properties.ansi)) {
+                    return 'state-path';
+                } else if (that.linksSelected.map(d => d.target.ansi).includes(d.properties.ansi)) {
                     return 'state-path';
                 } else {
                     return 'state-path inactive';
@@ -913,7 +921,8 @@ function HybridMapClass() {
                 if (!that.infoData.includes(that.nodeSelected)) {
                     that.infoData.push(that.nodeSelected);
                 }
-                that.DrawNetwork()
+                that.DrawMap()
+                    .DrawNetwork()
                     .DrawInfo();
             })
             .on('mouseout', () => {
@@ -922,7 +931,8 @@ function HybridMapClass() {
                 }
                 that.nodeSelected = null;
                 that.linksSelected = [];
-                that.DrawNetwork()
+                that.DrawMap()
+                    .DrawNetwork()
                     .DrawInfo();
             })
             .call(d3.drag()

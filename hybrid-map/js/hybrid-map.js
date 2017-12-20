@@ -496,6 +496,8 @@ function UpdateLayout() {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     var that = this;
+    that.nodeSelected = null;
+    that.linksSelected = [];
     that.infoData = [];
     that.centroidByANSI = {};
     that.$outTotalScale = d3.scaleLinear().range([0, 1]);
@@ -650,7 +652,17 @@ function HybridMapClass() {
             return d.properties.ansi;
         });
         statePaths = statePaths.enter().append('path').classed('state-path', true).merge(statePaths).attr('class', function (d) {
-            if (d.$out !== 0 || d.$in !== 0) {
+            if (d.$out === 0 && d.$in === 0) {
+                return 'state-path inactive';
+            } else if (that.linksSelected.length === 0) {
+                return 'state-path';
+            } else if (that.linksSelected.map(function (d) {
+                return d.source.ansi;
+            }).includes(d.properties.ansi)) {
+                return 'state-path';
+            } else if (that.linksSelected.map(function (d) {
+                return d.target.ansi;
+            }).includes(d.properties.ansi)) {
                 return 'state-path';
             } else {
                 return 'state-path inactive';
@@ -839,14 +851,14 @@ function HybridMapClass() {
             if (!that.infoData.includes(that.nodeSelected)) {
                 that.infoData.push(that.nodeSelected);
             }
-            that.DrawNetwork().DrawInfo();
+            that.DrawMap().DrawNetwork().DrawInfo();
         }).on('mouseout', function () {
             if (isDragging) {
                 return;
             }
             that.nodeSelected = null;
             that.linksSelected = [];
-            that.DrawNetwork().DrawInfo();
+            that.DrawMap().DrawNetwork().DrawInfo();
         }).call(d3.drag()
         // .container(nodesG)
         // .subject(() => that.simulation.find(d3.event.x, d3.event.y, 100))
