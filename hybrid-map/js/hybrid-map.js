@@ -2,30 +2,6 @@
 
 'use strict'; /* globals d3, console, nodes, count */ /* jshint -W069, unused:false */
 
-// Window Events -----------------------------------------------------------------------------------
-
-window.onload = function () {
-    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-links-04-06-2017.json').defer(d3.csv, 'data/cleaned-data-12-19-2017.csv').awaitAll(InitializePage);
-};
-window.onresize = function () {
-    if (!isLoaded) {
-        return;
-    }
-    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-    resizeCounter += 1;
-    setTimeout(function () {
-        if (resizeCounter > 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-        } else if (resizeCounter === 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-            UpdateLayout();
-            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
-        }
-    }, resizeWait);
-};
-
 // Selections --------------------------------------------------------------------------------------
 
 var body = d3.select('body');
@@ -100,7 +76,7 @@ var rData = [{
         name: 'wMin'
     }, {
         name: 'whRatioMap',
-        value: 1.7
+        value: 1.5
     }, {
         name: 'projectionScale',
         value: 1.2
@@ -119,11 +95,11 @@ var rData = [{
     category: 'network',
     rows: [{
         name: 'rMin',
-        value: 4,
+        value: 5,
         inputType: 'range'
     }, {
         name: 'rFactor',
-        value: 60,
+        value: 75,
         inputType: 'range'
     }, {
         name: 'strokeWidthNode',
@@ -400,7 +376,7 @@ var rData = [{
     }, {
         name: 'alphaMin',
         inputType: 'range',
-        value: 0.3,
+        value: 0.35,
         min: 0,
         max: 1,
         step: 0.05,
@@ -445,6 +421,30 @@ rData.forEach(function (optionsObj) {
     });
 });
 
+// Window Events -----------------------------------------------------------------------------------
+
+window.onload = function () {
+    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.csv, 'data/cleaned-data-12-19-2017.csv').awaitAll(InitializePage);
+};
+window.onresize = function () {
+    if (!isLoaded) {
+        return;
+    }
+    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+    resizeCounter += 1;
+    setTimeout(function () {
+        if (resizeCounter > 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+        } else if (resizeCounter === 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+            UpdateLayout();
+            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
+        }
+    }, resizeWait);
+};
+
 // Functions ---------------------------------------------------------------------------------------
 
 function SetRData(category, name, value) {
@@ -460,9 +460,7 @@ function SetRData(category, name, value) {
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     UpdateLayout();
-    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap()
-    // .LoadData(results[2])
-    .LoadNodes(results[1].nodes).LoadLinks(results[1].links).UpdateData().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
+    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData().DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
     requestAnimationFrame(function () {
         body.classed('loading', false);
         isLoaded = true;
@@ -495,20 +493,11 @@ function UpdateLayout() {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     var that = this;
-    that.statesLoaded = null;
-    that.nodesLoaded = null;
-    that.linksLoaded = null;
-    that.states = null;
-    that.nodes = null;
-    that.links = null;
-    that.nodeSelected = null;
-    that.linksSelected = null;
     that.infoData = [];
     that.centroidByState = {};
     that.$inByState = {};
     that.$outByState = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
-    that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
     that.filteredOutObj = {
@@ -520,11 +509,6 @@ function HybridMapClass() {
         TestApp('UpdateStates', 1);
         that.statesLoaded = d;
         that.states = that.statesLoaded;
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
         TestApp('UpdateStates', -1);
         return that;
     };
@@ -534,37 +518,52 @@ function HybridMapClass() {
         that.dataLoaded = data;
         that.nodesLoaded = [];
         that.linksLoaded = [];
-        that.dataLoaded.forEach(function (d) {});
-        console.log('that.dataLoaded', that.dataLoaded);
-        TestApp('LoadData', -1);
-        return that;
-    };
-
-    that.LoadNodes = function (data) {
-        TestApp('LoadNodes', 1);
-        that.nodesLoaded = data;
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
-        TestApp('LoadNodes', -1);
-        return that;
-    };
-
-    that.LoadLinks = function (data) {
-        TestApp('LoadLinks', 1);
-        that.linksLoaded = data;
-        that.linksLoaded.forEach(function (d) {
-            d.sourceId = d.source;
-            d.targetId = d.target;
+        that.nodeById = {};
+        that.linkByIds = {};
+        that.dataLoaded.forEach(function (d) {
+            if (that.nodeById[d.sourceId] === undefined) {
+                that.nodeById[d.sourceId] = {
+                    id: d.sourceId,
+                    state: d.sourceState
+                };
+            }
+            if (that.nodeById[d.targetId] === undefined) {
+                that.nodeById[d.targetId] = {
+                    id: d.targetId,
+                    state: d.targetState
+                };
+            }
+            if (that.linkByIds[d.sourceId + d.targetId] === undefined) {
+                that.linkByIds[d.sourceId + d.targetId] = {
+                    sourceId: d.sourceId,
+                    targetId: d.targetId
+                };
+            }
+            Object.keys(d).forEach(function (key) {
+                switch (key) {
+                    case 'sourceId':
+                    case 'sourceState':
+                    case 'targetId':
+                    case 'targetState':
+                        break;
+                    case 'month':
+                        that.linkByIds[d.sourceId + d.targetId][key] = d[key];
+                        break;
+                    case 'report':
+                    case 'dollars':
+                    case 'year':
+                        that.linkByIds[d.sourceId + d.targetId][key] = parseInt(d[key]);
+                        break;
+                }
+            });
         });
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
-        TestApp('LoadLinks', -1);
+        that.nodesLoaded = Object.keys(that.nodeById).map(function (d) {
+            return that.nodeById[d];
+        });
+        that.linksLoaded = Object.keys(that.linkByIds).map(function (d) {
+            return that.linkByIds[d];
+        });
+        TestApp('LoadData', -1);
         return that;
     };
 
@@ -572,12 +571,15 @@ function HybridMapClass() {
         TestApp('UpdateData', 1);
         var iCount = 0;
         that.states = that.statesLoaded;
-        that.nodes = that.nodesLoaded;
+        that.nodes = that.nodesLoaded.map(function (d) {
+            return d;
+        });
         that.nodes.forEach(function (d, i) {
             d.$out = 0;
             d.$in = 0;
             that.$outByState[d.state] = 0;
             that.$inByState[d.state] = 0;
+            d.i = undefined;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
@@ -588,9 +590,6 @@ function HybridMapClass() {
             d.y = d.y !== undefined ? d.y : that.centroidByState[d.state][1];
             d.vx = 0;
             d.vy = 0;
-        });
-        that.nodeById = d3.map(that.nodes, function (d) {
-            return d.id;
         });
         that.links = that.linksLoaded.filter(function (d) {
             if (that.filteredOutObj.year[d.year]) {
@@ -603,8 +602,8 @@ function HybridMapClass() {
         });
         that.$total = 0;
         that.links.forEach(function (d) {
-            d.source = that.nodeById.get(d.sourceId);
-            d.target = that.nodeById.get(d.targetId);
+            d.source = that.nodeById[d.sourceId];
+            d.target = that.nodeById[d.targetId];
             d.source.$out += d.dollars;
             d.target.$in += d.dollars;
             that.$outByState[d.source.state] += d.dollars;

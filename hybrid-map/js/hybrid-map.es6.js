@@ -2,41 +2,6 @@
 
 'use strict'; /* globals d3, console, nodes, count */ /* jshint -W069, unused:false */
 
-// Window Events -----------------------------------------------------------------------------------
-
-window.onload = () => {
-    d3.queue()
-        .defer(d3.json, 'data/us-states-features.json')
-        .defer(d3.json, 'data/nodes-links-04-06-2017.json')
-        .defer(d3.csv, 'data/cleaned-data-12-19-2017.csv')
-        .awaitAll(InitializePage);
-};
-window.onresize = () => {
-    if (!isLoaded) {
-        return;
-    }
-    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-    resizeCounter += 1;
-    setTimeout(() => {
-        if (resizeCounter > 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-        } else if (resizeCounter === 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-            UpdateLayout();
-            mapObj
-                .DrawMap()
-                .DrawNetwork()
-                .DrawInfo()
-                .DrawFilters()
-                .UpdateData()
-                .UpdateSimulation()
-                .DrawOptions();
-        }
-    }, resizeWait);
-};
-
 // Selections --------------------------------------------------------------------------------------
 
 const body = d3.select('body');
@@ -119,7 +84,7 @@ let rData = [
                 name: 'wMin',
             }, {
                 name: 'whRatioMap',
-                value: 1.7,
+                value: 1.5,
             }, {
                 name: 'projectionScale',
                 value: 1.2,
@@ -139,11 +104,11 @@ let rData = [
         rows: [
             {
                 name: 'rMin',
-                value: 4,
+                value: 5,
                 inputType: 'range',
             }, {
                 name: 'rFactor',
-                value: 60,
+                value: 75,
                 inputType: 'range',
             }, {
                 name: 'strokeWidthNode',
@@ -422,7 +387,7 @@ let rData = [
             }, {
                 name: 'alphaMin',
                 inputType: 'range',
-                value: 0.3,
+                value: 0.35,
                 min: 0,
                 max: 1,
                 step: 0.05,
@@ -467,6 +432,40 @@ rData.forEach(optionsObj => {
     });
 });
 
+// Window Events -----------------------------------------------------------------------------------
+
+window.onload = () => {
+    d3.queue()
+        .defer(d3.json, 'data/us-states-features.json')
+        .defer(d3.csv, 'data/cleaned-data-12-19-2017.csv')
+        .awaitAll(InitializePage);
+};
+window.onresize = () => {
+    if (!isLoaded) {
+        return;
+    }
+    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+    resizeCounter += 1;
+    setTimeout(() => {
+        if (resizeCounter > 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+        } else if (resizeCounter === 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+            UpdateLayout();
+            mapObj
+                .DrawMap()
+                .DrawNetwork()
+                .DrawInfo()
+                .DrawFilters()
+                .UpdateData()
+                .UpdateSimulation()
+                .DrawOptions();
+        }
+    }, resizeWait);
+};
+
 // Functions ---------------------------------------------------------------------------------------
 
 function SetRData(category, name, value) {
@@ -484,12 +483,11 @@ const InitializePage = (error, results) => {
     mapObj = (new HybridMapClass())
         .LoadStates(results[0].features)
         .DrawMap()
-        // .LoadData(results[2])
-        .LoadNodes(results[1].nodes)
-        .LoadLinks(results[1].links)
+        .LoadData(results[1])
         .UpdateData()
         .DrawNetwork()
         .DrawInfo()
+        .DrawFilters()
         .UpdateSimulation()
         .DrawOptions();
     requestAnimationFrame(() => {
@@ -525,20 +523,11 @@ function UpdateLayout() {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     let that = this;
-    that.statesLoaded = null;
-    that.nodesLoaded = null;
-    that.linksLoaded = null;
-    that.states = null;
-    that.nodes = null;
-    that.links = null;
-    that.nodeSelected = null;
-    that.linksSelected = null;
     that.infoData = [];
     that.centroidByState = {};
     that.$inByState = {};
     that.$outByState = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
-    that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
     that.path = d3.geoPath();
     that.filteredOutObj = {
@@ -550,11 +539,6 @@ function HybridMapClass() {
         TestApp('UpdateStates', 1);
         that.statesLoaded = d;
         that.states = that.statesLoaded;
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
         TestApp('UpdateStates', -1);
         return that;
     };
@@ -564,39 +548,48 @@ function HybridMapClass() {
         that.dataLoaded = data;
         that.nodesLoaded = [];
         that.linksLoaded = [];
+        that.nodeById = {};
+        that.linkByIds = {};
         that.dataLoaded.forEach(d => {
-
+            if (that.nodeById[d.sourceId] === undefined) {
+                that.nodeById[d.sourceId] = {
+                    id: d.sourceId,
+                    state: d.sourceState,
+                };
+            }
+            if (that.nodeById[d.targetId] === undefined) {
+                that.nodeById[d.targetId] = {
+                    id: d.targetId,
+                    state: d.targetState,
+                };
+            }
+            if (that.linkByIds[d.sourceId + d.targetId] === undefined) {
+                that.linkByIds[d.sourceId + d.targetId] = {
+                    sourceId: d.sourceId,
+                    targetId: d.targetId,
+                };
+            }
+            Object.keys(d).forEach(key => {
+                switch (key) {
+                    case 'sourceId':
+                    case 'sourceState':
+                    case 'targetId':
+                    case 'targetState':
+                        break;
+                    case 'month':
+                        that.linkByIds[d.sourceId + d.targetId][key] = d[key];
+                        break;
+                    case 'report':
+                    case 'dollars':
+                    case 'year':
+                        that.linkByIds[d.sourceId + d.targetId][key] = parseInt(d[key]);
+                        break;
+                }
+            });
         });
-        console.log('that.dataLoaded', that.dataLoaded);
+        that.nodesLoaded = Object.keys(that.nodeById).map(d => that.nodeById[d]);
+        that.linksLoaded = Object.keys(that.linkByIds).map(d => that.linkByIds[d]);
         TestApp('LoadData', -1);
-        return that;
-    };
-
-    that.LoadNodes = data => {
-        TestApp('LoadNodes', 1);
-        that.nodesLoaded = data;
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
-        TestApp('LoadNodes', -1);
-        return that;
-    };
-
-    that.LoadLinks = data => {
-        TestApp('LoadLinks', 1);
-        that.linksLoaded = data;
-        that.linksLoaded.forEach(d => {
-            d.sourceId = d.source;
-            d.targetId = d.target;
-        });
-        that.filteredOutObj = {
-            year: {},
-            report: {}
-        };
-        that.DrawFilters();
-        TestApp('LoadLinks', -1);
         return that;
     };
 
@@ -604,12 +597,13 @@ function HybridMapClass() {
         TestApp('UpdateData', 1);
         let iCount = 0;
         that.states = that.statesLoaded;
-        that.nodes = that.nodesLoaded;
+        that.nodes = that.nodesLoaded.map(d => d);
         that.nodes.forEach((d, i) => {
             d.$out = 0;
             d.$in = 0;
             that.$outByState[d.state] = 0;
             that.$inByState[d.state] = 0;
+            d.i = undefined;
             if (topIds.includes(d.id)) {
                 d.i = iCount;
                 iCount += 1;
@@ -621,7 +615,6 @@ function HybridMapClass() {
             d.vx = 0;
             d.vy = 0;
         });
-        that.nodeById = d3.map(that.nodes, d => d.id);
         that.links = that.linksLoaded.filter(function(d) {
             if (that.filteredOutObj.year[d.year]) {
                 return false;
@@ -633,8 +626,8 @@ function HybridMapClass() {
         });
         that.$total = 0;
         that.links.forEach(d => {
-            d.source = that.nodeById.get(d.sourceId);
-            d.target = that.nodeById.get(d.targetId);
+            d.source = that.nodeById[d.sourceId];
+            d.target = that.nodeById[d.targetId];
             d.source.$out += d.dollars;
             d.target.$in += d.dollars;
             that.$outByState[d.source.state] += d.dollars;

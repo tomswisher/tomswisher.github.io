@@ -7,10 +7,10 @@ var columnHashes = [
   {type:'number', canon:'dollars',      list:['dollars']},
   {type:'string', canon:'month',        list:['month']},
   {type:'number', canon:'year',         list:['year']},
-  {type:'string', canon:'source-state', list:['source_state']},
-  {type:'string', canon:'source-id',    list:['source_name                           ']},
-  {type:'string', canon:'target-state', list:['target_state']},
-  {type:'string', canon:'target-id',    list:['target_name                           ']},
+  {type:'string', canon:'sourceState', list:['source_state']},
+  {type:'string', canon:'sourceId',    list:['source_name                           ']},
+  {type:'string', canon:'targetState', list:['target_state']},
+  {type:'string', canon:'targetId',    list:['target_name                           ']},
 ];
 var idHashes = [
     {canon:'Action Now Initiative'                                , list:['Action Now Initiative']},
@@ -159,7 +159,7 @@ d3.csv('raw-07-31-2017.csv', data => {
               break;
             case 'string':
               dClean[columnHash.canon] = d[key].trim();
-              if (columnHash.canon.substr(6) === '-id') {
+              if (['sourceId','targetId'].includes(columnHash.canon)) {
                 idHashes.some(function(idHash) {
                   if (idHash.list.includes(dClean[columnHash.canon])) {
                     dClean[columnHash.canon] = idHash.canon;
@@ -177,14 +177,14 @@ d3.csv('raw-07-31-2017.csv', data => {
   });
   console.log(cleanData[0], cleanData[1]);
   columnHashes.forEach((d, i) => {
-    csvString = csvString + String(d.canon) + (i !== columnHashes.length-1 ? ', ' : '');
+    csvString = csvString + String(d.canon) + (i !== columnHashes.length-1 ? ',' : '');
   });
   csvString = csvString + '\r\n';
   cleanData.forEach(row => {
     var rowString = '';
     Object.keys(row).forEach((key, i) => {
-      let value = (key.substring(6) === '-id') ? '"'+String(row[key])+'"' : String(row[key]);
-      rowString = rowString + value + (i !== columnHashes.length-1 ? ', ' : '');
+      let value = (['sourceId','targetId'].includes(key) ? '"'+String(row[key])+'"' : String(row[key]));
+      rowString = rowString + value + (i !== columnHashes.length-1 ? ',' : '');
     });
     csvString = csvString + rowString + '\r\n';
   });
