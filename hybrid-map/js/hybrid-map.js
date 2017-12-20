@@ -2,6 +2,30 @@
 
 'use strict'; /* globals d3, console, nodes, count */ /* jshint -W069, unused:false */
 
+// Window Events -----------------------------------------------------------------------------------
+
+window.onload = function () {
+    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-links-04-06-2017.json').defer(d3.csv, 'data/cleaned-data-12-19-2017.csv').awaitAll(InitializePage);
+};
+window.onresize = function () {
+    if (!isLoaded) {
+        return;
+    }
+    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+    resizeCounter += 1;
+    setTimeout(function () {
+        if (resizeCounter > 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+        } else if (resizeCounter === 1) {
+            resizeCounter -= 1;
+            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
+            UpdateLayout();
+            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
+        }
+    }, resizeWait);
+};
+
 // Selections --------------------------------------------------------------------------------------
 
 var body = d3.select('body');
@@ -421,30 +445,6 @@ rData.forEach(function (optionsObj) {
     });
 });
 
-// Window Events -----------------------------------------------------------------------------------
-
-window.onload = function () {
-    d3.queue().defer(d3.json, 'data/us-states-features.json').defer(d3.json, 'data/nodes-links-04-06-2017.json').awaitAll(InitializePage);
-};
-window.onresize = function () {
-    if (!isLoaded) {
-        return;
-    }
-    if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-    resizeCounter += 1;
-    setTimeout(function () {
-        if (resizeCounter > 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-        } else if (resizeCounter === 1) {
-            resizeCounter -= 1;
-            if (logsLvl1) console.log(''.padStart(resizeCounter * 2, ' ') + resizeCounter);
-            UpdateLayout();
-            mapObj.DrawMap().DrawNetwork().DrawInfo().DrawFilters().UpdateData().UpdateSimulation().DrawOptions();
-        }
-    }, resizeWait);
-};
-
 // Functions ---------------------------------------------------------------------------------------
 
 function SetRData(category, name, value) {
@@ -460,7 +460,9 @@ function SetRData(category, name, value) {
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     UpdateLayout();
-    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadNodes(results[1].nodes).LoadLinks(results[1].links).UpdateData().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
+    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap()
+    // .LoadData(results[2])
+    .LoadNodes(results[1].nodes).LoadLinks(results[1].links).UpdateData().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
     requestAnimationFrame(function () {
         body.classed('loading', false);
         isLoaded = true;
@@ -493,20 +495,18 @@ function UpdateLayout() {
 function HybridMapClass() {
     TestApp('HybridMapClass', 1);
     var that = this;
-    that.statesLoaded = [];
-    that.nodesLoaded = [];
-    that.linksLoaded = [];
-    that.states = [];
-    that.nodes = [];
-    that.links = [];
+    that.statesLoaded = null;
+    that.nodesLoaded = null;
+    that.linksLoaded = null;
+    that.states = null;
+    that.nodes = null;
+    that.links = null;
     that.nodeSelected = null;
-    that.linksSelected = [];
+    that.linksSelected = null;
     that.infoData = [];
     that.centroidByState = {};
     that.$inByState = {};
     that.$outByState = {};
-    that.$inById = {};
-    that.$outById = {};
     that.$nodeScale = d3.scaleLinear().range([0, 1]);
     that.nodeById = {};
     that.projection = d3.geoAlbersUsa();
@@ -529,9 +529,20 @@ function HybridMapClass() {
         return that;
     };
 
-    that.LoadNodes = function (d) {
+    that.LoadData = function (data) {
+        TestApp('LoadData', 1);
+        that.dataLoaded = data;
+        that.nodesLoaded = [];
+        that.linksLoaded = [];
+        that.dataLoaded.forEach(function (d) {});
+        console.log('that.dataLoaded', that.dataLoaded);
+        TestApp('LoadData', -1);
+        return that;
+    };
+
+    that.LoadNodes = function (data) {
         TestApp('LoadNodes', 1);
-        that.nodesLoaded = d;
+        that.nodesLoaded = data;
         that.filteredOutObj = {
             year: {},
             report: {}
@@ -541,9 +552,9 @@ function HybridMapClass() {
         return that;
     };
 
-    that.LoadLinks = function (d) {
+    that.LoadLinks = function (data) {
         TestApp('LoadLinks', 1);
-        that.linksLoaded = d;
+        that.linksLoaded = data;
         that.linksLoaded.forEach(function (d) {
             d.sourceId = d.source;
             d.targetId = d.target;
@@ -559,12 +570,12 @@ function HybridMapClass() {
 
     that.UpdateData = function () {
         TestApp('UpdateData', 1);
-        that.states = that.statesLoaded;
         var iCount = 0;
+        that.states = that.statesLoaded;
         that.nodes = that.nodesLoaded;
         that.nodes.forEach(function (d, i) {
-            that.$outById[d.id] = 0;
-            that.$inById[d.id] = 0;
+            d.$out = 0;
+            d.$in = 0;
             that.$outByState[d.state] = 0;
             that.$inByState[d.state] = 0;
             if (topIds.includes(d.id)) {
@@ -594,19 +605,19 @@ function HybridMapClass() {
         that.links.forEach(function (d) {
             d.source = that.nodeById.get(d.sourceId);
             d.target = that.nodeById.get(d.targetId);
-            that.$outById[d.source.id] += d.dollars;
-            that.$inById[d.target.id] += d.dollars;
+            d.source.$out += d.dollars;
+            d.target.$in += d.dollars;
             that.$outByState[d.source.state] += d.dollars;
             that.$inByState[d.target.state] += d.dollars;
             that.$total += d.dollars;
         });
         that.nodes = that.nodes.filter(function (d) {
-            return that.$nodeScale(that.$inById[d.id]) || that.$nodeScale(that.$outById[d.id]);
+            return that.$nodeScale(d.$in) || that.$nodeScale(d.$out);
         });
         that.$nodeScale.domain([0, that.$total]);
         that.nodes.forEach(function (d) {
-            var $in = that.$nodeScale(that.$inById[d.id]);
-            var $out = that.$nodeScale(that.$outById[d.id]);
+            var $in = that.$nodeScale(d.$in);
+            var $out = that.$nodeScale(d.$out);
             if ($in === 0 && $out === 0) {
                 d.r = 0;
             } else if ($in > $out) {
@@ -672,11 +683,11 @@ function HybridMapClass() {
         infoTextGs.each(function (datum) {
             d3.select(this).append('text').attr('x', 0).attr('y', 0.5 * r.info.textRowH).text(datum.id);
             d3.select(this).append('text').attr('x', 0).attr('y', 1.5 * r.info.textRowH).text('State: ' + datum.state);
-            // if (that.$inById[datum.id] > 0) {
-            d3.select(this).append('text').attr('x', 0).attr('y', 2.5 * r.info.textRowH).text('Received: ' + d3.format('$,')(that.$inById[datum.id]));
+            // if (datum.$in > 0) {
+            d3.select(this).append('text').attr('x', 0).attr('y', 2.5 * r.info.textRowH).text('Received: ' + d3.format('$,')(datum.$in));
             // }
-            // if (that.$outById[datum.id] > 0) {
-            d3.select(this).append('text').attr('x', 0).attr('y', 3.5 * r.info.textRowH).text('Donated: ' + d3.format('$,')(that.$outById[datum.id]));
+            // if (datum.$out > 0) {
+            d3.select(this).append('text').attr('x', 0).attr('y', 3.5 * r.info.textRowH).text('Donated: ' + d3.format('$,')(datum.$out));
             // }
             // d3.select(this).append('text')
             //     .attr('x', 0)
@@ -831,7 +842,7 @@ function HybridMapClass() {
         }).style('stroke-width', r.network.strokeWidthNode + 'px').style('fill', function (d) {
             if (topIds.includes(d.id)) {
                 return d3.schemeCategory20[d.i];
-            } else if (that.$outById[d.id] > 0) {
+            } else if (d.$out > 0) {
                 return r.network.fillGeneral;
             } else {
                 return 'white';
