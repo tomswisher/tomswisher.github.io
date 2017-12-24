@@ -8,8 +8,9 @@ const body = d3.select('body');
 const svg = body.select('#svg');
 const svgDefs = body.select('#svg-defs');
 let svgDefsArrows = svgDefs.select(null);
-const bgRect = body.select('#bg-rect');
-const clipPathRect = body.select('#clip-path-rect');
+const mapBGRect = body.select('#map-bg-rect');
+const clipPath = body.select('#clip-path');
+let clipPathRect = clipPath.select(null);
 const statePathsG = body.select('#state-paths-g');
 let statePaths = statePathsG.select(null);
 const nodesG = body.select('#nodes-g');
@@ -65,6 +66,14 @@ let stringSource = '',
     stringSymbol = '';
 let rData = [
     {
+        category: 'main',
+        rows: [
+            {
+                name: 'strokeWidth',
+                value: parseInt(infoBGRect.style('stroke-width')),
+            }
+        ]
+    }, {
         category: 'svg',
         rows: [
             {
@@ -91,7 +100,7 @@ let rData = [
             }, {
                 name: 'mode',
                 value: 'states',
-                inputType: 'select',
+                // inputType: 'select',
             }
         ],
     }, {
@@ -115,17 +124,11 @@ let rData = [
                 inputType: 'range',
             }, {
                 name: 'arrowScale',
-                value: 0.25,
+                value: 0.26,
                 min: 0.05,
                 max: 2,
                 step: 0.05,
                 inputType: 'range',
-            }, {
-                name: 'fillGeneral',
-                value: 'gray',
-            }, {
-                name: 'strokeGeneral',
-                value: 'gray',
             }
         ],
     }, {
@@ -668,9 +671,14 @@ function HybridMapClass() {
         svg
             .attr('width', r.svg.w)
             .attr('height', r.svg.h);
-        bgRect
+        mapBGRect
             .attr('width', r.map.w)
             .attr('height', r.map.h);
+        clipPathRect = clipPath.selectAll('rect')
+            .data([null]);
+        clipPathRect = clipPathRect
+            .enter().append('rect')
+            .merge(clipPathRect);
         clipPathRect
             .attr('width', r.map.w)
             .attr('height', r.svg.h);
@@ -699,7 +707,7 @@ function HybridMapClass() {
             })
             .attr('d', that.path)
             .each(d => that.centroidByANSI[d.properties.ansi] = that.path.centroid(d))
-            // .style('opacity', 0.75)
+        // .style('opacity', 0.75)
         // .each(function(d) {
         //     let centroid = that.centroidByANSI[d.properties.ansi];
         //     let rect = d3.select(this.parentNode).append('rect')
@@ -720,11 +728,13 @@ function HybridMapClass() {
     that.DrawInfo = () => {
         TestApp('DrawInfo', 1);
         infoG
-            .attr('transform', 'translate(' + (r.map.w + r.info.margin) + ',' + (r.info.margin) + ')');
+            .attr('transform', 'translate(' + (r.map.w + r.info.margin) + ',' + (1*r.main.strokeWidth) + ')');
         infoBGRect
-            .attr('transform', 'translate(' + (1 - r.info.margin) + ',' + (1 - r.info.margin) + ')')
-            .attr('width', r.info.w - 2)
-            .attr('height', r.info.h - 2);
+            .attr('transform', 'translate(' + (r.map.w) + ',' + (1*r.main.strokeWidth) + ')')
+            .attr('x', 1 * r.info.margin - 0.5 * r.main.strokeWidth)
+            .attr('y', -0.5*r.main.strokeWidth)
+            .attr('width', r.info.w - 2 * r.info.margin + 1 * r.main.strokeWidth)
+            .attr('height', r.info.h - 1 * r.main.strokeWidth);
         infoImageGs = infoG.selectAll('g.info-image-g')
             .data(that.infoData);
         infoImageGs = infoImageGs.enter().append('g')
@@ -798,8 +808,18 @@ function HybridMapClass() {
         TestApp('UpdateSimulation', 1);
         that.simulation = d3.forceSimulation()
             .nodes(that.nodes)
-            .on('tick', that.Tick)
-            .stop();
+            .on('tick', () => {
+                SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
+                optionsAlphaLabel
+                    .text(r.simulation.alpha);
+                optionsAlphaSlider
+                    .property('value', r.simulation.alpha);
+                that.Tick();
+            });
+        // See https://github.com/d3/d3-force/blob/master/README.md#simulation_tick
+          // for (var i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
+            // simulation.tick();
+          // }
         rData.forEach(optionsObj => {
             if (optionsObj.category === 'simulation') {
                 optionsObj.rows.forEach(row => {
@@ -862,7 +882,7 @@ function HybridMapClass() {
     };
 
     that.DragStarted = d => {
-        TestApp('DragStarted', 1);
+        // TestApp('DragStarted', 1);
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
@@ -871,11 +891,11 @@ function HybridMapClass() {
         // if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         // d3.event.subject.fx = d3.event.subject.x;
         // d3.event.subject.fy = d3.event.subject.y;
-        TestApp('DragStarted', -1);
+        // TestApp('DragStarted', -1);
     };
 
     that.Dragged = d => {
-        TestApp('Dragged', 1);
+        // TestApp('Dragged', 1);
         d.fx = d3.event.x;
         d.fy = d3.event.y;
         d.x = d3.event.x;
@@ -883,11 +903,11 @@ function HybridMapClass() {
         that.Tick();
         // d3.event.subject.fx = d3.event.x;
         // d3.event.subject.fy = d3.event.y;
-        TestApp('Dragged', -1);
+        // TestApp('Dragged', -1);
     };
 
     that.DragEnded = d => {
-        TestApp('DragEnded', 1);
+        // TestApp('DragEnded', 1);
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
@@ -899,7 +919,7 @@ function HybridMapClass() {
         // if (!d3.event.active) simulation.alphaTarget(0);
         // d3.event.subject.fx = null;
         // d3.event.subject.fy = null;
-        TestApp('DragEnded', -1);
+        // TestApp('DragEnded', -1);
     };
 
     that.DrawNetwork = () => {
@@ -950,7 +970,7 @@ function HybridMapClass() {
                 if (topIds.includes(d.id)) {
                     return d3.schemeCategory20[d.i];
                 } else if (d.$out > 0) {
-                    return r.network.fillGeneral;
+                    return null;
                 } else {
                     return 'white';
                 }
@@ -970,6 +990,11 @@ function HybridMapClass() {
                     return 0;
                 }
             });
+        /*<path
+            class="arrow"
+            d="M-7,-4L0,0L-7,4L-6,0"
+            transform="translate(601.4125366210938,231.9962921142578) rotate(19.56897738993942)">
+        </path>*/
         svgDefsArrows = svgDefs.selectAll('marker.arrow')
             .data(topIds.concat('misc'));
         svgDefsArrows = svgDefsArrows.enter().append('marker')
@@ -983,12 +1008,12 @@ function HybridMapClass() {
                 path = path.enter().append('path')
                     .merge(path)
                     .attr('d', 'M 0 0 12 6 0 12 3 6 Z')
-                    .attr('transform', 'scale('+(r.network.arrowScale)+')')
-                    .style('stroke', () => (i < topIds.length) ? d3.schemeCategory20[i] : r.network.strokeGeneral)
-                    .style('fill', () => (i < topIds.length) ? d3.schemeCategory20[i] : r.network.fillGeneral);
+                    .attr('transform', 'scale(' + (r.network.arrowScale) + ')')
+                    .style('stroke', () => (i < topIds.length) ? d3.schemeCategory20[i] : null)
+                    .style('fill', () => (i < topIds.length) ? d3.schemeCategory20[i] : null);
             })
-            .attr('refX', (12-2.5)*r.network.arrowScale)
-            .attr('refY', 6*r.network.arrowScale)
+            .attr('refX', (12 - 2.5) * r.network.arrowScale)
+            .attr('refY', 6 * r.network.arrowScale)
             // .attr('markerUnits', 'userSpaceOnUse')
             .attr('markerWidth', 112)
             .attr('markerHeight', 118)
@@ -1013,7 +1038,7 @@ function HybridMapClass() {
                 }
             })
             .style('stroke-width', d => {
-                return Math.max(r.network.swMin, r.network.swFactor*d.dollars/that.$outTotal) + 'px';
+                return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
             })
             .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
@@ -1021,7 +1046,7 @@ function HybridMapClass() {
                 } else if (topIds.includes(d.target.id)) {
                     return d3.schemeCategory20[d.target.i];
                 } else {
-                    return r.network.strokeGeneral;
+                    return null;
                 }
             })
             // .transition().duration(r.transition.duration).ease(r.transition.ease)
@@ -1064,10 +1089,10 @@ function HybridMapClass() {
         filterGroups = filterGroups.enter().append('div')
             .classed('filter-group', true)
             .each(function(datum) {
-                d3.select(this).selectAll('div.filters-year')
+                d3.select(this).selectAll('div.filter-cell')
                     .data(datum.row)
                     .enter().append('div')
-                    .classed('filters-year', true)
+                    .classed('filter-cell', true)
                     .each(function(d) {
                         d3.select(this).append('div')
                             .text(d);
@@ -1206,11 +1231,6 @@ function HybridMapClass() {
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.$out > 0 ? d.target.x : that.centroidByANSI[d.target.ansi][0])
             .attr('y2', d => d.target.$out > 0 ? d.target.y : that.centroidByANSI[d.target.ansi][1]);
-        SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
-        optionsAlphaLabel
-            .text(r.simulation.alpha);
-        optionsAlphaSlider
-            .property('value', r.simulation.alpha);
         // TestApp('Tick', -1);
     };
 

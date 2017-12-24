@@ -8,55 +8,68 @@
 7   1024    768
 */
 
-@font1Size: 14px;
-@bodyColor: white;
-@bgColor: PowderBlue;
-@font1Color: gray;
-@outlineColor: gainsboro;
-@bodyMargin: 10px;
-@containerMargin: @bodyMargin @bodyMargin/2 0px @bodyMargin/2;
-
+@main-background-color: white;
+@main-color: gray;
+@main-font-size: 14px;
+@main-font-family: sans-serif;
+@main-marginfactor: 10px;
+@main-outline-width: 2px;
+@main-outline-color: gainsboro;
+@mapBGRect-fill: #8bd1da;
+@network-fill: rosybrown;
+// @network-stroke: gray;
+@container-margin: @main-marginfactor @main-marginfactor/2 0px @main-marginfactor/2;
 body {
-    margin: @bodyMargin @bodyMargin @bodyMargin @bodyMargin;
-    font-family: 'Lato', sans-serif;
-    font-weight: 400;
+    background-color: @main-background-color;
+    color: @main-color;
+    font-family: @main-font-family;
     font-size: 0px;
-    color: @font1Color;
-    overflow-x: scroll;
+    overflow-x: auto;
+    margin: @main-marginfactor 0px @main-marginfactor @main-marginfactor;
 }
 
 #svg {
-    font-size: @font1Size;
-    outline: 1px solid @outlineColor;
-    #bg-rect {
-        fill: @bgColor;
-    }
-    path.state-path {
-        pointer-events: none !important;
-        fill: @bodyColor;
-        stroke: @bgColor;
-        stroke-width: 1px;
-        &.inactive {
-            fill: @bgColor;
-            stroke: @bodyColor;
+    font-size: @main-font-size;
+    // outline: @main-outline-width solid @main-outline-color;
+    #svg-defs {
+        marker.arrow {
+            fill: @network-fill;
         }
     }
-    circle.node-circle {
-        stroke: gray;
-        stroke-width: 1px;
+    #map-bg-rect {
+        fill: @mapBGRect-fill;
     }
-    line.link-line {
-        pointer-events: none;
+    #state-paths-g {
+        path.state-path {
+            pointer-events: none;
+            fill: @main-background-color;
+            stroke: @main-outline-color;
+            stroke-width: @main-outline-width;
+            &.inactive {
+                fill: @mapBGRect-fill;
+            }
+        }
+    }
+    #nodes-g {
+        circle.node-circle {
+            fill: @network-fill;
+            // stroke: @network-stroke;
+            stroke-width: @main-outline-width;
+        }
+    }
+    #links-g {
+        line.link-line {
+            pointer-events: none;
+            stroke: @network-fill;
+        }
+    }
+    #info-bg-rect {
+        fill: @main-background-color;
+        stroke: @main-outline-color;
+        stroke-width: @main-outline-width;
     }
     #info-g {
-        fill: @font1Color;
-        #info-bg-rect {
-            fill: white; // stroke: @outlineColor;
-        }
-        g.info-image-g {
-            // outline: 1px solid @outlineColor;
-            image {}
-        }
+        g.info-image-g {}
         g.info-text-g {
             pointer-events: none;
             text {
@@ -71,13 +84,13 @@ body {
     text-align: center;
     .filter-group {
         display: inline-block;
-        margin: @containerMargin;
-        outline: 1px solid @outlineColor;
-        .filters-year,
-        .filters-report {
+        margin: @container-margin;
+        outline: @main-outline-width solid @main-outline-color;
+        .filter-cell {
             display: inline-block;
-            font-size: @font1Size;
+            font-size: @main-font-size;
             text-align: center;
+            outline: @main-outline-width/2 solid @main-outline-color;
         }
     }
 }
@@ -86,10 +99,14 @@ body {
     text-align: center;
     .option-group {
         display: inline-block;
-        margin: @containerMargin;
-        outline: 1px solid @outlineColor;
+        margin: @container-margin;
+        outline: @main-outline-width solid @main-outline-color;
+        div {
+            height: 16px;
+            line-height: 16px;
+        }
         >* {
-            font-size: @font1Size;
+            font-size: @main-font-size;
         }
         .option-category {
             display: inline-block;
@@ -115,9 +132,12 @@ body {
 
 #debug-div {
     .debug-button {
-        background: @outlineColor;
         cursor: pointer;
     }
+}
+
+.loading {
+    opacity: 0;
 }
 
 .unselectable {
@@ -125,26 +145,11 @@ body {
     -moz-user-select: -moz-none;
     -khtml-user-select: none;
     -webkit-user-select: none;
-    /*
-     Introduced in IE 10.
-     See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
-    */
-    -ms-user-select: none;
     user-select: none;
-}
-
-.loading {
-    opacity: 0;
-}
-
-.collapsed {
-    visibility: hidden;
-    width: 0px;
-    height: 0px;
+    -ms-user-select: none; // IE 10 http://ie.microsoft.com/testdrive/HTML5/msUserSelect
 }
 
 .grayscale {
     -webkit-filter: grayscale(100%);
-    /* Safari 6.0 - 9.0 */
-    filter: grayscale(100%);
+    filter: grayscale(100%); // Safari 6.0 - 9.0
 }

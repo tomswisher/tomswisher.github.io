@@ -8,8 +8,9 @@ var body = d3.select('body');
 var svg = body.select('#svg');
 var svgDefs = body.select('#svg-defs');
 var svgDefsArrows = svgDefs.select(null);
-var bgRect = body.select('#bg-rect');
-var clipPathRect = body.select('#clip-path-rect');
+var mapBGRect = body.select('#map-bg-rect');
+var clipPath = body.select('#clip-path');
+var clipPathRect = clipPath.select(null);
 var statePathsG = body.select('#state-paths-g');
 var statePaths = statePathsG.select(null);
 var nodesG = body.select('#nodes-g');
@@ -60,6 +61,12 @@ var stringSource = '',
     stringCombined = '',
     stringSymbol = '';
 var rData = [{
+    category: 'main',
+    rows: [{
+        name: 'strokeWidth',
+        value: parseInt(infoBGRect.style('stroke-width'))
+    }]
+}, {
     category: 'svg',
     rows: [{
         name: 'w'
@@ -82,8 +89,8 @@ var rData = [{
         value: 1.2
     }, {
         name: 'mode',
-        value: 'states',
-        inputType: 'select'
+        value: 'states'
+        // inputType: 'select',
     }]
 }, {
     category: 'network',
@@ -105,17 +112,11 @@ var rData = [{
         inputType: 'range'
     }, {
         name: 'arrowScale',
-        value: 0.25,
+        value: 0.26,
         min: 0.05,
         max: 2,
         step: 0.05,
         inputType: 'range'
-    }, {
-        name: 'fillGeneral',
-        value: 'gray'
-    }, {
-        name: 'strokeGeneral',
-        value: 'gray'
     }]
 }, {
     category: 'info',
@@ -644,7 +645,9 @@ function HybridMapClass() {
     that.DrawMap = function () {
         TestApp('DrawMap', 1);
         svg.attr('width', r.svg.w).attr('height', r.svg.h);
-        bgRect.attr('width', r.map.w).attr('height', r.map.h);
+        mapBGRect.attr('width', r.map.w).attr('height', r.map.h);
+        clipPathRect = clipPath.selectAll('rect').data([null]);
+        clipPathRect = clipPathRect.enter().append('rect').merge(clipPathRect);
         clipPathRect.attr('width', r.map.w).attr('height', r.svg.h);
         that.projection.scale(r.map.w * r.map.projectionScale).translate([r.map.w / 2, r.map.h / 2]);
         that.path.projection(that.projection);
@@ -690,8 +693,8 @@ function HybridMapClass() {
 
     that.DrawInfo = function () {
         TestApp('DrawInfo', 1);
-        infoG.attr('transform', 'translate(' + (r.map.w + r.info.margin) + ',' + r.info.margin + ')');
-        infoBGRect.attr('transform', 'translate(' + (1 - r.info.margin) + ',' + (1 - r.info.margin) + ')').attr('width', r.info.w - 2).attr('height', r.info.h - 2);
+        infoG.attr('transform', 'translate(' + (r.map.w + r.info.margin) + ',' + 1 * r.main.strokeWidth + ')');
+        infoBGRect.attr('transform', 'translate(' + r.map.w + ',' + 1 * r.main.strokeWidth + ')').attr('x', 1 * r.info.margin - 0.5 * r.main.strokeWidth).attr('y', -0.5 * r.main.strokeWidth).attr('width', r.info.w - 2 * r.info.margin + 1 * r.main.strokeWidth).attr('height', r.info.h - 1 * r.main.strokeWidth);
         infoImageGs = infoG.selectAll('g.info-image-g').data(that.infoData);
         infoImageGs = infoImageGs.enter().append('g').classed('info-image-g', true).each(function (datum) {
             d3.select(this).append('image').attr('width', r.info.wImage).attr('height', r.info.hImage).attr('xlink:href', function () {
@@ -737,7 +740,16 @@ function HybridMapClass() {
 
     that.UpdateSimulation = function () {
         TestApp('UpdateSimulation', 1);
-        that.simulation = d3.forceSimulation().nodes(that.nodes).on('tick', that.Tick).stop();
+        that.simulation = d3.forceSimulation().nodes(that.nodes).on('tick', function () {
+            SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
+            optionsAlphaLabel.text(r.simulation.alpha);
+            optionsAlphaSlider.property('value', r.simulation.alpha);
+            that.Tick();
+        });
+        // See https://github.com/d3/d3-force/blob/master/README.md#simulation_tick
+        // for (var i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
+        // simulation.tick();
+        // }
         rData.forEach(function (optionsObj) {
             if (optionsObj.category === 'simulation') {
                 optionsObj.rows.forEach(function (row) {
@@ -797,7 +809,7 @@ function HybridMapClass() {
     };
 
     that.DragStarted = function (d) {
-        TestApp('DragStarted', 1);
+        // TestApp('DragStarted', 1);
         isDragging = true;
         // if (!d3.event.active) { that.simulation.alphaTarget(0.3).restart(); }
         d.fx = d.x;
@@ -806,11 +818,11 @@ function HybridMapClass() {
         // if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         // d3.event.subject.fx = d3.event.subject.x;
         // d3.event.subject.fy = d3.event.subject.y;
-        TestApp('DragStarted', -1);
+        // TestApp('DragStarted', -1);
     };
 
     that.Dragged = function (d) {
-        TestApp('Dragged', 1);
+        // TestApp('Dragged', 1);
         d.fx = d3.event.x;
         d.fy = d3.event.y;
         d.x = d3.event.x;
@@ -818,11 +830,11 @@ function HybridMapClass() {
         that.Tick();
         // d3.event.subject.fx = d3.event.x;
         // d3.event.subject.fy = d3.event.y;
-        TestApp('Dragged', -1);
+        // TestApp('Dragged', -1);
     };
 
     that.DragEnded = function (d) {
-        TestApp('DragEnded', 1);
+        // TestApp('DragEnded', 1);
         isDragging = false;
         // if (!d3.event.active) { that.simulation.alphaTarget(0); }
         d.fx = null;
@@ -833,7 +845,7 @@ function HybridMapClass() {
         // if (!d3.event.active) simulation.alphaTarget(0);
         // d3.event.subject.fx = null;
         // d3.event.subject.fy = null;
-        TestApp('DragEnded', -1);
+        // TestApp('DragEnded', -1);
     };
 
     that.DrawNetwork = function () {
@@ -871,7 +883,7 @@ function HybridMapClass() {
             if (topIds.includes(d.id)) {
                 return d3.schemeCategory20[d.i];
             } else if (d.$out > 0) {
-                return r.network.fillGeneral;
+                return null;
             } else {
                 return 'white';
             }
@@ -896,6 +908,11 @@ function HybridMapClass() {
                 return 0;
             }
         });
+        /*<path
+            class="arrow"
+            d="M-7,-4L0,0L-7,4L-6,0"
+            transform="translate(601.4125366210938,231.9962921142578) rotate(19.56897738993942)">
+        </path>*/
         svgDefsArrows = svgDefs.selectAll('marker.arrow').data(topIds.concat('misc'));
         svgDefsArrows = svgDefsArrows.enter().append('marker').classed('arrow', true).attr('id', function (d, i) {
             return 'arrow-id' + i;
@@ -903,9 +920,9 @@ function HybridMapClass() {
         svgDefsArrows.each(function (datum, i) {
             var path = d3.select(this).selectAll('path').data([null]);
             path = path.enter().append('path').merge(path).attr('d', 'M 0 0 12 6 0 12 3 6 Z').attr('transform', 'scale(' + r.network.arrowScale + ')').style('stroke', function () {
-                return i < topIds.length ? d3.schemeCategory20[i] : r.network.strokeGeneral;
+                return i < topIds.length ? d3.schemeCategory20[i] : null;
             }).style('fill', function () {
-                return i < topIds.length ? d3.schemeCategory20[i] : r.network.fillGeneral;
+                return i < topIds.length ? d3.schemeCategory20[i] : null;
             });
         }).attr('refX', (12 - 2.5) * r.network.arrowScale).attr('refY', 6 * r.network.arrowScale)
         // .attr('markerUnits', 'userSpaceOnUse')
@@ -935,7 +952,7 @@ function HybridMapClass() {
             } else if (topIds.includes(d.target.id)) {
                 return d3.schemeCategory20[d.target.i];
             } else {
-                return r.network.strokeGeneral;
+                return null;
             }
         })
         // .transition().duration(r.transition.duration).ease(r.transition.ease)
@@ -972,7 +989,7 @@ function HybridMapClass() {
         filtersDiv.style('width', r.filters.w + 'px');
         filterGroups = filtersDiv.selectAll('div.filter-group').data(filtersData);
         filterGroups = filterGroups.enter().append('div').classed('filter-group', true).each(function (datum) {
-            d3.select(this).selectAll('div.filters-year').data(datum.row).enter().append('div').classed('filters-year', true).each(function (d) {
+            d3.select(this).selectAll('div.filter-cell').data(datum.row).enter().append('div').classed('filter-cell', true).each(function (d) {
                 d3.select(this).append('div').text(d);
                 d3.select(this).append('input').attr('type', 'checkbox').attr('checked', true).on('change', function () {
                     that.filteredOutObj[datum.key][d] = !this.checked;
@@ -1065,9 +1082,6 @@ function HybridMapClass() {
         }).attr('y2', function (d) {
             return d.target.$out > 0 ? d.target.y : that.centroidByANSI[d.target.ansi][1];
         });
-        SetRData('simulation', 'alpha', parseFloat(that.simulation.alpha()).toFixed(8));
-        optionsAlphaLabel.text(r.simulation.alpha);
-        optionsAlphaSlider.property('value', r.simulation.alpha);
         // TestApp('Tick', -1);
     };
 

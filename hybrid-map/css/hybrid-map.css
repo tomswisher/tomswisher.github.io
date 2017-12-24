@@ -8,42 +8,43 @@
 7   1024    768
 */
 body {
-  margin: 10px 10px 10px 10px;
-  font-family: 'Lato', sans-serif;
-  font-weight: 400;
-  font-size: 0px;
+  background-color: white;
   color: gray;
-  overflow-x: scroll;
+  font-family: sans-serif;
+  font-size: 0px;
+  overflow-x: auto;
+  margin: 10px 0px 10px 10px;
 }
 #svg {
   font-size: 14px;
-  outline: 1px solid gainsboro;
 }
-#svg #bg-rect {
-  fill: PowderBlue;
+#svg #svg-defs marker.arrow {
+  fill: rosybrown;
 }
-#svg path.state-path {
-  pointer-events: none !important;
-  fill: white;
-  stroke: PowderBlue;
-  stroke-width: 1px;
+#svg #map-bg-rect {
+  fill: #8bd1da;
 }
-#svg path.state-path.inactive {
-  fill: PowderBlue;
-  stroke: white;
-}
-#svg circle.node-circle {
-  stroke: gray;
-  stroke-width: 1px;
-}
-#svg line.link-line {
+#svg #state-paths-g path.state-path {
   pointer-events: none;
-}
-#svg #info-g {
-  fill: gray;
-}
-#svg #info-g #info-bg-rect {
   fill: white;
+  stroke: gainsboro;
+  stroke-width: 2px;
+}
+#svg #state-paths-g path.state-path.inactive {
+  fill: #8bd1da;
+}
+#svg #nodes-g circle.node-circle {
+  fill: rosybrown;
+  stroke-width: 2px;
+}
+#svg #links-g line.link-line {
+  pointer-events: none;
+  stroke: rosybrown;
+}
+#svg #info-bg-rect {
+  fill: white;
+  stroke: gainsboro;
+  stroke-width: 2px;
 }
 #svg #info-g g.info-text-g {
   pointer-events: none;
@@ -58,13 +59,13 @@ body {
 #filters-div .filter-group {
   display: inline-block;
   margin: 10px 5px 0px 5px;
-  outline: 1px solid gainsboro;
+  outline: 2px solid gainsboro;
 }
-#filters-div .filter-group .filters-year,
-#filters-div .filter-group .filters-report {
+#filters-div .filter-group .filter-cell {
   display: inline-block;
   font-size: 14px;
   text-align: center;
+  outline: 1px solid gainsboro;
 }
 #options-div {
   text-align: center;
@@ -72,7 +73,11 @@ body {
 #options-div .option-group {
   display: inline-block;
   margin: 10px 5px 0px 5px;
-  outline: 1px solid gainsboro;
+  outline: 2px solid gainsboro;
+}
+#options-div .option-group div {
+  height: 16px;
+  line-height: 16px;
 }
 #options-div .option-group > * {
   font-size: 14px;
@@ -97,31 +102,20 @@ body {
   margin: 0px;
 }
 #debug-div .debug-button {
-  background: gainsboro;
   cursor: pointer;
+}
+.loading {
+  opacity: 0;
 }
 .unselectable {
   -webkit-touch-callout: none;
   -moz-user-select: -moz-none;
   -khtml-user-select: none;
   -webkit-user-select: none;
-  /*
-     Introduced in IE 10.
-     See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
-    */
-  -ms-user-select: none;
   user-select: none;
-}
-.loading {
-  opacity: 0;
-}
-.collapsed {
-  visibility: hidden;
-  width: 0px;
-  height: 0px;
+  -ms-user-select: none;
 }
 .grayscale {
   -webkit-filter: grayscale(100%);
-  /* Safari 6.0 - 9.0 */
   filter: grayscale(100%);
 }
