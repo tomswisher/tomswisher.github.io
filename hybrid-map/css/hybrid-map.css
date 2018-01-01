@@ -1,12 +1,3 @@
-/*
-1   320     568     P iPhone 5
-2   375     627     P iPhone 6
-3   414     736     P iPhone 6+
-4   667     375     
-5   736     414
-6   768     1024    P iPad
-7   1024    768
-*/
 body {
   background-color: white;
   color: gray;
@@ -28,23 +19,25 @@ body {
   pointer-events: none;
   fill: white;
   stroke: gainsboro;
-  stroke-width: 2px;
+  stroke-width: 1px;
 }
 #svg #state-paths-g path.state-path.inactive {
   fill: #8bd1da;
 }
 #svg #nodes-g circle.node-circle {
   fill: rosybrown;
-  stroke-width: 2px;
+  stroke-width: 1px;
+}
+#svg #links-g {
+  pointer-events: none;
 }
 #svg #links-g line.link-line {
-  pointer-events: none;
   stroke: rosybrown;
 }
 #svg #info-bg-rect {
   fill: white;
   stroke: gainsboro;
-  stroke-width: 2px;
+  stroke-width: 1px;
 }
 #svg #info-g g.info-text-g {
   pointer-events: none;
@@ -59,13 +52,13 @@ body {
 #filters-div .filter-group {
   display: inline-block;
   margin: 10px 5px 0px 5px;
-  outline: 2px solid gainsboro;
+  outline: 1px solid gainsboro;
 }
 #filters-div .filter-group .filter-cell {
   display: inline-block;
   font-size: 14px;
   text-align: center;
-  outline: 1px solid gainsboro;
+  outline: 0.5px solid gainsboro;
 }
 #options-div {
   text-align: center;
@@ -73,7 +66,7 @@ body {
 #options-div .option-group {
   display: inline-block;
   margin: 10px 5px 0px 5px;
-  outline: 2px solid gainsboro;
+  outline: 1px solid gainsboro;
 }
 #options-div .option-group div {
   height: 16px;
@@ -101,8 +94,11 @@ body {
 #options-div .option-group input[type='Range'] {
   margin: 0px;
 }
-#debug-div .debug-button {
-  cursor: pointer;
+#debug-text {
+  position: absolute;
+  font-family: monospace;
+  font-size: 14px;
+  white-space: pre;
 }
 .loading {
   opacity: 0;

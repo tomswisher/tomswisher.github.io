@@ -1,23 +1,12 @@
-/*
-1   320     568     P iPhone 5
-2   375     627     P iPhone 6
-3   414     736     P iPhone 6+
-4   667     375     
-5   736     414
-6   768     1024    P iPad
-7   1024    768
-*/
-
 @main-background-color: white;
 @main-color: gray;
 @main-font-size: 14px;
 @main-font-family: sans-serif;
 @main-marginfactor: 10px;
-@main-outline-width: 2px;
+@main-outline-width: 1px;
 @main-outline-color: gainsboro;
 @mapBGRect-fill: #8bd1da;
 @network-fill: rosybrown;
-// @network-stroke: gray;
 @container-margin: @main-marginfactor @main-marginfactor/2 0px @main-marginfactor/2;
 body {
     background-color: @main-background-color;
@@ -30,7 +19,6 @@ body {
 
 #svg {
     font-size: @main-font-size;
-    // outline: @main-outline-width solid @main-outline-color;
     #svg-defs {
         marker.arrow {
             fill: @network-fill;
@@ -53,13 +41,12 @@ body {
     #nodes-g {
         circle.node-circle {
             fill: @network-fill;
-            // stroke: @network-stroke;
             stroke-width: @main-outline-width;
         }
     }
     #links-g {
+        pointer-events: none;
         line.link-line {
-            pointer-events: none;
             stroke: @network-fill;
         }
     }
@@ -130,10 +117,11 @@ body {
     }
 }
 
-#debug-div {
-    .debug-button {
-        cursor: pointer;
-    }
+#debug-text {
+    position: absolute;
+    font-family: monospace;
+    font-size: @main-font-size;
+    white-space: pre;
 }
 
 .loading {

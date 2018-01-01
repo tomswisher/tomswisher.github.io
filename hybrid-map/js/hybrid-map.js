@@ -27,21 +27,18 @@ var optionsDiv = body.select('#options-div');
 var optionGroups = optionsDiv.select(null);
 var optionsAlphaLabel = optionsDiv.select(null);
 var optionsAlphaSlider = optionsDiv.select(null);
-var debugDiv = body.select('#debug-div');
+var debugText = body.select('#debug-text');
 
 // Variables ---------------------------------------------------------------------------------------
-
-var mapObj = null;
-var isLoaded = false;
-var isDragging = false;
+var isDebug = false;
+var logsTest = 'in',
+    logsLvl1 = false,
+    resizeWait = 150;
+var resizeCounter = 0;
 var mobileUserAgents = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i,
     mobileBrowser = navigator && mobileUserAgents.test(navigator.userAgent);
 if (mobileBrowser) console.log('mobile browser detected: ' + navigator.userAgent);
 var topIds = ['Alice Walton', 'Carrie Walton Penner', 'Jim Walton', 'Dorris Fisher', 'Eli Broad', 'Greg Penner', 'Jonathan Sackler', 'Laurene Powell Jobs', 'Michael Bloomberg', 'Reed Hastings', 'Stacy Schusterman', 'John Arnold', 'Laura Arnold'];
-var logsTest = 'in',
-    logsLvl1 = false;
-var resizeWait = 150;
-var resizeCounter = 0;
 var stackLevel = 0,
     stackLevelTemp = 0;
 var sizeNodesOld = -1,
@@ -60,6 +57,9 @@ var stringSource = '',
     stringTotal = '',
     stringCombined = '',
     stringSymbol = '';
+var mapObj = null;
+var isLoaded = false;
+var isDragging = false;
 var rData = [{
     category: 'main',
     rows: [{
@@ -117,6 +117,62 @@ var rData = [{
         max: 2,
         step: 0.05,
         inputType: 'range'
+    }, {
+        name: 'A',
+        value: 0,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'B',
+        value: 0,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'C',
+        value: 12,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'D',
+        value: 6,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'E',
+        value: 0,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'F',
+        value: 12,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'G',
+        value: 3,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
+    }, {
+        name: 'H',
+        value: 6,
+        min: -20,
+        max: 20,
+        step: 0.5
+        // inputType: 'range',
     }]
 }, {
     category: 'info',
@@ -201,20 +257,20 @@ var rData = [{
         value: 5,
         min: 0,
         max: 10,
-        step: 1,
-        _default: 1
+        step: 1
+        // _default: 1,
     }, {
         name: 'strength',
         inputType: 'range',
         value: 1,
         min: 0,
         max: 1,
-        step: 0.01,
-        _default: 1
+        step: 0.01
+        // _default: 1,
     }, {
         name: 'radius',
         value: function value(node, i, nodes) {
-            return node.r ? 3 + node.r : 0;
+            return node.r ? 2 + node.r : 0;
         }
     }]
 }, {
@@ -223,8 +279,8 @@ var rData = [{
     isIsolated: false,
     rows: [{
         name: 'links',
-        value: [],
-        _default: []
+        value: []
+        // _default: [],
     }, {
         name: 'id',
         value: function value(node) {
@@ -237,28 +293,24 @@ var rData = [{
         value: 1,
         min: 0,
         max: 10,
-        step: 1,
-        _default: 1
+        step: 1
+        // _default: 1,
     }, {
         name: 'strength',
         inputType: 'range',
         value: 0.5,
         min: 0,
         max: 1,
-        step: 0.01,
-        _default: function _default(link, i, links) {
-            return 1 / Math.min(count[link.source.index], count[link.target.index]);
-        }
+        step: 0.01
+        // _default: (link, i, links) => 1 / Math.min(count[link.source.index], count[link.target.index]),
     }, {
         name: 'distance',
         inputType: 'range',
         value: 30,
         min: 0,
         max: 100,
-        step: 1,
-        _default: function _default(link, i, links) {
-            return 30;
-        }
+        step: 1
+        // _default: (link, i, links) => 30,
     }]
 }, {
     category: 'forceManyBody',
@@ -270,10 +322,8 @@ var rData = [{
         value: -30,
         min: -100,
         max: 0,
-        step: 1,
-        _default: function _default(node, i, nodes) {
-            return -30;
-        }
+        step: 1
+        // _default: (node, i, nodes) => -30,
     }, {
         name: 'distanceMin',
         inputType: 'range',
@@ -287,8 +337,8 @@ var rData = [{
         value: 100,
         min: 0,
         max: 200,
-        step: 1,
-        _default: Infinity
+        step: 1
+        // _default: Infinity,
     }, {
         name: 'theta',
         inputType: 'range',
@@ -307,10 +357,8 @@ var rData = [{
         value: 0.1,
         min: 0,
         max: 1,
-        step: 0.01,
-        _default: function _default(node, i, nodes) {
-            return 0.1;
-        }
+        step: 0.01
+        // _default: (node, i, nodes) => 0.1,
     }, {
         name: 'radius',
         value: function value(node, i, nodes) {
@@ -333,16 +381,12 @@ var rData = [{
         value: 0.1,
         min: 0,
         max: 1,
-        step: 0.05,
-        _default: function _default(node, i, nodes) {
-            return 0.1;
-        }
+        step: 0.05
+        // _default: (node, i, nodes) => 0.1,
     }, {
         name: 'x',
-        value: 'cx',
-        _default: function _default(node, i, nodes) {
-            return node.x;
-        }
+        value: 'cx'
+        // _default: (node, i, nodes) => node.x,
     }]
 }, {
     category: 'forceY',
@@ -354,16 +398,12 @@ var rData = [{
         value: 0.1,
         min: 0,
         max: 1,
-        step: 0.05,
-        _default: function _default(node, i, nodes) {
-            return 0.1;
-        }
+        step: 0.05
+        // _default: (node, i, nodes) => 0.1,
     }, {
         name: 'y',
-        value: 'cy',
-        _default: function _default(node, i, nodes) {
-            return node.y;
-        }
+        value: 'cy'
+        // _default: (node, i, nodes) => node.y,
     }]
 }, {
     category: 'simulation',
@@ -381,8 +421,8 @@ var rData = [{
         value: 0.35,
         min: 0,
         max: 1,
-        step: 0.05,
-        _default: 0.001
+        step: 0.05
+        // _default: 0.001,
     }, {
         name: 'alphaDecay',
         inputType: 'range',
@@ -418,7 +458,7 @@ rData.forEach(function (optionsObj) {
         if (row.inputType === 'range') {
             row.min = row.min !== undefined ? row.min : 0;
             row.max = row.max !== undefined ? row.max : 5 * row.value;
-            row.step = 5 * row.value / 100;
+            row.step = row.step !== undefined ? row.step : 5 * row.value / 100;
         }
     });
 });
@@ -447,6 +487,19 @@ window.onresize = function () {
         }
     }, resizeWait);
 };
+window.onkeydown = function (event) {
+    switch (event.key) {
+        case 'd':
+            ManageOptions('default');
+            break;
+        case 's':
+            ManageOptions('save');
+            break;
+        case 'l':
+            ManageOptions('load');
+            break;
+    }
+};
 
 // Functions ---------------------------------------------------------------------------------------
 
@@ -456,8 +509,50 @@ function SetRData(category, name, value) {
     })[0].rows.filter(function (row) {
         return row.name === name;
     })[0];
-    row.value = value;
+    if (isNaN(parseFloat(row.value))) {
+        row.value = value;
+    } else {
+        row.value = parseFloat(value);
+    }
     r[category][name] = value;
+    if (!svgDefsArrows.select('path').empty()) {
+        var num = 6;
+        if (isDebug) {
+            debugText.property('innerHTML', String(r.network.A).padEnd(num) + String(r.network.B).padEnd(num) + '    ' + String(r.network.C).padEnd(num) + String(r.network.D).padEnd(num) + '    ' + String(r.network.E).padEnd(num) + String(r.network.F).padEnd(num) + '    ' + String(r.network.G).padEnd(num) + String(r.network.H).padEnd(num));
+        }
+    }
+}
+
+function ManageOptions(mode) {
+    console.log('ManageOptions', mode);
+    rData.forEach(function (optionsObj) {
+        optionsObj.rows.forEach(function (row) {
+            if (!row.inputType) {
+                return;
+            }
+            var key = '_' + String(optionsObj.category) + String(row.name);
+            switch (mode) {
+                case 'default':
+                    console.log('default', key, row.valueDefault);
+                    SetRData(optionsObj.category, row.name, row.valueDefault);
+                    break;
+                case 'save':
+                    sessionStorage.setItem('_' + String(optionsObj.category) + String(row.name), row.value);
+                    console.log('save   ', key, row.value);
+                    break;
+                case 'load':
+                    if (sessionStorage.length === 0) {
+                        console.log('no saved options');
+                        break;
+                    }
+                    var loaded = sessionStorage.getItem(key);
+                    SetRData(optionsObj.category, row.name, loaded);
+                    console.log('load   ', key, loaded);
+                    break;
+            }
+        });
+    });
+    mapObj.UpdateData().DrawMap().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
 }
 
 var InitializePage = function InitializePage(error, results) {
@@ -491,6 +586,7 @@ function UpdateLayout() {
     SetRData('svg', 'h', Math.max(r.map.h, r.info.h));
     SetRData('filters', 'w', r.map.w);
     SetRData('options', 'w', r.map.w);
+    debugText.style('left', 20 + 'px').style('top', r.map.h - 10 + 'px');
     TestApp('UpdateLayout', -1);
 }
 
@@ -919,7 +1015,9 @@ function HybridMapClass() {
         }).merge(svgDefsArrows);
         svgDefsArrows.each(function (datum, i) {
             var path = d3.select(this).selectAll('path').data([null]);
-            path = path.enter().append('path').merge(path).attr('d', 'M 0 0 12 6 0 12 3 6 Z').attr('transform', 'scale(' + r.network.arrowScale + ')').style('stroke', function () {
+            path = path.enter().append('path').merge(path)
+            // .attr('d', 'M 0 0 12 6 0 12 3 6 Z')
+            .attr('d', 'M' + ' ' + r.network.A + ',' + r.network.B + ' ' + r.network.C + ',' + r.network.D + ' ' + r.network.E + ',' + r.network.F + ' ' + r.network.G + ',' + r.network.H + ' ' + 'Z').attr('transform', 'scale(' + r.network.arrowScale + ')').style('stroke', function () {
                 return i < topIds.length ? d3.schemeCategory20[i] : null;
             }).style('fill', function () {
                 return i < topIds.length ? d3.schemeCategory20[i] : null;
@@ -1017,7 +1115,7 @@ function HybridMapClass() {
                 switch (row.inputType) {
                     case 'range':
                         d3.select(this).append('label').classed('label-small', true).text(row.min);
-                        d3.select(this).append('input').attr('type', 'range').attr('min', row.min).attr('max', row.max).attr('step', row.step).attr('value', row.value).on('change', function () {
+                        d3.select(this).append('input').attr('type', 'range').attr('min', row.min).attr('max', row.max).attr('step', row.step).property('value', row.value).on('change', function () {
                             if (row.step === parseInt(row.step)) {
                                 row.value = parseInt(this.value);
                             } else {
@@ -1055,6 +1153,9 @@ function HybridMapClass() {
                 }
             }).style('width', r.options.wGroup - r.options.wMedium + 'px');
         }).merge(optionGroups).style('width', r.options.wGroup + 'px');
+        optionGroups.selectAll('input[type="range"]').property('value', function (d) {
+            return d.value;
+        });
         optionGroups.selectAll('label.option-value').text(function (d) {
             return d.value;
         });
