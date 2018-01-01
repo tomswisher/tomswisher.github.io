@@ -1087,9 +1087,11 @@ function HybridMapClass() {
         filtersDiv.style('width', r.filters.w + 'px');
         filterGroups = filtersDiv.selectAll('div.filter-group').data(filtersData);
         filterGroups = filterGroups.enter().append('div').classed('filter-group', true).each(function (datum) {
-            d3.select(this).selectAll('div.filter-cell').data(datum.row).enter().append('div').classed('filter-cell', true).each(function (d) {
+            d3.select(this).selectAll('label.filter-cell').data(datum.row).enter().append('label').classed('filter-cell', true).attr('for', function (d) {
+                return 'filter-' + datum.key + '-' + d;
+            }).each(function (d) {
                 d3.select(this).append('div').text(d);
-                d3.select(this).append('input').attr('type', 'checkbox').attr('checked', true).on('change', function () {
+                d3.select(this).append('input').attr('id', 'filter-' + datum.key + '-' + d).attr('type', 'checkbox').attr('checked', true).on('change', function () {
                     that.filteredOutObj[datum.key][d] = !this.checked;
                     that.UpdateData().DrawNetwork().UpdateSimulation();
                 });

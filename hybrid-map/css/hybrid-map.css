@@ -25,6 +25,7 @@ body {
   fill: #8bd1da;
 }
 #svg #nodes-g circle.node-circle {
+  cursor: -webkit-grab;
   fill: rosybrown;
   stroke-width: 1px;
 }
@@ -56,9 +57,13 @@ body {
 }
 #filters-div .filter-group .filter-cell {
   display: inline-block;
+  cursor: pointer;
   font-size: 14px;
   text-align: center;
   outline: 0.5px solid gainsboro;
+}
+#filters-div .filter-group .filter-cell * {
+  cursor: pointer;
 }
 #options-div {
   text-align: center;
@@ -92,6 +97,7 @@ body {
   dominant-baseline: central;
 }
 #options-div .option-group input[type='Range'] {
+  cursor: -webkit-grab;
   margin: 0px;
 }
 #debug-text {

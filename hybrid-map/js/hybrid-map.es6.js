@@ -1215,14 +1215,16 @@ function HybridMapClass() {
         filterGroups = filterGroups.enter().append('div')
             .classed('filter-group', true)
             .each(function(datum) {
-                d3.select(this).selectAll('div.filter-cell')
+                d3.select(this).selectAll('label.filter-cell')
                     .data(datum.row)
-                    .enter().append('div')
+                    .enter().append('label')
                     .classed('filter-cell', true)
+                    .attr('for', d => 'filter-'+datum.key+'-'+d)
                     .each(function(d) {
                         d3.select(this).append('div')
                             .text(d);
                         d3.select(this).append('input')
+                            .attr('id', 'filter-'+datum.key+'-'+d)
                             .attr('type', 'checkbox')
                             .attr('checked', true)
                             .on('change', function() {
