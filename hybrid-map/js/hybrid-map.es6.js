@@ -249,12 +249,16 @@ let rData = [
         category: 'transition',
         rows: [
             {
-                name: 'duration',
-                value: 200,
+                name: 'durationShort',
+                value: 350,
+                // inputType: 'range',
+            }, {
+                name: 'durationMedium',
+                value: 600,
                 // inputType: 'range',
             }, {
                 name: 'ease',
-                value: d3.easeLinear,
+                value: d3.easeQuad,
             }
         ],
     }, {
@@ -621,7 +625,8 @@ const InitializePage = (error, results) => {
         .DrawOptions();
     requestAnimationFrame(() => {
         body
-            .classed('loading', false);
+            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
+            .style('opacity', 1);
         isLoaded = true;
     });
     TestApp('InitializePage', -1);
@@ -876,9 +881,10 @@ function HybridMapClass() {
                         }
                     });
             })
+            .style('opacity', 0)
             .merge(infoImageGs);
         infoImageGs
-            .transition().duration(r.transition.duration).ease(r.transition.ease)
+            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
             .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         infoTextGs = infoG.selectAll('g.info-text-g')
             .data(that.infoData);
@@ -923,7 +929,7 @@ function HybridMapClass() {
                 //         }
                 //     });
             })
-            .transition().duration(r.transition.duration).ease(r.transition.ease)
+            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
             .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         TestApp('DrawInfo', -1);
         return that;
@@ -1087,6 +1093,7 @@ function HybridMapClass() {
                 .on('drag', that.Dragged)
                 .on('end', that.DragEnded)
             )
+            .attr('r', 0)
             .merge(nodeCircles);
         nodeCircles
             .attr('cx', d => d.x)
@@ -1100,8 +1107,6 @@ function HybridMapClass() {
                     return 'white';
                 }
             })
-            .attr('r', d => d.r)
-            // .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('opacity', d => {
                 if (!that.nodeSelected) {
                     return 1;
@@ -1114,7 +1119,9 @@ function HybridMapClass() {
                 } else {
                     return 0;
                 }
-            });
+            })
+            .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
+            .attr('r', d => d.r);
         /*<path
             class="arrow"
             d="M-7,-4L0,0L-7,4L-6,0"
@@ -1154,6 +1161,7 @@ function HybridMapClass() {
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
             .attr('y2', d => d.target.y)
+            .style('stroke-width', '0px')
             .merge(linkLines);
         linkLines
             .attr('marker-end', d => {
@@ -1162,9 +1170,6 @@ function HybridMapClass() {
                 } else {
                     return 'url(#arrow-id' + topIds.length + ')';
                 }
-            })
-            .style('stroke-width', d => {
-                return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
             })
             .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
@@ -1175,7 +1180,6 @@ function HybridMapClass() {
                     return null;
                 }
             })
-            // .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('display', d => {
                 if (d.source.ansi === d.target.ansi) {
                     return 'none';
@@ -1192,6 +1196,10 @@ function HybridMapClass() {
                 } else {
                     return 'none';
                 }
+            })
+            .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
+            .style('stroke-width', d => {
+                return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
             });
         TestApp('DrawNetwork', -1);
         return that;
@@ -1219,12 +1227,12 @@ function HybridMapClass() {
                     .data(datum.row)
                     .enter().append('label')
                     .classed('filter-cell', true)
-                    .attr('for', d => 'filter-'+datum.key+'-'+d)
+                    .attr('for', d => 'filter-' + datum.key + '-' + d)
                     .each(function(d) {
                         d3.select(this).append('div')
                             .text(d);
                         d3.select(this).append('input')
-                            .attr('id', 'filter-'+datum.key+'-'+d)
+                            .attr('id', 'filter-' + datum.key + '-' + d)
                             .attr('type', 'checkbox')
                             .attr('checked', true)
                             .on('change', function() {

@@ -8,6 +8,7 @@
 @mapBGRect-fill: #8bd1da;
 @network-fill: rosybrown;
 @container-margin: @main-marginfactor @main-marginfactor/2 0px @main-marginfactor/2;
+
 body {
     background-color: @main-background-color;
     color: @main-color;
@@ -15,6 +16,7 @@ body {
     font-size: 0px;
     overflow-x: auto;
     margin: @main-marginfactor 0px @main-marginfactor @main-marginfactor;
+    opacity: 0;
 }
 
 #svg {
@@ -128,10 +130,6 @@ body {
     font-family: monospace;
     font-size: @main-font-size;
     white-space: pre;
-}
-
-.loading {
-    opacity: 0;
 }
 
 .unselectable {

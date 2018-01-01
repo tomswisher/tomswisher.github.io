@@ -229,12 +229,16 @@ var rData = [{
 }, {
     category: 'transition',
     rows: [{
-        name: 'duration',
-        value: 200
+        name: 'durationShort',
+        value: 350
+        // inputType: 'range',
+    }, {
+        name: 'durationMedium',
+        value: 600
         // inputType: 'range',
     }, {
         name: 'ease',
-        value: d3.easeLinear
+        value: d3.easeQuad
     }]
 }, {
     category: 'forceCenter',
@@ -561,7 +565,7 @@ var InitializePage = function InitializePage(error, results) {
     mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData().DrawMap() // coloring
     .DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
     requestAnimationFrame(function () {
-        body.classed('loading', false);
+        body.transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', 1);
         isLoaded = true;
     });
     TestApp('InitializePage', -1);
@@ -800,8 +804,8 @@ function HybridMapClass() {
                     return 'img/' + datum.id + '.jpg';
                 }
             });
-        }).merge(infoImageGs);
-        infoImageGs.transition().duration(r.transition.duration).ease(r.transition.ease).style('opacity', function (d) {
+        }).style('opacity', 0).merge(infoImageGs);
+        infoImageGs.transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', function (d) {
             return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         infoTextGs = infoG.selectAll('g.info-text-g').data(that.infoData);
@@ -827,7 +831,7 @@ function HybridMapClass() {
             //             return 'Years: [' + yearsArray + ']';
             //         }
             //     });
-        }).transition().duration(r.transition.duration).ease(r.transition.ease).style('opacity', function (d) {
+        }).transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', function (d) {
             return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         TestApp('DrawInfo', -1);
@@ -970,7 +974,7 @@ function HybridMapClass() {
         }).call(d3.drag()
         // .container(nodesG)
         // .subject(() => that.simulation.find(d3.event.x, d3.event.y, 100))
-        .on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).merge(nodeCircles);
+        .on('start', that.DragStarted).on('drag', that.Dragged).on('end', that.DragEnded)).attr('r', 0).merge(nodeCircles);
         nodeCircles.attr('cx', function (d) {
             return d.x;
         }).attr('cy', function (d) {
@@ -983,11 +987,7 @@ function HybridMapClass() {
             } else {
                 return 'white';
             }
-        }).attr('r', function (d) {
-            return d.r;
-        })
-        // .transition().duration(r.transition.duration).ease(r.transition.ease)
-        .style('opacity', function (d) {
+        }).style('opacity', function (d) {
             if (!that.nodeSelected) {
                 return 1;
             } else if (that.nodeSelected.id === d.id) {
@@ -1003,6 +1003,8 @@ function HybridMapClass() {
             } else {
                 return 0;
             }
+        }).transition().duration(r.transition.durationMedium).ease(r.transition.ease).attr('r', function (d) {
+            return d.r;
         });
         /*<path
             class="arrow"
@@ -1035,15 +1037,13 @@ function HybridMapClass() {
             return d.target.x;
         }).attr('y2', function (d) {
             return d.target.y;
-        }).merge(linkLines);
+        }).style('stroke-width', '0px').merge(linkLines);
         linkLines.attr('marker-end', function (d) {
             if (topIds.includes(d.source.id)) {
                 return 'url(#arrow-id' + d.source.i + ')';
             } else {
                 return 'url(#arrow-id' + topIds.length + ')';
             }
-        }).style('stroke-width', function (d) {
-            return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
         }).style('stroke', function (d) {
             if (topIds.includes(d.source.id)) {
                 return d3.schemeCategory20[d.source.i];
@@ -1052,9 +1052,7 @@ function HybridMapClass() {
             } else {
                 return null;
             }
-        })
-        // .transition().duration(r.transition.duration).ease(r.transition.ease)
-        .style('display', function (d) {
+        }).style('display', function (d) {
             if (d.source.ansi === d.target.ansi) {
                 return 'none';
             } else if (that.filteredOutObj.year[d.year]) {
@@ -1070,6 +1068,8 @@ function HybridMapClass() {
             } else {
                 return 'none';
             }
+        }).transition().duration(r.transition.durationMedium).ease(r.transition.ease).style('stroke-width', function (d) {
+            return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
         });
         TestApp('DrawNetwork', -1);
         return that;

@@ -5,6 +5,7 @@ body {
   font-size: 0px;
   overflow-x: auto;
   margin: 10px 0px 10px 10px;
+  opacity: 0;
 }
 #svg {
   font-size: 14px;
@@ -105,9 +106,6 @@ body {
   font-family: monospace;
   font-size: 14px;
   white-space: pre;
-}
-.loading {
-  opacity: 0;
 }
 .unselectable {
   -webkit-touch-callout: none;
