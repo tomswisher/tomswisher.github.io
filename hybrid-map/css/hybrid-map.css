@@ -10,9 +10,6 @@ body {
 #svg {
   font-size: 14px;
 }
-#svg #svg-defs marker.arrow {
-  fill: rosybrown;
-}
 #svg #map-bg-rect {
   fill: #8bd1da;
 }
@@ -28,13 +25,15 @@ body {
 #svg #nodes-g circle.node-circle {
   cursor: -webkit-grab;
   fill: rosybrown;
+  stroke: gainsboro;
   stroke-width: 1px;
 }
 #svg #links-g {
   pointer-events: none;
 }
-#svg #links-g line.link-line {
-  stroke: rosybrown;
+#svg #links-g path.link-path {
+  stroke: gainsboro;
+  fill: rosybrown;
 }
 #svg #info-bg-rect {
   fill: white;

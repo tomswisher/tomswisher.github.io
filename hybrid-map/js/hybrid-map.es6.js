@@ -7,7 +7,6 @@
 const body = d3.select('body');
 const svg = body.select('#svg');
 const svgDefs = body.select('#svg-defs');
-let svgDefsArrows = svgDefs.select(null);
 const mapBGRect = body.select('#map-bg-rect');
 const clipPath = body.select('#clip-path');
 let clipPathRect = clipPath.select(null);
@@ -16,7 +15,7 @@ let statePaths = statePathsG.select(null);
 const nodesG = body.select('#nodes-g');
 let nodeCircles = nodesG.select(null);
 const linksG = body.select('#links-g');
-let linkLines = linksG.select(null);
+let linkPaths = linksG.select(null);
 const infoG = body.select('#info-g');
 const infoBGRect = body.select('#info-bg-rect');
 let infoImageGs = infoG.select(null);
@@ -120,71 +119,8 @@ let rData = [
                 inputType: 'range',
             }, {
                 name: 'swFactor',
-                value: 250,
+                value: 0,
                 inputType: 'range',
-            }, {
-                name: 'arrowScale',
-                value: 0.26,
-                min: 0.05,
-                max: 2,
-                step: 0.05,
-                inputType: 'range',
-            }, {
-                name: 'A',
-                value: 0,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'B',
-                value: 0,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'C',
-                value: 12,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'D',
-                value: 6,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'E',
-                value: 0,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'F',
-                value: 12,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'G',
-                value: 3,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
-            }, {
-                name: 'H',
-                value: 6,
-                min: -20,
-                max: 20,
-                step: 0.5,
-                // inputType: 'range',
             }
         ],
     }, {
@@ -208,7 +144,6 @@ let rData = [
             }, {
                 name: 'textRowH',
                 value: 15,
-                inputType: 'range',
             }
         ],
     }, {
@@ -237,7 +172,8 @@ let rData = [
                 value: 115,
             }, {
                 name: 'wInput',
-                value: 100,
+                value: 200,
+                // inputType: 'range',
             }, {
                 name: 'wGroup',
             }, {
@@ -558,18 +494,6 @@ function SetRData(category, name, value) {
         row.value = parseFloat(value);
     }
     r[category][name] = value;
-    if (!svgDefsArrows.select('path').empty()) {
-        let num = 6;
-        if (isDebug) {
-            debugText
-                .property('innerHTML',
-                    String(r.network.A).padEnd(num) + String(r.network.B).padEnd(num) + '    ' +
-                    String(r.network.C).padEnd(num) + String(r.network.D).padEnd(num) + '    ' +
-                    String(r.network.E).padEnd(num) + String(r.network.F).padEnd(num) + '    ' +
-                    String(r.network.G).padEnd(num) + String(r.network.H).padEnd(num)
-                );
-        }
-    }
 }
 
 function ManageOptions(mode) {
@@ -1093,7 +1017,7 @@ function HybridMapClass() {
                 .on('drag', that.Dragged)
                 .on('end', that.DragEnded)
             )
-            .attr('r', 0)
+            .attr('r', d => d.r)
             .merge(nodeCircles);
         nodeCircles
             .attr('cx', d => d.x)
@@ -1122,56 +1046,17 @@ function HybridMapClass() {
             })
             .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
             .attr('r', d => d.r);
-        /*<path
-            class="arrow"
-            d="M-7,-4L0,0L-7,4L-6,0"
-            transform="translate(601.4125366210938,231.9962921142578) rotate(19.56897738993942)">
-        </path>*/
-        svgDefsArrows = svgDefs.selectAll('marker.arrow')
-            .data(topIds.concat('misc'));
-        svgDefsArrows = svgDefsArrows.enter().append('marker')
-            .classed('arrow', true)
-            .attr('id', (d, i) => 'arrow-id' + i)
-            .merge(svgDefsArrows);
-        svgDefsArrows
-            .each(function(datum, i) {
-                let path = d3.select(this).selectAll('path')
-                    .data([null]);
-                path = path.enter().append('path')
-                    .merge(path)
-                    // .attr('d', 'M 0 0 12 6 0 12 3 6 Z')
-                    .attr('d', 'M' + ' ' + r.network.A + ',' + r.network.B + ' ' + r.network.C + ',' + r.network.D + ' ' + r.network.E + ',' + r.network.F + ' ' + r.network.G + ',' + r.network.H + ' ' + 'Z')
-                    .attr('transform', 'scale(' + (r.network.arrowScale) + ')')
-                    .style('stroke', () => (i < topIds.length) ? d3.schemeCategory20[i] : null)
-                    .style('fill', () => (i < topIds.length) ? d3.schemeCategory20[i] : null);
-            })
-            .attr('refX', (12 - 2.5) * r.network.arrowScale)
-            .attr('refY', 6 * r.network.arrowScale)
-            // .attr('markerUnits', 'userSpaceOnUse')
-            .attr('markerWidth', 112)
-            .attr('markerHeight', 118)
-            .attr('orient', 'auto');
-        linkLines = linksG.selectAll('line.link-line')
+        linkPaths = linksG.selectAll('path.link-path')
             .data(that.links);
-        linkLines.exit()
+        linkPaths.exit()
             .remove();
-        linkLines = linkLines.enter().append('line')
-            .classed('link-line', true)
-            .attr('x1', d => d.source.x)
-            .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x)
-            .attr('y2', d => d.target.y)
-            .style('stroke-width', '0px')
-            .merge(linkLines);
-        linkLines
-            .attr('marker-end', d => {
-                if (topIds.includes(d.source.id)) {
-                    return 'url(#arrow-id' + d.source.i + ')';
-                } else {
-                    return 'url(#arrow-id' + topIds.length + ')';
-                }
-            })
-            .style('stroke', d => {
+        linkPaths = linkPaths.enter().append('path')
+            .classed('link-path', true)
+            .attr('d', '')
+            // .style('stroke-width', '0px')
+            .merge(linkPaths);
+        linkPaths
+            .style('fill', d => {
                 if (topIds.includes(d.source.id)) {
                     return d3.schemeCategory20[d.source.i];
                 } else if (topIds.includes(d.target.id)) {
@@ -1198,9 +1083,14 @@ function HybridMapClass() {
                 }
             })
             .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
-            .style('stroke-width', d => {
-                return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
-            });
+            // .style('visibility', d => {
+            //     return (d.targetId === "Yes on 1240" && d.source.i === 3) ? 'visible' : 'hidden';
+            //     // return (d.source.i === 3) ? 'visible' : 'hidden';
+            // })
+            // .style('stroke-width', d => {
+            //     return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
+            // })
+            ;
         TestApp('DrawNetwork', -1);
         return that;
     };
@@ -1364,11 +1254,19 @@ function HybridMapClass() {
         nodeCircles
             .attr('cx', d => d.$out > 0 ? d.x : that.centroidByANSI[d.ansi][0])
             .attr('cy', d => d.$out > 0 ? d.y : that.centroidByANSI[d.ansi][1]);
-        linkLines
-            .attr('x1', d => d.source.x)
-            .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.$out > 0 ? d.target.x : that.centroidByANSI[d.target.ansi][0])
-            .attr('y2', d => d.target.$out > 0 ? d.target.y : that.centroidByANSI[d.target.ansi][1]);
+        linkPaths
+            .attr('d', d => {
+                let angle = Math.atan2(d.target.y-d.source.y,d.target.x-d.source.x);
+                let x0 = d.source.x - d.source.r*Math.cos(angle+(1/2)*Math.PI);
+                let y0 = d.source.y + d.source.r*Math.sin(angle-(1/2)*Math.PI);
+                let x1 = d.target.x;
+                let y1 = d.target.y;
+                let x2 = d.source.x - d.source.r*Math.cos(angle+(3/2)*Math.PI);
+                let y2 = d.source.y + d.source.r*Math.sin(angle-(3/2)*Math.PI);
+                return `M ${x0} ${y0} ${x1} ${y1} ${x2} ${y2} Z`;
+                // return `M ${d.source.x-d.source.r} ${d.source.y} ${d.target.x} ${d.target.y} ${d.source.x+d.source.r} ${d.source.y} Z`;
+                // return `M ${d.source.x-d.source.r} ${d.source.y} ${d.target.x} ${d.target.y} ${d.source.x+d.source.r} ${d.source.y} Z`;
+            });
         // TestApp('Tick', -1);
     };
 

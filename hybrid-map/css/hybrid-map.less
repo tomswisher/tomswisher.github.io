@@ -21,11 +21,6 @@ body {
 
 #svg {
     font-size: @main-font-size;
-    #svg-defs {
-        marker.arrow {
-            fill: @network-fill;
-        }
-    }
     #map-bg-rect {
         fill: @mapBGRect-fill;
     }
@@ -44,13 +39,15 @@ body {
         circle.node-circle {
             cursor: -webkit-grab;
             fill: @network-fill;
+            stroke: @main-outline-color;
             stroke-width: @main-outline-width;
         }
     }
     #links-g {
         pointer-events: none;
-        line.link-line {
-            stroke: @network-fill;
+        path.link-path {
+            stroke: @main-outline-color;
+            fill: @network-fill;
         }
     }
     #info-bg-rect {
