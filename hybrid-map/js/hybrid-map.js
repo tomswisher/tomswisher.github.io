@@ -29,6 +29,7 @@ var optionsAlphaSlider = optionsDiv.select(null);
 var debugText = body.select('#debug-text');
 
 // Variables ---------------------------------------------------------------------------------------
+
 var isDebug = false;
 var logsTest = 'in',
     logsLvl1 = false,
@@ -101,14 +102,6 @@ var rData = [{
         name: 'rFactor',
         value: 75,
         inputType: 'range'
-    }, {
-        name: 'swMin',
-        value: 1,
-        inputType: 'range'
-    }, {
-        name: 'swFactor',
-        value: 0,
-        inputType: 'range'
     }]
 }, {
     category: 'info',
@@ -155,7 +148,6 @@ var rData = [{
     }, {
         name: 'wInput',
         value: 200
-        // inputType: 'range',
     }, {
         name: 'wGroup'
     }, {
@@ -165,13 +157,9 @@ var rData = [{
 }, {
     category: 'transition',
     rows: [{
-        name: 'durationShort',
-        value: 350
-        // inputType: 'range',
-    }, {
-        name: 'durationMedium',
-        value: 600
-        // inputType: 'range',
+        name: 'duration',
+        value: 450,
+        inputType: 'range'
     }, {
         name: 'ease',
         value: d3.easeQuad
@@ -428,6 +416,9 @@ window.onresize = function () {
     }, resizeWait);
 };
 window.onkeydown = function (event) {
+    if (!isDebug) {
+        return;
+    }
     switch (event.key) {
         case 'd':
             ManageOptions('default');
@@ -442,6 +433,15 @@ window.onkeydown = function (event) {
 };
 
 // Functions ---------------------------------------------------------------------------------------
+
+function FadeInBody() {
+    body.style('opacity', 0);
+    isLoaded = false;
+    requestAnimationFrame(function () {
+        body.transition().duration(r.transition.duration).ease(r.transition.ease).style('opacity', 1);
+        isLoaded = true;
+    });
+}
 
 function SetRData(category, name, value) {
     var row = rData.filter(function (optionsObj) {
@@ -486,18 +486,16 @@ function ManageOptions(mode) {
             }
         });
     });
+    FadeInBody();
     mapObj.UpdateData().DrawMap().DrawNetwork().DrawInfo().UpdateSimulation().DrawOptions();
 }
 
 var InitializePage = function InitializePage(error, results) {
     TestApp('InitializePage', 1);
     UpdateLayout();
-    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData().DrawMap() // coloring
+    mapObj = new HybridMapClass().LoadStates(results[0].features).DrawMap().LoadData(results[1]).UpdateData('initialize').DrawMap() // coloring
     .DrawNetwork().DrawInfo().DrawFilters().UpdateSimulation().DrawOptions();
-    requestAnimationFrame(function () {
-        body.transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', 1);
-        isLoaded = true;
-    });
+    FadeInBody();
     TestApp('InitializePage', -1);
 };
 
@@ -606,7 +604,7 @@ function HybridMapClass() {
         return that;
     };
 
-    that.UpdateData = function () {
+    that.UpdateData = function (mode) {
         TestApp('UpdateData', 1);
         var iCount = 0;
         var $outByANSI = {};
@@ -639,8 +637,10 @@ function HybridMapClass() {
                 return false;
             }
             return true;
+        }).sort(function (a, b) {
+            return d3.ascending(a.year, b.year);
         });
-        that.$outTotal = 0;
+        that.$outTotal = mode === 'initialize' ? 0 : that.$outTotal;
         that.links.forEach(function (d) {
             d.source = that.nodeById[d.sourceId];
             d.target = that.nodeById[d.targetId];
@@ -648,7 +648,7 @@ function HybridMapClass() {
             d.target.$in += d.dollars;
             $outByANSI[d.source.ansi] += d.dollars;
             $inByANSI[d.target.ansi] += d.dollars;
-            that.$outTotal += d.dollars;
+            that.$outTotal += mode === 'initialize' ? d.dollars : 0;
         });
         that.nodes = that.nodes.filter(function (d) {
             return d.$in > 0 || d.$out > 0;
@@ -703,7 +703,6 @@ function HybridMapClass() {
         }).attr('d', that.path).each(function (d) {
             return that.centroidByANSI[d.properties.ansi] = that.path.centroid(d);
         })
-        // .style('opacity', 0.75)
         // .each(function(d) {
         //     let centroid = that.centroidByANSI[d.properties.ansi];
         //     let rect = d3.select(this.parentNode).append('rect')
@@ -735,7 +734,7 @@ function HybridMapClass() {
                 }
             });
         }).style('opacity', 0).merge(infoImageGs);
-        infoImageGs.transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', function (d) {
+        infoImageGs.transition().duration(r.transition.duration).ease(r.transition.ease).style('opacity', function (d) {
             return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         infoTextGs = infoG.selectAll('g.info-text-g').data(that.infoData);
@@ -761,7 +760,7 @@ function HybridMapClass() {
             //             return 'Years: [' + yearsArray + ']';
             //         }
             //     });
-        }).transition().duration(r.transition.durationShort).ease(r.transition.ease).style('opacity', function (d) {
+        }).transition().duration(r.transition.duration).ease(r.transition.ease).style('opacity', function (d) {
             return +(that.nodeSelected && d.id === that.nodeSelected.id);
         });
         TestApp('DrawInfo', -1);
@@ -935,15 +934,22 @@ function HybridMapClass() {
             } else {
                 return 0;
             }
-        }).transition().duration(r.transition.durationMedium).ease(r.transition.ease).attr('r', function (d) {
+        }).transition().duration(r.transition.duration).ease(r.transition.ease).attr('r', function (d) {
             return d.r;
         });
         linkPaths = linksG.selectAll('path.link-path').data(that.links);
-        linkPaths.exit().remove();
-        linkPaths = linkPaths.enter().append('path').classed('link-path', true).attr('d', '')
-        // .style('stroke-width', '0px')
-        .merge(linkPaths);
+        // linkPaths.exit()
+        //     .remove();
+        linkPaths = linkPaths.enter().append('path').classed('link-path', true).attr('d', '').merge(linkPaths);
         linkPaths.style('fill', function (d) {
+            if (topIds.includes(d.source.id)) {
+                return d3.schemeCategory20[d.source.i];
+            } else if (topIds.includes(d.target.id)) {
+                return d3.schemeCategory20[d.target.i];
+            } else {
+                return null;
+            }
+        }).style('stroke', function (d) {
             if (topIds.includes(d.source.id)) {
                 return d3.schemeCategory20[d.source.i];
             } else if (topIds.includes(d.target.id)) {
@@ -959,23 +965,21 @@ function HybridMapClass() {
             } else if (that.filteredOutObj.report[d.report]) {
                 return 'none';
             } else if (!that.nodeSelected) {
-                return 'block';
+                return null;
             } else if (that.nodeSelected.id === d.source.id) {
-                return 'block';
+                return null;
             } else if (that.nodeSelected.id === d.target.id) {
-                return 'block';
+                return null;
             } else {
                 return 'none';
             }
-        }).transition().duration(r.transition.durationMedium).ease(r.transition.ease)
+        }).transition().duration(r.transition.duration).ease(r.transition.ease)
         // .style('visibility', d => {
         //     return (d.targetId === "Yes on 1240" && d.source.i === 3) ? 'visible' : 'hidden';
         //     // return (d.source.i === 3) ? 'visible' : 'hidden';
         // })
-        // .style('stroke-width', d => {
-        //     return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
-        // })
         ;
+        linkPaths.exit().remove();
         TestApp('DrawNetwork', -1);
         return that;
     };

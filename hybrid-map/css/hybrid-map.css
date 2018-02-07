@@ -22,7 +22,7 @@ body {
 #svg #state-paths-g path.state-path.inactive {
   fill: #8bd1da;
 }
-#svg #nodes-g circle.node-circle {
+#svg #nodes-g {
   cursor: -webkit-grab;
   fill: rosybrown;
   stroke: gainsboro;
@@ -30,9 +30,7 @@ body {
 }
 #svg #links-g {
   pointer-events: none;
-}
-#svg #links-g path.link-path {
-  stroke: gainsboro;
+  fill-opacity: 0.5;
   fill: rosybrown;
 }
 #svg #info-bg-rect {

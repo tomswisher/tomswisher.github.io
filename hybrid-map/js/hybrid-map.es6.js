@@ -29,6 +29,7 @@ let optionsAlphaSlider = optionsDiv.select(null);
 const debugText = body.select('#debug-text');
 
 // Variables ---------------------------------------------------------------------------------------
+
 let isDebug = false;
 const logsTest = 'in',
     logsLvl1 = false,
@@ -113,14 +114,6 @@ let rData = [
                 name: 'rFactor',
                 value: 75,
                 inputType: 'range',
-            }, {
-                name: 'swMin',
-                value: 1,
-                inputType: 'range',
-            }, {
-                name: 'swFactor',
-                value: 0,
-                inputType: 'range',
             }
         ],
     }, {
@@ -173,7 +166,6 @@ let rData = [
             }, {
                 name: 'wInput',
                 value: 200,
-                // inputType: 'range',
             }, {
                 name: 'wGroup',
             }, {
@@ -185,13 +177,9 @@ let rData = [
         category: 'transition',
         rows: [
             {
-                name: 'durationShort',
-                value: 350,
-                // inputType: 'range',
-            }, {
-                name: 'durationMedium',
-                value: 600,
-                // inputType: 'range',
+                name: 'duration',
+                value: 450,
+                inputType: 'range',
             }, {
                 name: 'ease',
                 value: d3.easeQuad,
@@ -468,6 +456,7 @@ window.onresize = () => {
     }, resizeWait);
 };
 window.onkeydown = event => {
+    if (!isDebug) { return; }
     switch (event.key) {
         case 'd':
             ManageOptions('default');
@@ -482,6 +471,17 @@ window.onkeydown = event => {
 };
 
 // Functions ---------------------------------------------------------------------------------------
+
+function FadeInBody() {
+    body.style('opacity', 0);
+    isLoaded = false;
+    requestAnimationFrame(() => {
+        body
+            .transition().duration(r.transition.duration).ease(r.transition.ease)
+            .style('opacity', 1);
+        isLoaded = true;
+    });
+}
 
 function SetRData(category, name, value) {
     let row = rData
@@ -525,6 +525,7 @@ function ManageOptions(mode) {
             }
         });
     });
+    FadeInBody();
     mapObj.UpdateData()
         .DrawMap()
         .DrawNetwork()
@@ -540,19 +541,14 @@ const InitializePage = (error, results) => {
         .LoadStates(results[0].features)
         .DrawMap()
         .LoadData(results[1])
-        .UpdateData()
+        .UpdateData('initialize')
         .DrawMap() // coloring
         .DrawNetwork()
         .DrawInfo()
         .DrawFilters()
         .UpdateSimulation()
         .DrawOptions();
-    requestAnimationFrame(() => {
-        body
-            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
-            .style('opacity', 1);
-        isLoaded = true;
-    });
+    FadeInBody();
     TestApp('InitializePage', -1);
 };
 
@@ -657,7 +653,7 @@ function HybridMapClass() {
         return that;
     };
 
-    that.UpdateData = () => {
+    that.UpdateData = (mode) => {
         TestApp('UpdateData', 1);
         let iCount = 0;
         let $outByANSI = {};
@@ -680,16 +676,18 @@ function HybridMapClass() {
             d.vx = 0;
             d.vy = 0;
         });
-        that.links = that.linksLoaded.filter(function(d) {
-            if (that.filteredOutObj.year[d.year]) {
-                return false;
-            }
-            if (that.filteredOutObj.report[d.report]) {
-                return false;
-            }
-            return true;
-        });
-        that.$outTotal = 0;
+        that.links = that.linksLoaded
+            .filter(function(d) {
+                if (that.filteredOutObj.year[d.year]) {
+                    return false;
+                }
+                if (that.filteredOutObj.report[d.report]) {
+                    return false;
+                }
+                return true;
+            })
+            .sort((a, b) => d3.ascending(a.year, b.year));
+        that.$outTotal = (mode === 'initialize') ? 0 : that.$outTotal;
         that.links.forEach(d => {
             d.source = that.nodeById[d.sourceId];
             d.target = that.nodeById[d.targetId];
@@ -697,7 +695,7 @@ function HybridMapClass() {
             d.target.$in += d.dollars;
             $outByANSI[d.source.ansi] += d.dollars;
             $inByANSI[d.target.ansi] += d.dollars;
-            that.$outTotal += d.dollars;
+            that.$outTotal += (mode === 'initialize') ? d.dollars : 0;
         });
         that.nodes = that.nodes.filter(d => d.$in > 0 || d.$out > 0);
         that.$outTotalScale
@@ -761,20 +759,19 @@ function HybridMapClass() {
             })
             .attr('d', that.path)
             .each(d => that.centroidByANSI[d.properties.ansi] = that.path.centroid(d))
-        // .style('opacity', 0.75)
-        // .each(function(d) {
-        //     let centroid = that.centroidByANSI[d.properties.ansi];
-        //     let rect = d3.select(this.parentNode).append('rect')
-        //         .classed('path-rect', true)
-        //         .attr('x', centroid[0]-20)
-        //         .attr('y', centroid[1]-20)
-        //         .attr('width', 40)
-        //         .attr('height', 40)
-        //         .attr('fill', 'white')
-        //         .style('stroke', 'red');
-        //     d3.select(this).remove();
-        // })
-        ;
+            // .each(function(d) {
+            //     let centroid = that.centroidByANSI[d.properties.ansi];
+            //     let rect = d3.select(this.parentNode).append('rect')
+            //         .classed('path-rect', true)
+            //         .attr('x', centroid[0]-20)
+            //         .attr('y', centroid[1]-20)
+            //         .attr('width', 40)
+            //         .attr('height', 40)
+            //         .attr('fill', 'white')
+            //         .style('stroke', 'red');
+            //     d3.select(this).remove();
+            // })
+            ;
         TestApp('DrawMap', -1);
         return that;
     };
@@ -808,7 +805,7 @@ function HybridMapClass() {
             .style('opacity', 0)
             .merge(infoImageGs);
         infoImageGs
-            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
+            .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         infoTextGs = infoG.selectAll('g.info-text-g')
             .data(that.infoData);
@@ -853,7 +850,7 @@ function HybridMapClass() {
                 //         }
                 //     });
             })
-            .transition().duration(r.transition.durationShort).ease(r.transition.ease)
+            .transition().duration(r.transition.duration).ease(r.transition.ease)
             .style('opacity', d => +(that.nodeSelected && d.id === that.nodeSelected.id));
         TestApp('DrawInfo', -1);
         return that;
@@ -1044,19 +1041,27 @@ function HybridMapClass() {
                     return 0;
                 }
             })
-            .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
+            .transition().duration(r.transition.duration).ease(r.transition.ease)
             .attr('r', d => d.r);
         linkPaths = linksG.selectAll('path.link-path')
             .data(that.links);
-        linkPaths.exit()
-            .remove();
+        // linkPaths.exit()
+        //     .remove();
         linkPaths = linkPaths.enter().append('path')
             .classed('link-path', true)
             .attr('d', '')
-            // .style('stroke-width', '0px')
             .merge(linkPaths);
         linkPaths
             .style('fill', d => {
+                if (topIds.includes(d.source.id)) {
+                    return d3.schemeCategory20[d.source.i];
+                } else if (topIds.includes(d.target.id)) {
+                    return d3.schemeCategory20[d.target.i];
+                } else {
+                    return null;
+                }
+            })
+            .style('stroke', d => {
                 if (topIds.includes(d.source.id)) {
                     return d3.schemeCategory20[d.source.i];
                 } else if (topIds.includes(d.target.id)) {
@@ -1073,24 +1078,23 @@ function HybridMapClass() {
                 } else if (that.filteredOutObj.report[d.report]) {
                     return 'none';
                 } else if (!that.nodeSelected) {
-                    return 'block';
+                    return null;
                 } else if (that.nodeSelected.id === d.source.id) {
-                    return 'block';
+                    return null;
                 } else if (that.nodeSelected.id === d.target.id) {
-                    return 'block';
+                    return null;
                 } else {
                     return 'none';
                 }
             })
-            .transition().duration(r.transition.durationMedium).ease(r.transition.ease)
+            .transition().duration(r.transition.duration).ease(r.transition.ease)
             // .style('visibility', d => {
             //     return (d.targetId === "Yes on 1240" && d.source.i === 3) ? 'visible' : 'hidden';
             //     // return (d.source.i === 3) ? 'visible' : 'hidden';
             // })
-            // .style('stroke-width', d => {
-            //     return Math.max(r.network.swMin, r.network.swFactor * d.dollars / that.$outTotal) + 'px';
-            // })
             ;
+        linkPaths.exit()
+            .remove();
         TestApp('DrawNetwork', -1);
         return that;
     };
@@ -1256,7 +1260,7 @@ function HybridMapClass() {
             .attr('cy', d => d.$out > 0 ? d.y : that.centroidByANSI[d.ansi][1]);
         linkPaths
             .attr('d', d => {
-                let angle = Math.atan2(d.target.y-d.source.y,d.target.x-d.source.x);
+                let angle = Math.atan2(d.target.y-d.source.y, d.target.x-d.source.x);
                 let x0 = d.source.x - d.source.r*Math.cos(angle+(1/2)*Math.PI);
                 let y0 = d.source.y + d.source.r*Math.sin(angle-(1/2)*Math.PI);
                 let x1 = d.target.x;

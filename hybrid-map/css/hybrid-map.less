@@ -36,19 +36,26 @@ body {
         }
     }
     #nodes-g {
-        circle.node-circle {
-            cursor: -webkit-grab;
-            fill: @network-fill;
-            stroke: @main-outline-color;
-            stroke-width: @main-outline-width;
-        }
+        cursor: -webkit-grab;
+        fill: @network-fill;
+        stroke: @main-outline-color;
+        stroke-width: @main-outline-width;
+        // circle.node-circle {
+        //     cursor: -webkit-grab;
+        //     fill: @network-fill;
+        //     stroke: @main-outline-color;
+        //     stroke-width: @main-outline-width;
+        // }
     }
     #links-g {
         pointer-events: none;
-        path.link-path {
-            stroke: @main-outline-color;
-            fill: @network-fill;
-        }
+        fill-opacity: 0.5;
+        // stroke: @main-outline-color;
+        fill: @network-fill;
+        // path.link-path {
+        //     stroke: @main-outline-color;
+        //     fill: @network-fill;
+        // }
     }
     #info-bg-rect {
         fill: @main-background-color;
