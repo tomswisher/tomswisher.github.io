@@ -113,7 +113,7 @@ trackLoadButton
 		svgsContainer.selectAll('*').remove();
 		loadingLabel.text('');
 		trackURLLabel.text(trackURL);
-		wavesurfer.load('../static/audio/'+trackURL);
+		wavesurfer.load('./audio/'+trackURL);
 	});
 trackClearButton
 	.on('click', function() {
