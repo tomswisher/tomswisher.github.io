@@ -1,0 +1,57 @@
+<html>
+<head>
+<meta charset='UTF-8' />
+<title>Classer</title>
+<link rel='stylesheet' type='text/css' href='../static/css/classer.css'></link>
+</head>
+<body>
+	<div class='solid'>
+		<div class='row'>
+			<div class='left inlineblock'><button class='medium' id='track-load-button' tabindex='1'>Load Track</button></div>
+			<div class='right inlineblock'><button class='medium' id='track-clear-button' tabindex='3'>Clear Track</button></div>
+			<div class='flex'><span class='expanded outlined' id='track-url-label' tabindex='2'></span></div>
+			<input class='hidden' id='track-input' type='file'></input>
+		</div>
+	</div>
+	<div class='solid'>
+		<div class='row'>
+			<div class='center'><span id='loading-label'></span></div>
+		</div>
+	</div>
+	<div class='show-if-loaded inlineblock' id='app-container'>
+		<div class='inlineblock' id='wavesurfer-container'></div>
+		<div class='inlineblock' id='svgs-container'></div>
+		<div id='player-line'></div>
+	</div>
+	<div class='solid show-if-loaded'>
+		<div class='row'>
+			<div class='left inlineblock'><button class='medium' id='play-pause-button' tabindex='7'></button></div>
+			<div class='right inlineblock'><button class='medium' id='stop-button' tabindex='8'>Stop</button></div>
+		</div>
+		<!-- <div class='row'>
+			<div class='center'><span class='medium inlineblock' id='key-pressed-label'></span></div>
+		</div> -->
+		<!-- <div class='row settings'>
+			<div class='left inlineblock'>Zoom Level: x<span id='zoom-label'>2.0</span></div>
+			<div class='flex'><input class='expanded' id='zoom-slider' type='range' min='1' max='10' step='0.1' value='2.0' /></div>
+		</div> -->
+		<div class='row'>
+			<div class='left inlineblock'><button class='medium' id='export-data-button' tabindex='10'>Export Data</button></div>
+		</div>
+	</div>
+	<div class='solid hidden show-if-loaded' id='debug-container'>
+		<div class='left inlineblock medium'><span class='debug0' id='current-time-label'>0.0 s</span></div>
+		<div class='left inlineblock'><span id='speed-label'>Playback Speed: x 1.0</span></div>
+		<div class='flex'><input class='expanded' id='speed-slider' tabindex='9' type='range' min='0.1' max='3' step='0.1' value='1' /></div>
+		<span class='color-ref group0'>Group 0</span>
+		<span class='color-ref group1'>Group 1</span>
+		<span class='color-ref group2'>Group 2</span>
+	</div>
+</body>
+<!-- <script type='text/javascript' src='../static/js/d3.v3.min.js'></script> -->
+<!-- <script type='text/javascript' src='../static/js/d3.v3.js'></script> -->
+<script type='text/javascript' src='../static/js/d3_4_8_0.js'></script>
+<script type='text/javascript' src='../static/js/jquery.min.js'></script>
+<script type='text/javascript' src='../static/js/wavesurfer_1_3_7.js'></script>
+<script type='text/javascript' src='../static/js/classer.js'></script>
+</html>
