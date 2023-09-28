@@ -1,1 +1,0 @@
-This is an example data visualization dashboard built with [Create React App](https://github.com/facebookincubator/create-react-app) and [Semiotic](https://github.com/emeeks/semiotic) to demontrate how to use Semiotic to make dashboards.
